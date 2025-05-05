@@ -1,10 +1,6 @@
 import axios from 'axios';
 import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType } from '../types';
 import { TelegramUser } from 'react-telegram-login';
-import { 
-  generateImage as mockGenerateImage,
-  generateTags as mockGenerateTags
-} from '../mocks/api';
 
 // API base URL
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -141,9 +137,9 @@ export const generateText = async (prompt: string): Promise<string> => {
     // Use real API instead of mock
     const response = await api.post('/ai/generate-text', { prompt });
     return response.data.data.text;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Generate text error:', error);
-    if (error.response && error.response.status === 403) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
       throw new Error('Недостаточно кредитов для генерации текста');
     }
     throw error;
@@ -152,9 +148,14 @@ export const generateText = async (prompt: string): Promise<string> => {
 
 export const generateImage = async (prompt: string): Promise<string> => {
   try {
-    return await mockGenerateImage(prompt);
+    // Use real API instead of mock
+    const response = await api.post('/ai/generate-image', { prompt });
+    return response.data.data.imageUrl;
   } catch (error) {
     console.error('Generate image error:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      throw new Error('Недостаточно кредитов для генерации изображения');
+    }
     throw error;
   }
 };
@@ -170,9 +171,9 @@ export const generateTags = async (text: string): Promise<string[]> => {
     : ['#tag1', '#tag2', '#tag3', '#content', '#telegram'];
 
     return tags;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Generate tags error:', error);
-    if (error.response && error.response.status === 403) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
       throw new Error('Недостаточно кредитов для генерации тегов');
     }
     throw error;
