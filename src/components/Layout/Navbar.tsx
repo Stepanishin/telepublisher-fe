@@ -1,14 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LogOut, Send } from 'lucide-react';
+import { LogOut, Send, Coins, Info } from 'lucide-react';
 import Button from '../ui/Button';
 import { useUserStore } from '../../store/userStore';
+import { useCreditStore } from '../../store/creditStore';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useUserStore();
+  const { creditInfo, fetchCreditInfo } = useCreditStore();
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchCreditInfo();
+    }
+  }, [user, fetchCreditInfo]);
 
   const handleLogout = () => {
     logout();
+  };
+
+  // Format date to a readable string
+  const formatDate = (date: Date | null | undefined) => {
+    if (!date) return 'Нет данных';
+    return new Date(date).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -24,6 +43,45 @@ const Navbar: React.FC = () => {
             </Link>
           </div>
           <div className="flex items-center">
+            {creditInfo && (
+              <div 
+                className="relative flex items-center px-3 py-1 bg-blue-50 rounded-md mr-4 cursor-pointer"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+              >
+                <Coins className="h-4 w-4 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-800">
+                  {creditInfo.currentCredits} / {creditInfo.maxCredits} кредитов
+                </span>
+                <Info className="h-3 w-3 text-blue-400 ml-1" />
+                
+                {showTooltip && (
+                  <div className="absolute top-full right-0 mt-2 w-64 p-3 bg-white shadow-lg rounded-md z-50 text-xs">
+                    <div className="font-semibold text-gray-900 mb-2">Информация о кредитах</div>
+                    <div className="space-y-1 text-gray-700">
+                      <div className="flex justify-between">
+                        <span>Тип подписки:</span>
+                        <span className="font-medium">{creditInfo.subscriptionType.toUpperCase()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Всего использовано:</span>
+                        <span className="font-medium">{creditInfo.totalUsed}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Сброс кредитов:</span>
+                        <span className="font-medium">{formatDate(creditInfo.resetDate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Статус подписки:</span>
+                        <span className={`font-medium ${creditInfo.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                          {creditInfo.isActive ? 'Активна' : 'Неактивна'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {user && (
               <div className="flex items-center mr-4">
                 {user.photoUrl ? (
