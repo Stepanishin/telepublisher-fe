@@ -2,7 +2,6 @@ import axios from 'axios';
 import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType } from '../types';
 import { TelegramUser } from 'react-telegram-login';
 import { 
-  generateText as mockGenerateText,
   generateImage as mockGenerateImage,
   generateTags as mockGenerateTags
 } from '../mocks/api';
@@ -139,9 +138,14 @@ export const updateSubscription = async (subscriptionType: SubscriptionType, pay
 // Content generation
 export const generateText = async (prompt: string): Promise<string> => {
   try {
-    return await mockGenerateText(prompt);
-  } catch (error) {
+    // Use real API instead of mock
+    const response = await api.post('/ai/generate-text', { prompt });
+    return response.data.data.text;
+  } catch (error: any) {
     console.error('Generate text error:', error);
+    if (error.response && error.response.status === 403) {
+      throw new Error('Недостаточно кредитов для генерации текста');
+    }
     throw error;
   }
 };
@@ -157,9 +161,20 @@ export const generateImage = async (prompt: string): Promise<string> => {
 
 export const generateTags = async (text: string): Promise<string[]> => {
   try {
-    return await mockGenerateTags(text);
-  } catch (error) {
+    // Use real API instead of mock
+    const response = await api.post('/ai/generate-tags', { text });
+    console.log('response', response.data.data.tags);
+    const words: string[] = response.data.data.tags
+    const tags = words.length > 0 
+    ? words.slice(0, Math.min(5, words.length)).map((word: string) => `#${word.toLowerCase().replace(/[^a-zA-Zа-яА-Я0-9]/g, '')}`)
+    : ['#tag1', '#tag2', '#tag3', '#content', '#telegram'];
+
+    return tags;
+  } catch (error: any) {
     console.error('Generate tags error:', error);
+    if (error.response && error.response.status === 403) {
+      throw new Error('Недостаточно кредитов для генерации тегов');
+    }
     throw error;
   }
 };

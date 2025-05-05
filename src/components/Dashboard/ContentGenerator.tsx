@@ -4,9 +4,12 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { useContentStore } from '../../store/contentStore';
+import { useCreditStore } from '../../store/creditStore';
+import Alert from '../ui/Alert';
 
 const ContentGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
+  const [error, setError] = useState('');
   const { 
     content, 
     isGenerating, 
@@ -14,29 +17,55 @@ const ContentGenerator: React.FC = () => {
     generateImage, 
     generateTags 
   } = useContentStore();
+  const { creditInfo, fetchCreditInfo } = useCreditStore();
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPrompt(e.target.value);
+    if (error) setError('');
   };
 
   const handleGenerateText = async () => {
     if (!prompt.trim()) return;
-    await generateText(prompt);
+    try {
+      setError('');
+      await generateText(prompt);
+      // Refresh credits after successful generation
+      fetchCreditInfo();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка при генерации текста';
+      setError(errorMessage);
+    }
   };
 
   const handleGenerateImage = async () => {
     if (!prompt.trim()) return;
-    await generateImage(prompt);
+    try {
+      setError('');
+      await generateImage(prompt);
+      // Refresh credits after successful generation
+      fetchCreditInfo();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка при генерации изображения';
+      setError(errorMessage);
+    }
   };
 
   const handleGenerateTags = async () => {
-    if (!content.text.trim()) {
-      // If no text is generated yet, generate tags based on prompt
-      if (!prompt.trim()) return;
-      await generateTags(prompt);
-    } else {
-      // Otherwise, generate tags based on generated text
-      await generateTags(content.text);
+    try {
+      setError('');
+      if (!content.text.trim()) {
+        // If no text is generated yet, generate tags based on prompt
+        if (!prompt.trim()) return;
+        await generateTags(prompt);
+      } else {
+        // Otherwise, generate tags based on generated text
+        await generateTags(content.text);
+      }
+      // Refresh credits after successful generation
+      fetchCreditInfo();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка при генерации тегов';
+      setError(errorMessage);
     }
   };
 
@@ -46,13 +75,23 @@ const ContentGenerator: React.FC = () => {
         <CardTitle>Генератор контента</CardTitle>
       </CardHeader>
       <CardContent>
-        <Input
-          label="Введите промпт"
-          placeholder="О чем сгенерировать контент?"
-          value={prompt}
-          onChange={handlePromptChange}
-          fullWidth
-        />
+        {error && (
+          <Alert
+            variant="error"
+            message={error}
+            onClose={() => setError('')}
+          />
+        )}
+        
+        <div className="mt-4">
+          <Input
+            label="Введите промпт"
+            placeholder="О чем сгенерировать контент?"
+            value={prompt}
+            onChange={handlePromptChange}
+            fullWidth
+          />
+        </div>
         
         <div className="flex flex-wrap gap-2 mt-4">
           <Button
@@ -62,6 +101,7 @@ const ContentGenerator: React.FC = () => {
             disabled={!prompt.trim() || isGenerating}
           >
             Сгенерировать текст
+            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 кредит)</span>}
           </Button>
           
           <Button
@@ -72,6 +112,7 @@ const ContentGenerator: React.FC = () => {
             disabled={!prompt.trim() || isGenerating}
           >
             Сгенерировать изображение
+            {creditInfo && <span className="ml-1 text-xs opacity-70">(2 кредита)</span>}
           </Button>
           
           <Button
@@ -82,6 +123,7 @@ const ContentGenerator: React.FC = () => {
             disabled={(!prompt.trim() && !content.text.trim()) || isGenerating}
           >
             Сгенерировать теги
+            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 кредит)</span>}
           </Button>
         </div>
       </CardContent>
