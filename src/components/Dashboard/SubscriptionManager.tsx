@@ -6,61 +6,14 @@ import { useUserStore } from '../../store/userStore';
 import { toast } from 'react-hot-toast';
 import { getCreditInfo, createCheckoutSession, createPortalSession, cancelSubscription } from '../../services/api';
 import { SubscriptionType, CreditInfo } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
-// Subscription plans
-const plans = [
-  {
-    id: 'free',
-    type: 'free',
-    name: 'Бесплатный',
-    price: '0 $',
-    period: 'месяц',
-    credits: 10,
-    features: [
-      '10 AI-кредитов в месяц',
-      'До 2 каналов',
-      'Базовые инструменты',
-      '2-10 пробных публикаций',
-    ],
-    isPopular: false,
-    buttonText: 'Текущий тариф',
-    buttonVariant: 'outline' as const,
-  },
-  {
-    id: 'basic',
-    type: 'basic',
-    name: 'Стандарт',
-    price: '10$',
-    period: 'месяц',
-    credits: 100,
-    features: [
-      '100 AI-кредитов в месяц',
-      'До 10 каналов',
-      'До 100 публикаций',
-      'Приоритетная поддержка',
-    ],
-    isPopular: true,
-    buttonText: 'Оформить подписку',
-    buttonVariant: 'primary' as const,
-  },
-  {
-    id: 'business',
-    type: 'business',
-    name: 'Бизнес',
-    price: '30$',
-    period: 'месяц',
-    credits: 400,
-    features: [
-      '400 AI-кредитов в месяц',
-      'Неограниченное количество каналов',
-      'До 400 публикаций',
-      'Выделенная поддержка 24/7',
-    ],
-    isPopular: false,
-    buttonText: 'Оформить подписку',
-    buttonVariant: 'outline' as const,
-  },
-];
+// Helper function to format a date in the current locale
+const formatDate = (date: Date | string) => {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString();
+};
 
 const SubscriptionManager: React.FC = () => {
   const { user } = useUserStore();
@@ -69,6 +22,62 @@ const SubscriptionManager: React.FC = () => {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [managePaymentLoading, setManagePaymentLoading] = useState(false);
   const [cancelSubscriptionLoading, setCancelSubscriptionLoading] = useState(false);
+  const { t } = useLanguage();
+
+  // Create plans dynamically based on translations
+  const plans = [
+    {
+      id: 'free',
+      type: 'free',
+      name: t('subscription.free'),
+      price: t('subscription.free_price'),
+      period: t('subscription.month'),
+      credits: 10,
+      features: [
+        t('subscription.free_features_1'),
+        t('subscription.free_features_2'),
+        t('subscription.free_features_3'),
+        t('subscription.free_features_4'),
+      ],
+      isPopular: false,
+      buttonText: t('subscription.current_plan_button'),
+      buttonVariant: 'outline' as const,
+    },
+    {
+      id: 'basic',
+      type: 'basic',
+      name: t('subscription.standard'),
+      price: t('subscription.standard_price'),
+      period: t('subscription.month'),
+      credits: 100,
+      features: [
+        t('subscription.standard_features_1'),
+        t('subscription.standard_features_2'),
+        t('subscription.standard_features_3'),
+        t('subscription.standard_features_4'),
+      ],
+      isPopular: true,
+      buttonText: t('subscription.subscribe_button'),
+      buttonVariant: 'primary' as const,
+    },
+    {
+      id: 'business',
+      type: 'business',
+      name: t('subscription.business'),
+      price: t('subscription.business_price'),
+      period: t('subscription.month'),
+      credits: 400,
+      features: [
+        t('subscription.business_features_1'),
+        t('subscription.business_features_2'),
+        t('subscription.business_features_3'),
+        t('subscription.business_features_4'),
+      ],
+      isPopular: false,
+      buttonText: t('subscription.subscribe_button'),
+      buttonVariant: 'outline' as const,
+    },
+  ];
 
   // Fetch credit info when component mounts
   useEffect(() => {
@@ -79,14 +88,14 @@ const SubscriptionManager: React.FC = () => {
         setCreditInfo(creditData);
       } catch (error) {
         console.error('Error fetching credit info:', error);
-        toast.error('Не удалось загрузить информацию о подписке');
+        toast.error(t('subscription.error_load'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchCreditInfo();
-  }, []);
+  }, [t]);
 
   const handleUpgrade = async (subscriptionType: string) => {
     console.log('handleUpgrade', subscriptionType, user);
@@ -219,7 +228,7 @@ const SubscriptionManager: React.FC = () => {
     const paymentCancelled = params.get('payment_cancelled');
     
     if (paymentSuccess === 'true') {
-      toast.success('Оплата прошла успешно! Подписка активирована.');
+      toast.success(t('subscription.payment_success'));
       
       // Refresh credit info
       const fetchCreditInfo = async () => {
@@ -236,19 +245,28 @@ const SubscriptionManager: React.FC = () => {
       // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (paymentCancelled === 'true') {
-      toast.error('Оплата была отменена.');
+      toast.error(t('subscription.payment_cancelled'));
       
       // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [t]);
+
+  // Helper function to format a translated string with parameters
+  const formatString = (key: string, ...params: (string | number)[]) => {
+    let result = t(key);
+    params.forEach((param, index) => {
+      result = result.replace(`{${index}}`, String(param));
+    });
+    return result;
+  };
 
   return (
     <Card className="mb-6">
       <CardHeader>
         <div className="flex items-center">
           <Crown className="h-5 w-5 text-blue-600 mr-2" />
-          <CardTitle>Управление подпиской</CardTitle>
+          <CardTitle>{t('subscription.title')}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
@@ -266,13 +284,13 @@ const SubscriptionManager: React.FC = () => {
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-blue-800">
-                      Текущий план: {plans.find(p => String(p.type).toLowerCase() === String(creditInfo.subscriptionType).toLowerCase())?.name || creditInfo.subscriptionType}
+                      {t('subscription.current_plan')}: {plans.find(p => String(p.type).toLowerCase() === String(creditInfo.subscriptionType).toLowerCase())?.name || creditInfo.subscriptionType}
                     </h3>
                     <div className="mt-2 text-sm text-blue-700">
-                      <p>Доступно кредитов: {creditInfo.currentCredits} из {creditInfo.maxCredits}</p>
-                      <p>Использовано всего: {creditInfo.totalUsed} кредитов</p>
+                      <p>{formatString('subscription.credits_available', creditInfo.currentCredits, creditInfo.maxCredits)}</p>
+                      <p>{formatString('subscription.total_used', creditInfo.totalUsed)}</p>
                       {creditInfo.resetDate && (
-                        <p>Дата обновления кредитов: {new Date(creditInfo.resetDate).toLocaleDateString()}</p>
+                        <p>{formatString('subscription.reset_date', formatDate(creditInfo.resetDate))}</p>
                       )}
                       
                       {/* Show downgrade notice if applicable */}
@@ -280,12 +298,10 @@ const SubscriptionManager: React.FC = () => {
                         <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
                           <p className="text-amber-700 font-medium">
                             <AlertTriangle className="inline-block h-4 w-4 mr-1" />
-                            Подписка отменена
+                            {t('subscription.cancelled')}
                           </p>
                           <p className="text-amber-600 text-xs mt-1">
-                            Ваша подписка будет действовать до {new Date(creditInfo.endDate).toLocaleDateString()}, 
-                            после чего будет автоматически переведена на бесплатный план. 
-                            Ваши накопленные кредиты будут сохранены.
+                            {formatString('subscription.cancel_notice', formatDate(creditInfo.endDate))}
                           </p>
                         </div>
                       )}
@@ -312,7 +328,7 @@ const SubscriptionManager: React.FC = () => {
                     {plan.isPopular && (
                       <div className="absolute top-2 right-2">
                         <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                          Популярный
+                          {t('subscription.popular')}
                         </span>
                       </div>
                     )}
@@ -341,7 +357,7 @@ const SubscriptionManager: React.FC = () => {
                         {processingPayment ? (
                           <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
                         ) : isCurrentPlan ? (
-                          'Текущий тариф'
+                          t('subscription.current_plan_button')
                         ) : (
                           plan.buttonText
                         )}
@@ -365,10 +381,10 @@ const SubscriptionManager: React.FC = () => {
                     {managePaymentLoading ? (
                       <div className="flex items-center">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        <span>Загрузка...</span>
+                        <span>{t('subscription.loading')}</span>
                       </div>
                     ) : (
-                      <span>Управление платежами</span>
+                      <span>{t('subscription.manage_payments')}</span>
                     )}
                   </Button>
                   
@@ -381,10 +397,10 @@ const SubscriptionManager: React.FC = () => {
                     {cancelSubscriptionLoading ? (
                       <div className="flex items-center">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        <span>Отмена...</span>
+                        <span>{t('subscription.cancelling')}</span>
                       </div>
                     ) : (
-                      <span>Отменить подписку</span>
+                      <span>{t('subscription.cancel_subscription')}</span>
                     )}
                   </Button>
                 </>
@@ -400,10 +416,10 @@ const SubscriptionManager: React.FC = () => {
                   {processingPayment ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      <span>Загрузка...</span>
+                      <span>{t('subscription.loading')}</span>
                     </div>
                   ) : (
-                    <span>{creditInfo.downgradeOnExpiry ? 'Возобновить подписку' : 'Оформить подписку'}</span>
+                    <span>{creditInfo.downgradeOnExpiry ? t('subscription.renew_subscription') : t('subscription.subscribe_button')}</span>
                   )}
                 </Button>
               )}
