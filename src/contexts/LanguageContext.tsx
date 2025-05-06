@@ -145,6 +145,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Publish Panel
     'publish_panel.title': 'Publication Panel',
     'publish_panel.select_channel': 'Select channel',
+    'publish_panel.select_channels': 'Select channels',
     'publish_panel.select_channel_error': 'Select a channel',
     'publish_panel.no_channel_error': 'Select a channel for publication',
     'publish_panel.no_content_error': 'Add text or image for publication',
@@ -155,6 +156,12 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.tags': 'Tags',
     'publish_panel.image_preview': 'Image preview',
     'publish_panel.publish_button': 'Publish',
+    'publish_panel.multiple_selection_hint': 'Click to open dropdown and select multiple channels',
+    'publish_panel.publish_to_multiple': 'Publish to {count} channels',
+    'publish_panel.publishing_progress': 'Publishing Progress',
+    'publish_panel.channels': 'channels',
+    'publish_panel.success_publish': 'Successfully published to:',
+    'publish_panel.failed_publish': 'Failed to publish to:',
 
     // Channels Manager
     'channels_manager.title': 'Channel Management',
@@ -406,6 +413,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Publish Panel
     'publish_panel.title': 'Панель публикации',
     'publish_panel.select_channel': 'Выберите канал',
+    'publish_panel.select_channels': 'Выберите каналы',
     'publish_panel.select_channel_error': 'Выберите канал',
     'publish_panel.no_channel_error': 'Выберите канал для публикации',
     'publish_panel.no_content_error': 'Добавьте текст или изображение для публикации',
@@ -416,6 +424,12 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.tags': 'Теги',
     'publish_panel.image_preview': 'Предпросмотр изображения',
     'publish_panel.publish_button': 'Опубликовать',
+    'publish_panel.multiple_selection_hint': 'Нажмите, чтобы открыть выпадающий список и выбрать несколько каналов',
+    'publish_panel.publish_to_multiple': 'Опубликовать в {count} каналах',
+    'publish_panel.publishing_progress': 'Прогресс публикации',
+    'publish_panel.channels': 'каналов',
+    'publish_panel.success_publish': 'Успешно опубликовано в:',
+    'publish_panel.failed_publish': 'Не удалось опубликовать в:',
 
     // Channels Manager
     'channels_manager.title': 'Управление каналами',

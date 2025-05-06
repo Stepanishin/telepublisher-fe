@@ -13,7 +13,7 @@ interface ContentState {
   generateText: (prompt: string) => Promise<void>;
   generateImage: (prompt: string) => Promise<void>;
   generateTags: (text: string) => Promise<void>;
-  publish: (params: PublishParams) => Promise<void>;
+  publish: (params: PublishParams) => Promise<PublishResult>;
   resetPublishResult: () => void;
 }
 
@@ -92,11 +92,16 @@ export const useContentStore = create<ContentState>((set, get) => ({
     try {
       const result = await publishContent(params);
       set({ publishResult: result, isPublishing: false });
+      return result;
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to publish content', 
         isPublishing: false 
       });
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to publish content'
+      };
     }
   },
   
