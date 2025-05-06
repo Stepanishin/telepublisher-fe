@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TagInputProps {
   tags: string[];
@@ -13,9 +14,10 @@ const TagInput: React.FC<TagInputProps> = ({
   tags,
   onChange,
   label,
-  placeholder = 'Добавить тег...',
+  placeholder,
   disabled = false,
 }) => {
+  const { t } = useLanguage();
   const [input, setInput] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +80,7 @@ const TagInput: React.FC<TagInputProps> = ({
                 type="button"
                 onClick={() => removeTag(index)}
                 className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                aria-label={t('tag_input.remove_tag')}
               >
                 <X size={14} />
               </button>
@@ -89,13 +92,13 @@ const TagInput: React.FC<TagInputProps> = ({
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
-          placeholder={tags.length === 0 ? placeholder : ''}
+          placeholder={tags.length === 0 ? (placeholder || t('tag_input.placeholder')) : ''}
           className="flex-grow border-0 focus:ring-0 min-w-[120px] p-1 text-sm disabled:bg-transparent"
           disabled={disabled}
         />
       </div>
       <p className="mt-1 text-xs text-gray-500">
-        Нажмите Enter или запятую для добавления тега
+        {t('tag_input.hint')}
       </p>
     </div>
   );

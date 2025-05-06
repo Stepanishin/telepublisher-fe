@@ -189,6 +189,11 @@ const translations: Record<Language, Record<string, string>> = {
     'alert.info_title': 'Information',
     'common.close': 'Close',
 
+    // TagInput component
+    'tag_input.placeholder': 'Add tag...',
+    'tag_input.hint': 'Press Enter or comma to add a tag',
+    'tag_input.remove_tag': 'Remove tag',
+
     // Channels Manager
     'channels_manager.title': 'Channel Management',
     'channels_manager.add_new_channel': 'Add new channel',
@@ -310,6 +315,10 @@ const translations: Record<Language, Record<string, string>> = {
     'subscription.payment_success': 'Payment successful! Your subscription has been activated.',
     'subscription.payment_cancelled': 'Payment was cancelled.',
     'subscription.error_load': 'Failed to load subscription information',
+
+    // NotFoundPage
+    'not_found.message': 'Page not found',
+    'not_found.back_home': 'Back to home',
   },
   ru: {
     // Navbar
@@ -483,6 +492,11 @@ const translations: Record<Language, Record<string, string>> = {
     'alert.info_title': 'Информация',
     'common.close': 'Закрыть',
 
+    // TagInput component
+    'tag_input.placeholder': 'Добавить тег...',
+    'tag_input.hint': 'Нажмите Enter или запятую для добавления тега',
+    'tag_input.remove_tag': 'Удалить тег',
+
     // Channels Manager
     'channels_manager.title': 'Управление каналами',
     'channels_manager.add_new_channel': 'Добавить новый канал',
@@ -604,6 +618,10 @@ const translations: Record<Language, Record<string, string>> = {
     'subscription.payment_success': 'Оплата прошла успешно! Подписка активирована.',
     'subscription.payment_cancelled': 'Оплата была отменена.',
     'subscription.error_load': 'Не удалось загрузить информацию о подписке',
+
+    // NotFoundPage
+    'not_found.message': 'Страница не найдена',
+    'not_found.back_home': 'Вернуться на главную',
   },
 };
 
