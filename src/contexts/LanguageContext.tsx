@@ -124,6 +124,23 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels': 'Channel Management',
     'dashboard.tab_instructions': 'Instructions',
     'dashboard.tab_subscription': 'Subscription',
+
+    // Content Generator
+    'content_generator.title': 'Content Generator',
+    'content_generator.prompt_label': 'Enter prompt',
+    'content_generator.prompt_placeholder': 'What content should be generated?',
+    'content_generator.generate_text': 'Generate text',
+    'content_generator.generate_image': 'Generate image',
+    'content_generator.generate_tags': 'Generate tags',
+    'content_generator.credits': 'credit',
+    'content_generator.credits_plural': 'credits',
+    'content_generator.generation_results': 'Generation results:',
+    'content_generator.text': 'Text:',
+    'content_generator.image': 'Image:',
+    'content_generator.tags': 'Tags:',
+    'content_generator.error_text': 'Error generating text',
+    'content_generator.error_image': 'Error generating image',
+    'content_generator.error_tags': 'Error generating tags',
   },
   ru: {
     // Navbar
@@ -232,6 +249,23 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels': 'Управление каналами',
     'dashboard.tab_instructions': 'Инструкция',
     'dashboard.tab_subscription': 'Подписка',
+
+    // Content Generator
+    'content_generator.title': 'Генератор контента',
+    'content_generator.prompt_label': 'Введите промпт',
+    'content_generator.prompt_placeholder': 'О чем сгенерировать контент?',
+    'content_generator.generate_text': 'Сгенерировать текст',
+    'content_generator.generate_image': 'Сгенерировать изображение',
+    'content_generator.generate_tags': 'Сгенерировать теги',
+    'content_generator.credits': 'кредит',
+    'content_generator.credits_plural': 'кредита',
+    'content_generator.generation_results': 'Результат генерации:',
+    'content_generator.text': 'Текст:',
+    'content_generator.image': 'Изображение:',
+    'content_generator.tags': 'Теги:',
+    'content_generator.error_text': 'Ошибка при генерации текста',
+    'content_generator.error_image': 'Ошибка при генерации изображения',
+    'content_generator.error_tags': 'Ошибка при генерации тегов',
   },
 };
 

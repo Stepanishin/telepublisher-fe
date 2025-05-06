@@ -6,6 +6,7 @@ import Input from '../ui/Input';
 import { useContentStore } from '../../store/contentStore';
 import { useCreditStore } from '../../store/creditStore';
 import Alert from '../ui/Alert';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ContentGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -18,6 +19,7 @@ const ContentGenerator: React.FC = () => {
     generateTags 
   } = useContentStore();
   const { creditInfo, fetchCreditInfo } = useCreditStore();
+  const { t } = useLanguage();
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPrompt(e.target.value);
@@ -32,7 +34,7 @@ const ContentGenerator: React.FC = () => {
       // Refresh credits after successful generation
       fetchCreditInfo();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Ошибка при генерации текста';
+      const errorMessage = err instanceof Error ? err.message : t('content_generator.error_text');
       setError(errorMessage);
     }
   };
@@ -45,7 +47,7 @@ const ContentGenerator: React.FC = () => {
       // Refresh credits after successful generation
       fetchCreditInfo();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Ошибка при генерации изображения';
+      const errorMessage = err instanceof Error ? err.message : t('content_generator.error_image');
       setError(errorMessage);
     }
   };
@@ -64,7 +66,7 @@ const ContentGenerator: React.FC = () => {
       // Refresh credits after successful generation
       fetchCreditInfo();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Ошибка при генерации тегов';
+      const errorMessage = err instanceof Error ? err.message : t('content_generator.error_tags');
       setError(errorMessage);
     }
   };
@@ -72,7 +74,7 @@ const ContentGenerator: React.FC = () => {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Генератор контента</CardTitle>
+        <CardTitle>{t('content_generator.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         {error && (
@@ -85,8 +87,8 @@ const ContentGenerator: React.FC = () => {
         
         <div className="mt-4">
           <Input
-            label="Введите промпт"
-            placeholder="О чем сгенерировать контент?"
+            label={t('content_generator.prompt_label')}
+            placeholder={t('content_generator.prompt_placeholder')}
             value={prompt}
             onChange={handlePromptChange}
             fullWidth
@@ -100,8 +102,8 @@ const ContentGenerator: React.FC = () => {
             isLoading={isGenerating}
             disabled={!prompt.trim() || isGenerating}
           >
-            Сгенерировать текст
-            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 кредит)</span>}
+            {t('content_generator.generate_text')}
+            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 {t('content_generator.credits')})</span>}
           </Button>
           
           <Button
@@ -111,8 +113,8 @@ const ContentGenerator: React.FC = () => {
             isLoading={isGenerating}
             disabled={!prompt.trim() || isGenerating}
           >
-            Сгенерировать изображение
-            {creditInfo && <span className="ml-1 text-xs opacity-70">(2 кредита)</span>}
+            {t('content_generator.generate_image')}
+            {creditInfo && <span className="ml-1 text-xs opacity-70">(2 {t('content_generator.credits_plural')})</span>}
           </Button>
           
           <Button
@@ -122,28 +124,28 @@ const ContentGenerator: React.FC = () => {
             isLoading={isGenerating}
             disabled={(!prompt.trim() && !content.text.trim()) || isGenerating}
           >
-            Сгенерировать теги
-            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 кредит)</span>}
+            {t('content_generator.generate_tags')}
+            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 {t('content_generator.credits')})</span>}
           </Button>
         </div>
       </CardContent>
       
       {(content.text || content.imageUrl || content.tags.length > 0) && (
         <CardFooter className="flex flex-col items-start">
-          <h4 className="text-md font-medium mb-2">Результат генерации:</h4>
+          <h4 className="text-md font-medium mb-2">{t('content_generator.generation_results')}</h4>
           
           {/* Preview content */}
           <div className="w-full space-y-4">
             {content.text && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <h5 className="text-sm font-medium text-gray-700 mb-1">Текст:</h5>
+                <h5 className="text-sm font-medium text-gray-700 mb-1">{t('content_generator.text')}</h5>
                 <p className="text-sm whitespace-pre-line">{content.text}</p>
               </div>
             )}
             
             {content.imageUrl && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <h5 className="text-sm font-medium text-gray-700 mb-1">Изображение:</h5>
+                <h5 className="text-sm font-medium text-gray-700 mb-1">{t('content_generator.image')}</h5>
                 <div className="relative w-full h-48 overflow-hidden rounded">
                   <img 
                     src={content.imageUrl} 
@@ -156,7 +158,7 @@ const ContentGenerator: React.FC = () => {
             
             {content.tags.length > 0 && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <h5 className="text-sm font-medium text-gray-700 mb-1">Теги:</h5>
+                <h5 className="text-sm font-medium text-gray-700 mb-1">{t('content_generator.tags')}</h5>
                 <div className="flex flex-wrap gap-2">
                   {content.tags.map((tag, index) => (
                     <span 
