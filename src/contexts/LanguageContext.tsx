@@ -124,6 +124,10 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels': 'Channel Management',
     'dashboard.tab_instructions': 'Instructions',
     'dashboard.tab_subscription': 'Subscription',
+    'dashboard.tab_content_short': 'Content',
+    'dashboard.tab_channels_short': 'Channels',
+    'dashboard.tab_instructions_short': 'Guide',
+    'dashboard.tab_subscription_short': 'Sub',
 
     // Content Generator
     'content_generator.title': 'Content Generator',
@@ -427,6 +431,10 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels': 'Управление каналами',
     'dashboard.tab_instructions': 'Инструкция',
     'dashboard.tab_subscription': 'Подписка',
+    'dashboard.tab_content_short': 'Контент',
+    'dashboard.tab_channels_short': 'Каналы',
+    'dashboard.tab_instructions_short': 'Гид',
+    'dashboard.tab_subscription_short': 'Тариф',
 
     // Content Generator
     'content_generator.title': 'Генератор контента',
