@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Link to="/login">
-              <Button size="lg" className="bg-white !text-blue-700 hover:bg-gray-200">
+              <Button size="lg" className="bg-white !text-blue-700 hover:bg-gray-200 hover:!text-blue-700">
                 {t('hero.start_free')}
               </Button>
             </Link>
@@ -252,7 +252,7 @@ const HomePage: React.FC = () => {
             {t('call_to_action.description')}
           </p>
           <Link to="/login">
-            <Button size="lg" className="bg-white hover:bg-gray-300 !text-blue-700">
+            <Button size="lg" className="bg-white hover:bg-gray-100 !text-blue-700 hover:!text-blue-700">
               {t('call_to_action.start_free')}
             </Button>
           </Link>

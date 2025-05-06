@@ -15,12 +15,12 @@ const plans = [
     name: 'Бесплатный',
     price: '0 $',
     period: 'месяц',
-    credits: 50,
+    credits: 10,
     features: [
-      '50 AI-кредитов в месяц',
-      'До 3 каналов',
+      '10 AI-кредитов в месяц',
+      'До 2 каналов',
       'Базовые инструменты',
-      'До 30 публикаций в месяц',
+      '2-10 пробных публикаций',
     ],
     isPopular: false,
     buttonText: 'Текущий тариф',
@@ -30,14 +30,13 @@ const plans = [
     id: 'basic',
     type: 'basic',
     name: 'Стандарт',
-    price: '1 $',
+    price: '10$',
     period: 'месяц',
-    credits: 300,
+    credits: 100,
     features: [
-      '300 AI-кредитов в месяц',
+      '100 AI-кредитов в месяц',
       'До 10 каналов',
-      'Планирование публикаций',
-      'Неограниченные публикации',
+      'До 100 публикаций',
       'Приоритетная поддержка',
     ],
     isPopular: true,
@@ -45,35 +44,16 @@ const plans = [
     buttonVariant: 'primary' as const,
   },
   {
-    id: 'professional',
-    type: 'professional',
-    name: 'Профессиональный',
-    price: '1 $',
-    period: 'месяц',
-    credits: 1000,
-    features: [
-      '1000 AI-кредитов в месяц',
-      'До 20 каналов',
-      'Продвинутая генерация контента',
-      'Все функции планирования',
-      'Аналитика и отчеты',
-    ],
-    isPopular: false,
-    buttonText: 'Оформить подписку',
-    buttonVariant: 'outline' as const,
-  },
-  {
     id: 'business',
     type: 'business',
     name: 'Бизнес',
-    price: '1 $',
+    price: '30$',
     period: 'месяц',
-    credits: 3000,
+    credits: 400,
     features: [
-      '3000 AI-кредитов в месяц',
+      '400 AI-кредитов в месяц',
       'Неограниченное количество каналов',
-      'Все функции продвинутой генерации',
-      'API для интеграций',
+      'До 400 публикаций',
       'Выделенная поддержка 24/7',
     ],
     isPopular: false,
@@ -315,7 +295,7 @@ const SubscriptionManager: React.FC = () => {
               </div>
             )}
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {plans.map((plan) => {
                 // Более надежная проверка с приведением типов и значений к строке
                 const currentType = String(creditInfo?.subscriptionType || '').toLowerCase();
@@ -330,7 +310,7 @@ const SubscriptionManager: React.FC = () => {
                     className={`border ${plan.isPopular ? 'border-blue-500 shadow-md' : 'border-gray-200'} relative`}
                   >
                     {plan.isPopular && (
-                      <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/3">
+                      <div className="absolute top-2 right-2">
                         <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
                           Популярный
                         </span>
