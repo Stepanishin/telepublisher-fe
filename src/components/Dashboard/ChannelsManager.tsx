@@ -5,6 +5,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { useChannelsStore } from '../../store/channelsStore';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ChannelsManager: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -16,6 +17,14 @@ const ChannelsManager: React.FC = () => {
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<{id: string, token: string} | null>(null);
   const { channels, isLoading, fetchChannels, addChannel, updateChannel, deleteChannel } = useChannelsStore();
+  const { t } = useLanguage();
+
+  // Helper function to replace placeholders in translation strings
+  const formatMessage = (message: string, ...args: string[]) => {
+    return args.reduce((msg, arg, index) => {
+      return msg.replace(`{${index}}`, arg);
+    }, message);
+  };
 
   useEffect(() => {
     fetchChannels();
@@ -59,7 +68,7 @@ const ChannelsManager: React.FC = () => {
 
     // Validate username format
     if (!formattedUsername) {
-      setError('Введите имя пользователя канала');
+      setError(t('channels_manager.error_username'));
       return;
     }
 
@@ -70,7 +79,7 @@ const ChannelsManager: React.FC = () => {
 
     // Check if channel already exists
     if (channels.some((channel) => channel.title === formattedUsername)) {
-      setError('Канал с таким именем уже добавлен');
+      setError(t('channels_manager.error_already_added'));
       return;
     }
 
@@ -83,7 +92,7 @@ const ChannelsManager: React.FC = () => {
       setUsername('');
       setNewChannelToken('');
     } catch {
-      setError('Не удалось добавить канал');
+      setError(t('channels_manager.error_add_failed'));
     }
   };
 
@@ -116,7 +125,7 @@ const ChannelsManager: React.FC = () => {
         await fetchChannels(); // Then refresh the channels list
         closeTokenModal();
       } catch {
-        setError('Не удалось сохранить токен');
+        setError(t('channels_manager.error_save_token'));
       }
     }
   };
@@ -139,7 +148,7 @@ const ChannelsManager: React.FC = () => {
         closeDeleteModal(); // Close the modal first
         await fetchChannels(); // Then refresh the channels list
       } catch {
-        setError('Не удалось удалить канал');
+        setError(t('channels_manager.error_delete_channel'));
         closeDeleteModal();
       }
     }
@@ -159,7 +168,7 @@ const ChannelsManager: React.FC = () => {
     <>
       <Card className='mb-6'>
         <CardHeader>
-          <CardTitle>Управление каналами</CardTitle>
+          <CardTitle>{t('channels_manager.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           {error && (
@@ -170,16 +179,16 @@ const ChannelsManager: React.FC = () => {
           )}
 
           <div className='mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100'>
-            <h4 className='text-sm font-medium text-blue-800 mb-2'>Добавить новый канал</h4>
+            <h4 className='text-sm font-medium text-blue-800 mb-2'>{t('channels_manager.add_new_channel')}</h4>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-3 mb-3'>
               <Input
-                placeholder='@username канала'
+                placeholder={t('channels_manager.channel_username')}
                 value={username}
                 onChange={handleUsernameChange}
                 fullWidth
               />
               <Input
-                placeholder='Токен бота'
+                placeholder={t('channels_manager.bot_token')}
                 value={newChannelToken}
                 onChange={handleNewChannelTokenChange}
                 icon={<Key size={16} className="text-gray-400" />}
@@ -193,18 +202,18 @@ const ChannelsManager: React.FC = () => {
               leftIcon={<Plus size={16} />}
               className="w-full md:w-auto"
             >
-              Добавить канал
+              {t('channels_manager.add_channel')}
             </Button>
           </div>
 
           <div className='space-y-2'>
             <h4 className='text-sm font-medium text-gray-700 mb-2'>
-              Подключенные каналы:
+              {t('channels_manager.connected_channels')}
             </h4>
 
             {channels.length === 0 ? (
               <div className='text-sm text-gray-500 italic p-4 bg-gray-50 rounded-md'>
-                Нет подключенных каналов
+                {t('channels_manager.no_connected_channels')}
               </div>
             ) : (
               <ul className='divide-y divide-gray-200 bg-white rounded-lg border border-gray-200'>
@@ -229,10 +238,10 @@ const ChannelsManager: React.FC = () => {
                               <span className="text-gray-500 mr-2">
                                 <Key size={16} />
                               </span>
-                              <span className="text-gray-700">Токен настроен</span>
+                              <span className="text-gray-700">{t('channels_manager.token_configured')}</span>
                             </div>
                           ) : (
-                            <span className="text-amber-500">Токен не настроен</span>
+                            <span className="text-amber-500">{t('channels_manager.token_not_configured')}</span>
                           )}
                         </div>
                         
@@ -243,7 +252,7 @@ const ChannelsManager: React.FC = () => {
                           onClick={() => openTokenModal(channelId)} 
                           className='shrink-0'
                         >
-                          {channel.botToken ? 'Изменить токен' : 'Добавить токен'}
+                          {channel.botToken ? t('channels_manager.change_token') : t('channels_manager.add_token')}
                         </Button>
                       </div>
                       
@@ -254,7 +263,7 @@ const ChannelsManager: React.FC = () => {
                         className='text-red-500 hover:bg-red-50 shrink-0'
                         onClick={() => openDeleteModal(channelId)}
                       >
-                        Удалить
+                        {t('channels_manager.delete')}
                       </Button>
                     </li>
                   );
@@ -267,10 +276,10 @@ const ChannelsManager: React.FC = () => {
 
       <ConfirmDialog
         isOpen={deleteModalOpen}
-        title="Удаление канала"
-        message={`Вы уверены, что хотите удалить канал "${channelToDeleteName}"? Это действие нельзя отменить.`}
-        confirmText="Удалить"
-        cancelText="Отмена"
+        title={t('channels_manager.delete_channel')}
+        message={formatMessage(t('channels_manager.delete_confirmation'), channelToDeleteName)}
+        confirmText={t('channels_manager.confirm_delete')}
+        cancelText={t('channels_manager.cancel')}
         confirmType="danger"
         onConfirm={confirmDeleteChannel}
         onCancel={closeDeleteModal}
@@ -282,7 +291,7 @@ const ChannelsManager: React.FC = () => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">
-                Настройка токена для канала "{editingChannelName}"
+                {formatMessage(t('channels_manager.token_setup'), editingChannelName)}
               </h3>
               <button 
                 className="text-gray-400 hover:text-gray-500 focus:outline-none" 
@@ -294,9 +303,9 @@ const ChannelsManager: React.FC = () => {
               </button>
             </div>
             <div className="px-6 py-4">
-              <p className="text-gray-600 mb-4">Введите токен Telegram бота для этого канала:</p>
+              <p className="text-gray-600 mb-4">{t('channels_manager.enter_token')}</p>
               <Input
-                placeholder="Токен бота"
+                placeholder={t('channels_manager.bot_token')}
                 value={editingChannel.token}
                 onChange={handleTokenChange}
                 icon={<Key size={16} className="text-gray-400" />}
@@ -309,13 +318,13 @@ const ChannelsManager: React.FC = () => {
                 variant="ghost" 
                 onClick={closeTokenModal}
               >
-                Отмена
+                {t('channels_manager.cancel')}
               </Button>
               <Button 
                 className="bg-blue-500 hover:bg-blue-600 focus:ring-blue-500 text-white"
                 onClick={confirmTokenUpdate}
               >
-                Сохранить
+                {t('channels_manager.save')}
               </Button>
             </div>
           </div>
