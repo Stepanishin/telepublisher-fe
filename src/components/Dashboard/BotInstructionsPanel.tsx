@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Bot, ChevronDown, ChevronUp, ExternalLink, Copy, Check, Info, Send, MessageSquare, List, Calendar, Zap } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import Button from '../ui/Button';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const BotInstructionsPanel: React.FC = () => {
   const [isBotInstructionsExpanded, setBotInstructionsExpanded] = useState(true);
   const [isServiceInstructionsExpanded, setServiceInstructionsExpanded] = useState(true);
   const [copiedStep, setCopiedStep] = useState<number | null>(null);
+  const { t } = useLanguage();
 
   const toggleBotInstructions = () => {
     setBotInstructionsExpanded(!isBotInstructionsExpanded);
@@ -31,7 +33,7 @@ const BotInstructionsPanel: React.FC = () => {
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <Info className="h-5 w-5 text-blue-600 mr-2" />
-                <CardTitle>Инструкция по использованию сервиса TelePublisher</CardTitle>
+                <CardTitle>{t('instructions.service_title')}</CardTitle>
               </div>
               {isServiceInstructionsExpanded ? (
                 <ChevronUp className="h-5 w-5 text-gray-500" />
@@ -46,7 +48,7 @@ const BotInstructionsPanel: React.FC = () => {
           <CardContent>
             <div className="space-y-6">
               <p className="text-gray-600">
-                TelePublisher — это сервис для управления контентом в Telegram-каналах. Вот краткая инструкция, как использовать наш сервис:
+                {t('instructions.service_description')}
               </p>
 
               <div className="space-y-6">
@@ -55,12 +57,12 @@ const BotInstructionsPanel: React.FC = () => {
                     <Send className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Начало работы</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('instructions.getting_started')}</h3>
                     <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-                      <li>Создайте Telegram бота через BotFather (см. инструкцию ниже)</li>
-                      <li>Добавьте ваш Telegram-канал в разделе "Управление каналами"</li>
-                      <li>Укажите токен бота для вашего канала</li>
-                      <li>Убедитесь, что бот добавлен в канал как администратор</li>
+                      <li>{t('instructions.getting_started_step_1')}</li>
+                      <li>{t('instructions.getting_started_step_2')}</li>
+                      <li>{t('instructions.getting_started_step_3')}</li>
+                      <li>{t('instructions.getting_started_step_4')}</li>
                     </ol>
                   </div>
                 </div>
@@ -70,12 +72,12 @@ const BotInstructionsPanel: React.FC = () => {
                     <MessageSquare className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Создание контента</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('instructions.content_creation')}</h3>
                     <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-                      <li>Перейдите во вкладку "Генерация контента"</li>
-                      <li>Используйте редактор для создания нового поста</li>
-                      <li>Вы можете форматировать текст, добавлять эмодзи и медиафайлы</li>
-                      <li>Предварительный просмотр поста доступен в правой части экрана</li>
+                      <li>{t('instructions.content_creation_step_1')}</li>
+                      <li>{t('instructions.content_creation_step_2')}</li>
+                      <li>{t('instructions.content_creation_step_3')}</li>
+                      <li>{t('instructions.content_creation_step_4')}</li>
                     </ol>
                   </div>
                 </div>
@@ -85,12 +87,12 @@ const BotInstructionsPanel: React.FC = () => {
                     <Calendar className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Публикация и планирование</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('instructions.publishing')}</h3>
                     <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-                      <li>Выберите канал для публикации в панели справа</li>
-                      <li>Для мгновенной публикации нажмите "Опубликовать сейчас"</li>
-                      <li>Для планирования публикации выберите дату и время, затем нажмите "Запланировать"</li>
-                      <li>Запланированные публикации можно редактировать и отменять до момента отправки</li>
+                      <li>{t('instructions.publishing_step_1')}</li>
+                      <li>{t('instructions.publishing_step_2')}</li>
+                      <li>{t('instructions.publishing_step_3')}</li>
+                      <li>{t('instructions.publishing_step_4')}</li>
                     </ol>
                   </div>
                 </div>
@@ -100,12 +102,12 @@ const BotInstructionsPanel: React.FC = () => {
                     <List className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Управление каналами</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('instructions.channel_management')}</h3>
                     <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-                      <li>Перейдите во вкладку "Управление каналами"</li>
-                      <li>Добавьте новый канал, указав его username</li>
-                      <li>Для каждого канала необходимо настроить токен бота</li>
-                      <li>Вы можете управлять несколькими каналами одновременно (лимит зависит от тарифного плана)</li>
+                      <li>{t('instructions.channel_management_step_1')}</li>
+                      <li>{t('instructions.channel_management_step_2')}</li>
+                      <li>{t('instructions.channel_management_step_3')}</li>
+                      <li>{t('instructions.channel_management_step_4')}</li>
                     </ol>
                   </div>
                 </div>
@@ -115,12 +117,12 @@ const BotInstructionsPanel: React.FC = () => {
                     <Zap className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Советы по использованию</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('instructions.usage_tips')}</h3>
                     <ul className="list-disc pl-5 space-y-2 text-gray-700">
-                      <li>Используйте разные боты для разных каналов для повышения безопасности</li>
-                      <li>Планируйте контент заранее, чтобы обеспечить регулярность публикаций</li>
-                      <li>Используйте функцию предпросмотра перед публикацией, чтобы убедиться в корректном отображении</li>
-                      <li>В платных тарифах доступно больше каналов и расширенная функциональность</li>
+                      <li>{t('instructions.usage_tips_item_1')}</li>
+                      <li>{t('instructions.usage_tips_item_2')}</li>
+                      <li>{t('instructions.usage_tips_item_3')}</li>
+                      <li>{t('instructions.usage_tips_item_4')}</li>
                     </ul>
                   </div>
                 </div>
@@ -129,10 +131,10 @@ const BotInstructionsPanel: React.FC = () => {
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-4">
                 <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                   <Info className="h-4 w-4 mr-2" />
-                  Если у вас возникли вопросы
+                  {t('instructions.questions')}
                 </h4>
                 <p className="text-blue-700 text-sm">
-                  Свяжитесь с нашей службой поддержки через Telegram: <a href="https://t.me/telepublisher_support" target="_blank" rel="noopener noreferrer" className="underline">@telepublisher_support</a>
+                  {t('instructions.support_text')} <a href="https://t.me/telepublisher_support" target="_blank" rel="noopener noreferrer" className="underline">@telepublisher_support</a>
                 </p>
               </div>
 
@@ -142,7 +144,7 @@ const BotInstructionsPanel: React.FC = () => {
                   variant="outline"
                   size="sm"
                 >
-                  Свернуть инструкцию
+                  {t('instructions.collapse')}
                 </Button>
               </div>
             </div>
@@ -157,7 +159,7 @@ const BotInstructionsPanel: React.FC = () => {
             <div className="flex justify-between items-center">
               <div className="flex items-center">
                 <Bot className="h-5 w-5 text-blue-600 mr-2" />
-                <CardTitle>Инструкция по созданию бота</CardTitle>
+                <CardTitle>{t('instructions.bot_title')}</CardTitle>
               </div>
               {isBotInstructionsExpanded ? (
                 <ChevronUp className="h-5 w-5 text-gray-500" />
@@ -172,15 +174,14 @@ const BotInstructionsPanel: React.FC = () => {
           <CardContent>
             <div className="space-y-6">
               <p className="text-gray-600">
-                Для публикации постов в Telegram-каналы вам необходимо создать бота и получить его токен.
-                Следуйте инструкции ниже:
+                {t('instructions.bot_desc')}
               </p>
 
               <ol className="list-decimal pl-5 space-y-4">
                 <li className="text-gray-700">
-                  <div className="font-medium mb-1">Откройте BotFather в Telegram</div>
+                  <div className="font-medium mb-1">{t('instructions.step1_title')}</div>
                   <p className="text-sm text-gray-600 mb-2">
-                    Перейдите к официальному боту Telegram для создания других ботов
+                    {t('instructions.step1_desc')}
                   </p>
                   <div className="flex">
                     <a 
@@ -189,13 +190,13 @@ const BotInstructionsPanel: React.FC = () => {
                       rel="noopener noreferrer"
                       className="text-blue-600 flex items-center hover:underline"
                     >
-                      Открыть BotFather <ExternalLink className="h-4 w-4 ml-1" />
+                      {t('instructions.open_botfather')} <ExternalLink className="h-4 w-4 ml-1" />
                     </a>
                   </div>
                 </li>
 
                 <li className="text-gray-700">
-                  <div className="font-medium mb-1">Отправьте команду для создания нового бота</div>
+                  <div className="font-medium mb-1">{t('instructions.step2_title')}</div>
                   <div className="flex items-center bg-gray-100 rounded p-2 mb-2">
                     <code className="text-blue-700 font-mono">/newbot</code>
                     <button 
@@ -210,37 +211,34 @@ const BotInstructionsPanel: React.FC = () => {
                     </button>
                   </div>
                   <p className="text-sm text-gray-600">
-                    BotFather попросит вас задать имя и имя пользователя для бота.
+                    {t('instructions.step2_desc')}
                   </p>
                 </li>
 
                 <li className="text-gray-700">
-                  <div className="font-medium mb-1">Сохраните токен API</div>
+                  <div className="font-medium mb-1">{t('instructions.step3_title')}</div>
                   <p className="text-sm text-gray-600 mb-2">
-                    После создания бота вы получите токен API, выглядящий примерно так:
+                    {t('instructions.step3_desc')}
                   </p>
                   <div className="bg-gray-100 rounded p-2 font-mono text-sm text-gray-700 mb-2">
                     123456789:ABCDefGhIJKlmNoPQRsTUVwxyZ
                   </div>
                   <p className="text-sm text-gray-600">
-                    Этот токен вам понадобится для настройки канала в нашей системе.
+                    {t('instructions.step3_note')}
                   </p>
                 </li>
 
                 <li className="text-gray-700">
-                  <div className="font-medium mb-1">Добавьте бота в ваш канал как администратора</div>
+                  <div className="font-medium mb-1">{t('instructions.step4_title')}</div>
                   <p className="text-sm text-gray-600 mb-2">
-                    Откройте настройки канала, перейдите в "Администраторы" и добавьте вашего бота,
-                    предоставив ему права на публикацию сообщений. 
-                    <b> Используйте только мобильную версию Telegram для добавления бота в канал</b>
+                    {t('instructions.step4_desc')}
                   </p>
                 </li>
 
                 <li className="text-gray-700">
-                  <div className="font-medium mb-1">Введите токен бота в настройках канала</div>
+                  <div className="font-medium mb-1">{t('instructions.step5_title')}</div>
                   <p className="text-sm text-gray-600 mb-2">
-                    В разделе "Управление каналами" добавьте ваш Telegram-канал и укажите токен бота,
-                    который вы получили от BotFather.
+                    {t('instructions.step5_desc')}
                   </p>
                 </li>
               </ol>
@@ -248,13 +246,13 @@ const BotInstructionsPanel: React.FC = () => {
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-4">
                 <h4 className="font-medium text-blue-800 mb-2 flex items-center">
                   <Bot className="h-4 w-4 mr-2" />
-                  Рекомендации по безопасности
+                  {t('instructions.security_title')}
                 </h4>
                 <ul className="list-disc pl-5 text-sm text-blue-700 space-y-1">
-                  <li>Никогда не делитесь токеном бота с третьими лицами</li>
-                  <li>Используйте отдельного бота для каждого канала</li>
-                  <li>Регулярно проверяйте активность ваших ботов</li>
-                  <li>При подозрении на компрометацию токена, создайте нового бота</li>
+                  <li>{t('instructions.security_tip_1')}</li>
+                  <li>{t('instructions.security_tip_2')}</li>
+                  <li>{t('instructions.security_tip_3')}</li>
+                  <li>{t('instructions.security_tip_4')}</li>
                 </ul>
               </div>
 
@@ -264,7 +262,7 @@ const BotInstructionsPanel: React.FC = () => {
                   variant="outline"
                   size="sm"
                 >
-                  Свернуть инструкцию
+                  {t('instructions.collapse')}
                 </Button>
               </div>
             </div>
