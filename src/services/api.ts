@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType } from '../types';
 import { TelegramUser } from 'react-telegram-login';
 
@@ -55,17 +55,38 @@ export const fetchChannels = async () => {
     const response = await api.get('/channels');
     return response.data.channels;
   } catch (error) {
-    console.error('Error getting channels:', error);
+    console.error('Error fetching channels:', error);
     throw error;
   }
 };
 
-export const addChannel = async (channelData: { username: string; botToken?: string }) => {
+export const getChannelLimits = async () => {
+  try {
+    const response = await api.get('/channels/limits');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error getting channel limits:', error);
+    throw error;
+  }
+};
+
+export const addChannel = async (channelData: { username: string; title: string; botToken?: string }) => {
   try {
     const response = await api.post('/channels', channelData);
     return response.data.channel;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error adding channel:', error);
+    // Проверяем, связано ли это с достижением лимита
+    if (error instanceof AxiosError && error.response?.data?.limitReached) {
+      const limitError = new Error(`Channel limit reached: ${error.response.data.message}`);
+      limitError.name = 'ChannelLimitError';
+      // @ts-expect-error - Add custom properties to error
+      limitError.limitInfo = {
+        limit: error.response.data.channelLimit,
+        current: error.response.data.currentCount
+      };
+      throw limitError;
+    }
     throw error;
   }
 };

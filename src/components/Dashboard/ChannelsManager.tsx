@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash, Key, AlertCircle } from 'lucide-react';
+import { Plus, Trash, Key, AlertCircle, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -16,7 +16,7 @@ const ChannelsManager: React.FC = () => {
   const [channelToDelete, setChannelToDelete] = useState<string | null>(null);
   const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<{id: string, token: string} | null>(null);
-  const { channels, isLoading, fetchChannels, addChannel, updateChannel, deleteChannel } = useChannelsStore();
+  const { channels, isLoading, channelLimits, fetchChannels, fetchChannelLimits, addChannel, updateChannel, deleteChannel } = useChannelsStore();
   const { t } = useLanguage();
 
   // Helper function to replace placeholders in translation strings
@@ -28,7 +28,8 @@ const ChannelsManager: React.FC = () => {
 
   useEffect(() => {
     fetchChannels();
-  }, [fetchChannels]);
+    fetchChannelLimits();
+  }, [fetchChannels, fetchChannelLimits]);
   
   // Auto-clear error after 3 seconds
   useEffect(() => {
@@ -91,10 +92,33 @@ const ChannelsManager: React.FC = () => {
       });
       setUsername('');
       setNewChannelToken('');
-    } catch {
-      setError(t('channels_manager.error_add_failed'));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ChannelLimitError') {
+        // This is a channel limit error, show a specific message
+        setError(t('channels_manager.error_limit_reached'));
+      } else {
+        setError(t('channels_manager.error_add_failed'));
+      }
     }
   };
+
+  // Format channel limit text
+  const getLimitText = () => {
+    if (!channelLimits) return '';
+    
+    const { current, limit } = channelLimits;
+    
+    if (limit === -1) {
+      return t('channels_manager.unlimited_channels');
+    } else {
+      return formatMessage(t('channels_manager.channels_limit'), `${current}`, `${limit}`);
+    }
+  };
+
+  // Check if we've reached the channel limit
+  const isChannelLimitReached = channelLimits ? 
+    (channelLimits.limit !== -1 && channelLimits.current >= channelLimits.limit) : 
+    false;
 
   const openTokenModal = (channelId: string) => {
     if (!channelId) return;
@@ -178,6 +202,21 @@ const ChannelsManager: React.FC = () => {
             </div>
           )}
 
+          {/* Channel Limits Info Banner */}
+          {channelLimits && (
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded-r-md flex items-start">
+              <Info size={18} className="text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-blue-700 font-medium">{getLimitText()}</p>
+                {isChannelLimitReached && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    {t('channels_manager.upgrade_subscription')}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className='mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100'>
             <h4 className='text-sm font-medium text-blue-800 mb-2'>{t('channels_manager.add_new_channel')}</h4>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-3 mb-3'>
@@ -186,6 +225,7 @@ const ChannelsManager: React.FC = () => {
                 value={username}
                 onChange={handleUsernameChange}
                 fullWidth
+                disabled={isChannelLimitReached}
               />
               <Input
                 placeholder={t('channels_manager.bot_token')}
@@ -193,16 +233,20 @@ const ChannelsManager: React.FC = () => {
                 onChange={handleNewChannelTokenChange}
                 icon={<Key size={16} className="text-gray-400" />}
                 fullWidth
+                disabled={isChannelLimitReached}
               />
             </div>
             <Button
               onClick={handleAddChannel}
               isLoading={isLoading}
-              disabled={isLoading || !username.trim()}
+              disabled={isLoading || !username.trim() || isChannelLimitReached}
               leftIcon={<Plus size={16} />}
               className="w-full md:w-auto"
+              variant={isChannelLimitReached ? "danger" : "primary"}
             >
-              {t('channels_manager.add_channel')}
+              {isChannelLimitReached 
+                ? t('channels_manager.limit_reached') 
+                : t('channels_manager.add_channel')}
             </Button>
           </div>
 

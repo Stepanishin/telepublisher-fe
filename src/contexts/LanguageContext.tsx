@@ -181,6 +181,11 @@ const translations: Record<Language, Record<string, string>> = {
     'channels_manager.error_add_failed': 'Failed to add channel',
     'channels_manager.error_save_token': 'Failed to save token',
     'channels_manager.error_delete_channel': 'Failed to delete channel',
+    'channels_manager.channels_limit': 'Channels: {0} of {1}',
+    'channels_manager.unlimited_channels': 'Channels: Unlimited',
+    'channels_manager.limit_reached': 'Channel limit reached',
+    'channels_manager.error_limit_reached': 'Channel limit reached for your subscription',
+    'channels_manager.upgrade_subscription': 'To add more channels, please upgrade your subscription',
 
     // Bot Instructions Panel
     'instructions.bot_title': 'Bot Creation Instructions',
@@ -437,6 +442,11 @@ const translations: Record<Language, Record<string, string>> = {
     'channels_manager.error_add_failed': 'Не удалось добавить канал',
     'channels_manager.error_save_token': 'Не удалось сохранить токен',
     'channels_manager.error_delete_channel': 'Не удалось удалить канал',
+    'channels_manager.channels_limit': 'Каналы: {0} из {1}',
+    'channels_manager.unlimited_channels': 'Каналы: Без ограничений',
+    'channels_manager.limit_reached': 'Достигнут лимит каналов',
+    'channels_manager.error_limit_reached': 'Достигнут лимит каналов для вашей подписки',
+    'channels_manager.upgrade_subscription': 'Для добавления большего числа каналов обновите подписку',
 
     // Bot Instructions Panel
     'instructions.bot_title': 'Инструкция по созданию бота',
