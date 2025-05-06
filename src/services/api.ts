@@ -94,7 +94,23 @@ export const deleteChannel = async (id: string) => {
 export const getCreditInfo = async (): Promise<CreditInfo> => {
   try {
     const response = await api.get('/credits/info');
-    return response.data.data;
+    const creditInfo = response.data.data;
+    
+    // Log raw data for debugging
+    console.log('Raw credit info from API:', JSON.stringify(creditInfo));
+    
+    // Ensure subscription type is lowercase and valid
+    if (creditInfo) {
+      if (!creditInfo.subscriptionType) {
+        console.warn('No subscription type found in credit info response, defaulting to "free"');
+        creditInfo.subscriptionType = 'free' as SubscriptionType;
+      } else {
+        creditInfo.subscriptionType = String(creditInfo.subscriptionType).toLowerCase() as SubscriptionType;
+        console.log('Normalized subscription type:', creditInfo.subscriptionType);
+      }
+    }
+    
+    return creditInfo;
   } catch (error) {
     console.error('Error getting credit info:', error);
     throw error;
@@ -172,10 +188,20 @@ export const createPortalSession = async (returnUrl: string): Promise<string> =>
   }
 };
 
-export const cancelSubscription = async (): Promise<boolean> => {
+export const cancelSubscription = async (): Promise<{ 
+  success: boolean; 
+  data?: { 
+    endDate: string;
+    subscriptionType?: string;
+    isActive?: boolean;
+    downgradeOnExpiry?: boolean;
+    immediatelyCancelled?: boolean;
+  }; 
+  message?: string 
+}> => {
   try {
     const response = await api.post('/stripe/cancel-subscription');
-    return response.data.success;
+    return response.data;
   } catch (error) {
     console.error('Error cancelling subscription:', error);
     throw error;

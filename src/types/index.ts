@@ -25,6 +25,8 @@ export interface CreditInfo {
   subscriptionType: SubscriptionType;
   resetDate: Date;
   isActive: boolean;
+  downgradeOnExpiry?: boolean;
+  endDate?: Date;
 }
 
 export interface AIOperationCost {
