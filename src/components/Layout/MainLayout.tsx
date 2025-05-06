@@ -22,9 +22,11 @@ const MainLayout: React.FC = () => {
 
   const isHomePage = location.pathname === '/';
   const isContactPage = location.pathname === '/contact';
-  const showAuthNavbar = isAuthenticated && !isHomePage && !isContactPage;
+  const isTermsPage = location.pathname === '/terms';
 
-  const isWidthFull = isHomePage || isContactPage;
+  const showAuthNavbar = isAuthenticated && !isHomePage && !isContactPage && !isTermsPage;
+
+  const isWidthFull = isHomePage || isContactPage || isTermsPage;
 
   return (
     <div className="min-h-screen bg-gray-50">

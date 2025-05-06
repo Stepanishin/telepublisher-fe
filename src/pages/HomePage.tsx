@@ -302,10 +302,10 @@ const HomePage: React.FC = () => {
                 </h3>
                 <ul className="space-y-3">
                   <li>
-                    <a href="#" className="hover:text-white">{t('footer.terms_of_service')}</a>
+                    <Link to="/terms" className="hover:text-white">{t('footer.terms_of_service')}</Link>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-white">{t('footer.privacy_policy')}</a>
+                    <Link to="/terms" className="hover:text-white">{t('footer.privacy_policy')}</Link>
                   </li>
                 </ul>
               </div>
