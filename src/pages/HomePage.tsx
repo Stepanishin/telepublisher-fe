@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Zap, Globe, Clock, Send, Lock, CheckCircle } from 'lucide-react';
+import { Shield, Zap, Globe, Send, Lock, CheckCircle, Sparkles } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import PublicNavbar from '../components/Layout/PublicNavbar';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const HomePage: React.FC = () => {
+  const { t } = useLanguage();
+  
   return (
     <div className="flex flex-col min-h-screen">
       <PublicNavbar />
@@ -14,20 +17,19 @@ const HomePage: React.FC = () => {
       <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-20">
         <div className="container mx-auto px-6 text-center">
           <Send className="h-16 w-16 mx-auto mb-8" />
-          <h1 className="text-5xl font-bold mb-6">TelePublisher</h1>
+          <h1 className="text-5xl font-bold mb-6">{t('hero.title')}</h1>
           <p className="text-xl max-w-3xl mx-auto mb-10">
-            Профессиональная система для управления контентом в Telegram-каналах.
-            Создавайте, редактируйте и публикуйте контент с легкостью.
+            {t('hero.description')}
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Link to="/login">
-              <Button size="lg" className="bg-white text-blue-700 hover:bg-gray-100">
-                Начать бесплатно
+              <Button size="lg" className="bg-white !text-blue-700 hover:bg-gray-200">
+                {t('hero.start_free')}
               </Button>
             </Link>
             <a href="#features">
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-blue-700">
-                Узнать больше
+              <Button variant="outline" size="lg" className="border-white text-white hover:text-blue-700 hover:bg-blue-700">
+                {t('hero.learn_more')}
               </Button>
             </a>
           </div>
@@ -38,16 +40,16 @@ const HomePage: React.FC = () => {
       <section id="features" className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-            Наши возможности
+            {t('features.title')}
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="flex flex-col items-center text-center p-6">
                 <Zap className="h-12 w-12 text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Быстрая публикация</h3>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{t('features.fast_publication')}</h3>
                 <p className="text-gray-600">
-                  Публикуйте контент мгновенно или планируйте публикации на будущее время.
+                  {t('features.fast_publication_description')}
                 </p>
               </CardContent>
             </Card>
@@ -55,19 +57,19 @@ const HomePage: React.FC = () => {
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="flex flex-col items-center text-center p-6">
                 <Globe className="h-12 w-12 text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Множество каналов</h3>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{t('features.multiple_channels')}</h3>
                 <p className="text-gray-600">
-                  Управляйте несколькими каналами с единой панели администратора.
+                  {t('features.multiple_channels_description')}
                 </p>
               </CardContent>
             </Card>
             
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="flex flex-col items-center text-center p-6">
-                <Clock className="h-12 w-12 text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Планирование</h3>
+                <Sparkles className="h-12 w-12 text-blue-600 mb-4" />
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{t('features.ai_content')}</h3>
                 <p className="text-gray-600">
-                  Создавайте контент заранее и публикуйте по расписанию.
+                  {t('features.ai_content_description')}
                 </p>
               </CardContent>
             </Card>
@@ -75,9 +77,9 @@ const HomePage: React.FC = () => {
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="flex flex-col items-center text-center p-6">
                 <Shield className="h-12 w-12 text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Безопасность</h3>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{t('features.security')}</h3>
                 <p className="text-gray-600">
-                  Вход через Telegram без передачи паролей. Мы не храним чувствительных данных.
+                  {t('features.security_description')}
                 </p>
               </CardContent>
             </Card>
@@ -85,9 +87,9 @@ const HomePage: React.FC = () => {
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="flex flex-col items-center text-center p-6">
                 <Lock className="h-12 w-12 text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Приватность</h3>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{t('features.privacy')}</h3>
                 <p className="text-gray-600">
-                  Мы не собираем личную информацию и не передаем данные третьим лицам.
+                  {t('features.privacy_description')}
                 </p>
               </CardContent>
             </Card>
@@ -95,9 +97,9 @@ const HomePage: React.FC = () => {
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="flex flex-col items-center text-center p-6">
                 <CheckCircle className="h-12 w-12 text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Удобный интерфейс</h3>
+                <h3 className="text-xl font-semibold mb-3 text-gray-900">{t('features.easy_interface')}</h3>
                 <p className="text-gray-600">
-                  Интуитивно понятный интерфейс для комфортной работы с контентом.
+                  {t('features.easy_interface_description')}
                 </p>
               </CardContent>
             </Card>
@@ -109,95 +111,83 @@ const HomePage: React.FC = () => {
       <section id="pricing" className="py-20">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-            Тарифные планы
+            {t('pricing.title')}
           </h2>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">Бесплатный</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-4">0 ₽<span className="text-sm text-gray-500 font-normal">/месяц</span></p>
+              <CardContent className="p-6 flex flex-col justify-between h-full">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">{t('pricing.free')}</h3>
+                <p className="text-3xl font-bold text-gray-900 mb-4">$0<span className="text-sm text-gray-500 font-normal">/{t('pricing.mounth')}</span></p>
                 <ul className="mb-6 space-y-2">
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">До 3 каналов</span>
+                    <span className="text-gray-600">{t('pricing.free_channels')}</span>
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Базовые инструменты</span>
+                    <span className="text-gray-600">{t('pricing.basic-tools')}</span>
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">До 30 публикаций в месяц</span>
+                    <span className="text-gray-600">{t('pricing.free_publications')}</span>
                   </li>
                 </ul>
                 <Link to="/login">
-                  <Button variant="outline" fullWidth>Начать бесплатно</Button>
+                  <Button variant="outline" fullWidth>{t('pricing.start-free')}</Button>
                 </Link>
               </CardContent>
             </Card>
             
             <Card className="border-2 border-blue-500 shadow-md hover:shadow-lg transition-shadow relative">
-              <div className="absolute top-0 inset-x-0 transform -translate-y-1/2">
+              <div className="absolute top-4 right-1 transform -translate-y-1/2">
                 <div className="bg-blue-600 text-white text-xs font-semibold py-1 px-3 rounded-full inline-block">
-                  ПОПУЛЯРНЫЙ
+                  {t('pricing.popular')}
                 </div>
               </div>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">Стандарт</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-4">1 499 ₽<span className="text-sm text-gray-500 font-normal">/месяц</span></p>
+              <CardContent className="p-6 flex flex-col justify-between h-full">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">{t('pricing.standard')}</h3>
+                <p className="text-3xl font-bold text-gray-900 mb-4">$10<span className="text-sm text-gray-500 font-normal">/{t('pricing.mounth')}</span></p>
                 <ul className="mb-6 space-y-2">
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">До 10 каналов</span>
+                    <span className="text-gray-600">{t('pricing.standard_channels')}</span>
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Планирование публикаций</span>
+                    <span className="text-gray-600">{t('pricing.standard_publications')}</span>
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Неограниченные публикации</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Приоритетная поддержка</span>
+                    <span className="text-gray-600">{t('pricing.standard_support')}</span>
                   </li>
                 </ul>
                 <Link to="/login">
-                  <Button fullWidth>Выбрать план</Button>
+                  <Button fullWidth>{t('pricing.choose_plan')}</Button>
                 </Link>
               </CardContent>
             </Card>
             
             <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">Бизнес</h3>
-                <p className="text-3xl font-bold text-gray-900 mb-4">4 999 ₽<span className="text-sm text-gray-500 font-normal">/месяц</span></p>
+              <CardContent className="p-6 flex flex-col justify-between h-full">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">{t('pricing.business')}</h3>
+                <p className="text-3xl font-bold text-gray-900 mb-4">$30<span className="text-sm text-gray-500 font-normal">/{t('pricing.mounth')}</span></p>
                 <ul className="mb-6 space-y-2">
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Неограниченное количество каналов</span>
+                    <span className="text-gray-600">{t('pricing.business_channels')}</span>
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Все функции планирования</span>
+                    <span className="text-gray-600">{t('pricing.business_publications')}</span>
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Аналитика и отчеты</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">API для интеграций</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="text-gray-600">Выделенная поддержка 24/7</span>
+                    <span className="text-gray-600">{t('pricing.business_support')}</span>
                   </li>
                 </ul>
                 <Link to="/login">
-                  <Button variant="outline" fullWidth>Выбрать план</Button>
+                  <Button variant="outline" fullWidth>{t('pricing.choose_plan')}</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -209,7 +199,7 @@ const HomePage: React.FC = () => {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-            Безопасность и приватность
+            {t('security.title')}
           </h2>
           
           <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8 border border-gray-200">
@@ -218,39 +208,35 @@ const HomePage: React.FC = () => {
             </div>
             
             <h3 className="text-xl font-semibold mb-4 text-center text-gray-900">
-              Мы заботимся о вашей конфиденциальности
+              {t('security.description')}
             </h3>
             
             <div className="space-y-4">
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h4 className="font-medium text-blue-900 mb-2">Авторизация через Telegram</h4>
+                <h4 className="font-medium text-blue-900 mb-2">{t('security.login')}</h4>
                 <p className="text-blue-800">
-                  Вход в систему осуществляется исключительно через официальный виджет Telegram.
-                  Мы никогда не запрашиваем ваш пароль от аккаунта Telegram.
+                  {t('security.no_password')}
                 </p>
               </div>
               
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h4 className="font-medium text-blue-900 mb-2">Безопасное хранение данных</h4>
+                <h4 className="font-medium text-blue-900 mb-2">{t('security.no_data')}</h4>
                 <p className="text-blue-800">
-                  Мы не храним пароли пользователей. Ключи API хранятся в зашифрованном виде
-                  и используются только для работы с вашими каналами.
+                  {t('security.no_data_description')}
                 </p>
               </div>
               
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h4 className="font-medium text-blue-900 mb-2">Прозрачность</h4>
+                <h4 className="font-medium text-blue-900 mb-2">{t('security.transparency')}</h4>
                 <p className="text-blue-800">
-                  Вы всегда имеете полный контроль над своими данными и можете удалить аккаунт
-                  и все связанные с ним данные в любой момент.
+                  {t('security.transparency_description')}
                 </p>
               </div>
               
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <h4 className="font-medium text-blue-900 mb-2">Сертифицированная защита</h4>
+                <h4 className="font-medium text-blue-900 mb-2">{t('security.protection')}</h4>
                 <p className="text-blue-800">
-                  Вся информация передается по защищенному HTTPS-соединению. Наш сервис регулярно
-                  проходит аудиты безопасности.
+                  {t('security.protection_description')}
                 </p>
               </div>
             </div>
@@ -261,14 +247,13 @@ const HomePage: React.FC = () => {
       {/* Call to Action */}
       <section className="py-20 bg-blue-600 text-white">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-6">Начните использовать TelePublisher сегодня</h2>
+          <h2 className="text-3xl font-bold mb-6">{t('call_to_action.title')}</h2>
           <p className="text-xl max-w-2xl mx-auto mb-8">
-            Присоединяйтесь к тысячам администраторов каналов, которые уже упростили свою работу
-            с помощью нашего сервиса.
+            {t('call_to_action.description')}
           </p>
           <Link to="/login">
-            <Button size="lg" className="bg-white text-blue-700 hover:bg-gray-100">
-              Зарегистрироваться бесплатно
+            <Button size="lg" className="bg-white hover:bg-gray-300 !text-blue-700">
+              {t('call_to_action.start_free')}
             </Button>
           </Link>
         </div>
@@ -284,60 +269,50 @@ const HomePage: React.FC = () => {
                 <span className="ml-2 text-xl font-semibold text-white">TelePublisher</span>
               </div>
               <p className="mt-4 max-w-md text-gray-400">
-                Профессиональный инструмент для создания, 
-                управления и публикации контента в Telegram-каналах.
+                {t('footer.description')}
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
               <div>
                 <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-                  Продукт
+                  {t('footer.product')}
                 </h3>
                 <ul className="space-y-3">
                   <li>
-                    <a href="#features" className="hover:text-white">Возможности</a>
+                    <a href="#features" className="hover:text-white">{t('footer.features')}</a>
                   </li>
                   <li>
-                    <a href="#pricing" className="hover:text-white">Тарифы</a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white">Блог</a>
+                    <a href="#pricing" className="hover:text-white">{t('footer.pricing')}</a>
                   </li>
                 </ul>
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-                  Компания
+                  {t('footer.company')}
                 </h3>
                 <ul className="space-y-3">
                   <li>
-                    <a href="#" className="hover:text-white">О нас</a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white">Контакты</a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white">Карьера</a>
+                    <a href="#" className="hover:text-white">{t('footer.contact')}</a>
                   </li>
                 </ul>
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-                  Правовая информация
+                  {t('footer.legal_info')}
                 </h3>
                 <ul className="space-y-3">
                   <li>
-                    <a href="#" className="hover:text-white">Условия использования</a>
+                    <a href="#" className="hover:text-white">{t('footer.terms_of_service')}</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-white">Политика конфиденциальности</a>
+                    <a href="#" className="hover:text-white">{t('footer.privacy_policy')}</a>
                   </li>
                 </ul>
               </div>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 mt-8 text-sm text-gray-400 text-center">
-            <p>&copy; {new Date().getFullYear()} TelePublisher. Все права защищены.</p>
+            <p>&copy; {new Date().getFullYear()} TelePublisher. {t('footer.copyright')}</p>
           </div>
         </div>
       </footer>

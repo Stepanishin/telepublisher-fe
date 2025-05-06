@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Send, Coins, Info } from 'lucide-react';
+import { LogOut, Send, Coins, Info, Globe } from 'lucide-react';
 import Button from '../ui/Button';
 import { useUserStore } from '../../store/userStore';
 import { useCreditStore } from '../../store/creditStore';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useUserStore();
   const { creditInfo, fetchCreditInfo } = useCreditStore();
   const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     if (user) {
@@ -28,12 +30,26 @@ const Navbar: React.FC = () => {
 
   // Format date to a readable string
   const formatDate = (date: Date | null | undefined) => {
-    if (!date) return 'Нет данных';
-    return new Date(date).toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    if (!date) return t('navbar.no_data');
+    
+    if (language === 'en') {
+      return new Date(date).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    } else {
+      return new Date(date).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+  };
+
+  // Toggle language between English and Russian
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ru' : 'en');
   };
 
   return (
@@ -49,6 +65,15 @@ const Navbar: React.FC = () => {
             </Link>
           </div>
           <div className="flex items-center">
+            {/* Language toggle button */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center px-3 py-1 bg-gray-100 rounded-md mr-4 text-sm hover:bg-gray-200 transition-colors"
+            >
+              <Globe className="h-4 w-4 text-gray-600 mr-2" />
+              <span className="font-medium">{language === 'en' ? 'EN' : 'RU'}</span>
+            </button>
+            
             {creditInfo && (
               <div 
                 className="relative flex items-center px-3 py-1 bg-blue-50 rounded-md mr-4 cursor-pointer"
@@ -57,30 +82,30 @@ const Navbar: React.FC = () => {
               >
                 <Coins className="h-4 w-4 text-blue-600 mr-2" />
                 <span className="text-sm font-medium text-blue-800">
-                  {creditInfo.currentCredits} / {creditInfo.maxCredits} кредитов
+                  {creditInfo.currentCredits} / {creditInfo.maxCredits} {t('navbar.credits')}
                 </span>
                 <Info className="h-3 w-3 text-blue-400 ml-1" />
                 
                 {showTooltip && (
                   <div className="absolute top-full right-0 mt-2 w-64 p-3 bg-white shadow-lg rounded-md z-50 text-xs">
-                    <div className="font-semibold text-gray-900 mb-2">Информация о кредитах</div>
+                    <div className="font-semibold text-gray-900 mb-2">{t('navbar.credit_info')}</div>
                     <div className="space-y-1 text-gray-700">
                       <div className="flex justify-between">
-                        <span>Тип подписки:</span>
+                        <span>{t('navbar.subscription_type')}:</span>
                         <span className="font-medium">{creditInfo.subscriptionType.toUpperCase()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Всего использовано:</span>
+                        <span>{t('navbar.total_used')}:</span>
                         <span className="font-medium">{creditInfo.totalUsed}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Сброс кредитов:</span>
+                        <span>{t('navbar.reset_date')}:</span>
                         <span className="font-medium">{formatDate(creditInfo.resetDate)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Статус подписки:</span>
+                        <span>{t('navbar.subscription_status')}:</span>
                         <span className={`font-medium ${creditInfo.isActive ? 'text-green-600' : 'text-red-600'}`}>
-                          {creditInfo.isActive ? 'Активна' : 'Неактивна'}
+                          {creditInfo.isActive ? t('navbar.active') : t('navbar.inactive')}
                         </span>
                       </div>
                     </div>
@@ -109,8 +134,9 @@ const Navbar: React.FC = () => {
               size="sm"
               leftIcon={<LogOut size={16} />}
               onClick={handleLogout}
+              className="hover:!bg-blue-700"
             >
-              Выйти
+              {t('navbar.logout')}
             </Button>
           </div>
         </div>

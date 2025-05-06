@@ -6,26 +6,29 @@ import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 import HomePage from './pages/HomePage';
 import { useUserStore } from './store/userStore';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 function App() {
   const { isAuthenticated } = useUserStore();
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route 
-            path="dashboard" 
-            element={
-              isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />
-            } 
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route 
+              path="dashboard" 
+              element={
+                isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />
+              } 
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 
