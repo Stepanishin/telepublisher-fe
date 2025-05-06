@@ -162,6 +162,7 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.channels': 'channels',
     'publish_panel.success_publish': 'Successfully published to:',
     'publish_panel.failed_publish': 'Failed to publish to:',
+    'publish_panel.telegram_preview': 'Telegram Preview',
 
     // Channels Manager
     'channels_manager.title': 'Channel Management',
@@ -430,6 +431,7 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.channels': 'каналов',
     'publish_panel.success_publish': 'Успешно опубликовано в:',
     'publish_panel.failed_publish': 'Не удалось опубликовать в:',
+    'publish_panel.telegram_preview': 'Предпросмотр в Telegram',
 
     // Channels Manager
     'channels_manager.title': 'Управление каналами',

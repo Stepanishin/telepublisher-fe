@@ -7,6 +7,7 @@ import Input from '../ui/Input';
 import MultiSelect from '../ui/MultiSelect';
 import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
+import TelegramPostPreview from '../ui/TelegramPostPreview';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -269,20 +270,11 @@ const PublishPanel: React.FC = () => {
           onChange={setPublishTags}
         />
         
-        {publishImageUrl && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('publish_panel.image_preview')}
-            </label>
-            <div className="border border-gray-300 rounded-md p-2">
-              <img 
-                src={publishImageUrl} 
-                alt="Preview" 
-                className="max-h-48 mx-auto object-contain rounded" 
-              />
-            </div>
-          </div>
-        )}
+        <TelegramPostPreview
+          text={publishText}
+          imageUrl={publishImageUrl}
+          tags={publishTags}
+        />
       </CardContent>
       <CardFooter>
         <Button
