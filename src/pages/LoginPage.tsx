@@ -4,20 +4,23 @@ import TelegramLoginButton, { TelegramUser } from 'react-telegram-login';
 import { verifyTelegramLogin, getUserProfile } from '../services/api';
 import { useUserStore } from '../store/userStore';
 import Button from '../components/ui/Button';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Link } from 'react-router-dom';
 
 // Component for direct Telegram login link
 const DirectTelegramLoginButton: React.FC = () => {
   const botName = 'tele_publisher_login_bot';
-  
+  const { t } = useLanguage();
+
   return (
-    <a 
+    <a
       href={`https://t.me/${botName}?start=auth`}
-      className="flex items-center justify-center px-4 py-2 mt-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-      target="_blank"
-      rel="noopener noreferrer"
+      className='flex items-center justify-center px-4 py-2 mt-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors'
+      target='_blank'
+      rel='noopener noreferrer'
     >
-      <ExternalLink size={16} className="mr-2" />
-      Войти с другим аккаунтом Telegram
+      <ExternalLink size={16} className='mr-2' />
+      {t('login.direct_login')}
     </a>
   );
 };
@@ -27,7 +30,10 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDirectLogin, setShowDirectLogin] = useState(false);
   const { login: loginUser, isAuthenticated } = useUserStore();
-  const [telegramButtonKey, setTelegramButtonKey] = useState(Date.now().toString());
+  const [telegramButtonKey, setTelegramButtonKey] = useState(
+    Date.now().toString()
+  );
+  const { t } = useLanguage();
 
   // Try to auto-login when component mounts
   useEffect(() => {
@@ -79,7 +85,7 @@ const LoginPage: React.FC = () => {
       loginUser(user);
     } catch (error) {
       console.error('Login error:', error);
-      setError('Ошибка входа. Пожалуйста, попробуйте снова.');
+      setError(t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -89,85 +95,93 @@ const LoginPage: React.FC = () => {
   const handleSwitchAccount = () => {
     // Clear localStorage token
     localStorage.removeItem('token');
-    
+
     // Toggle showing direct login button
     setShowDirectLogin(true);
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
-      <div className="text-center mb-8">
-        <Send className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">TelePublisher</h1>
-        <p className="text-lg text-gray-600">
-          Система управления контентом для Telegram-каналов
-        </p>
+    <div className='min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4'>
+      <div className='text-center mb-8'>
+        <Send className='h-16 w-16 text-blue-600 mx-auto mb-4' />
+        <h1 className='text-4xl font-bold text-gray-900 mb-2'>
+          {t('login.title')}
+        </h1>
+        <p className='text-lg text-gray-600'>{t('login.subtitle')}</p>
       </div>
-      
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-          Вход в систему
+
+      <div className='w-full max-w-md bg-white p-8 rounded-lg shadow-md'>
+        <h2 className='text-2xl font-semibold text-gray-900 mb-6 text-center'>
+          {t('login.heading')}
         </h2>
-        
+
         {loading ? (
-          <div className="flex justify-center py-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className='flex justify-center py-6'>
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
           </div>
         ) : (
           <>
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+              <div className='bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md'>
+                <div className='flex'>
+                  <div className='ml-3'>
+                    <p className='text-sm text-red-700'>{error}</p>
                   </div>
                 </div>
               </div>
             )}
-            
-            <div className="flex flex-col items-center mb-6">
+
+            <div className='flex flex-col items-center mb-6'>
               {!showDirectLogin ? (
                 <>
                   <TelegramLoginButton
                     key={telegramButtonKey}
-                    botName="tele_publisher_login_bot"
+                    botName='tele_publisher_login_bot'
                     dataOnauth={handleTelegramResponse}
-                    buttonSize="large"
+                    buttonSize='large'
                     cornerRadius={8}
-                    requestAccess="write"
+                    requestAccess='write'
                   />
-                  
+
+                  <p className='mt-6 text-center text-xs text-gray-500'>
+                    <Link to='/terms' className='hover:underline'>
+                      {t('login.terms_agreement')}
+                    </Link>
+                  </p>
+
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4"
+                    variant='outline'
+                    size='sm'
+                    className='mt-4'
                     leftIcon={<LogOut size={16} />}
                     onClick={handleSwitchAccount}
                   >
-                    Сменить аккаунт
+                    {t('login.switch_account')}
                   </Button>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-4 text-center">
-                    Для смены аккаунта перейдите по ссылке ниже. Это откроет Телеграм, где вы сможете выбрать другой аккаунт.
+                  <p className='text-sm text-gray-600 mb-4 text-center'>
+                    {t('login.switch_account_description')}
                   </p>
                   <DirectTelegramLoginButton />
                   <Button
-                    variant="link"
-                    size="sm"
-                    className="mt-4"
+                    variant='link'
+                    size='sm'
+                    className='mt-4'
                     onClick={() => setShowDirectLogin(false)}
                   >
-                    Вернуться к обычному входу
+                    {t('login.back_to_normal')}
                   </Button>
+
+                  <p className='mt-6 text-center text-xs text-gray-500'>
+                    <Link to='/terms' className='hover:underline'>
+                      {t('login.terms_agreement')}
+                    </Link>
+                  </p>
                 </>
               )}
             </div>
-            
-            <p className="mt-6 text-center text-xs text-gray-500">
-              Нажимая кнопку, вы соглашаетесь с условиями использования сервиса
-            </p>
           </>
         )}
       </div>

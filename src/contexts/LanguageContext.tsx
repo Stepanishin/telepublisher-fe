@@ -104,6 +104,18 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.terms_of_service': 'Terms of service',
     'footer.privacy_policy': 'Privacy policy',
     'footer.copyright': 'All rights reserved.',
+
+    // Login Page
+    'login.title': 'TelePublisher',
+    'login.subtitle': 'Content management system for Telegram channels',
+    'login.heading': 'Sign in',
+    'login.error': 'Login error. Please try again.',
+    'login.switch_account': 'Switch Account',
+    'login.switch_account_description': 'To switch accounts, follow the link below. This will open Telegram where you can choose another account.',
+    'login.direct_login': 'Sign in with another Telegram account',
+    'login.back_to_normal': 'Back to normal login',
+    'login.terms_agreement': 'By clicking the button, you agree to the terms of service',
+    'login.loading': 'Loading...',
   },
   ru: {
     // Navbar
@@ -192,6 +204,18 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.terms_of_service': 'Условия использования',
     'footer.privacy_policy': 'Политика конфиденциальности',
     'footer.copyright': 'Все права защищены.',
+
+    // Login Page
+    'login.title': 'TelePublisher',
+    'login.subtitle': 'Система управления контентом для Telegram-каналов',
+    'login.heading': 'Вход в систему',
+    'login.error': 'Ошибка входа. Пожалуйста, попробуйте снова.',
+    'login.switch_account': 'Сменить аккаунт',
+    'login.switch_account_description': 'Для смены аккаунта перейдите по ссылке ниже. Это откроет Телеграм, где вы сможете выбрать другой аккаунт.',
+    'login.direct_login': 'Войти с другим аккаунтом Telegram',
+    'login.back_to_normal': 'Вернуться к обычному входу',
+    'login.terms_agreement': 'Нажимая кнопку, вы соглашаетесь с условиями использования сервиса',
+    'login.loading': 'Загрузка...',
   },
 };
 
