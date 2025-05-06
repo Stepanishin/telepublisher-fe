@@ -131,6 +131,57 @@ export const updateSubscription = async (subscriptionType: SubscriptionType, pay
   }
 };
 
+// Stripe API
+export const createCheckoutSession = async (
+  subscriptionType: string,
+  successUrl: string,
+  cancelUrl: string
+): Promise<string> => {
+  try {
+    const response = await api.post('/stripe/create-checkout-session', {
+      subscriptionType,
+      successUrl,
+      cancelUrl,
+    });
+    
+    if (response.data.success && response.data.data.url) {
+      return response.data.data.url;
+    } else {
+      throw new Error('Не удалось создать платежную сессию');
+    }
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw error;
+  }
+};
+
+export const createPortalSession = async (returnUrl: string): Promise<string> => {
+  try {
+    const response = await api.post('/stripe/create-portal-session', {
+      returnUrl,
+    });
+    
+    if (response.data.success && response.data.data.url) {
+      return response.data.data.url;
+    } else {
+      throw new Error('Не удалось создать сессию управления подпиской');
+    }
+  } catch (error) {
+    console.error('Error creating portal session:', error);
+    throw error;
+  }
+};
+
+export const cancelSubscription = async (): Promise<boolean> => {
+  try {
+    const response = await api.post('/stripe/cancel-subscription');
+    return response.data.success;
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    throw error;
+  }
+};
+
 // Content generation
 export const generateText = async (prompt: string): Promise<string> => {
   try {
