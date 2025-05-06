@@ -164,6 +164,24 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.failed_publish': 'Failed to publish to:',
     'publish_panel.telegram_preview': 'Telegram Preview',
 
+    // Image Uploader
+    'image_uploader.label': 'Image',
+    'image_uploader.url_mode': 'URL',
+    'image_uploader.upload_mode': 'Upload',
+    'image_uploader.url_placeholder': 'https://example.com/image.jpg',
+    'image_uploader.drag_drop': 'Drag and drop an image here',
+    'image_uploader.or': 'or',
+    'image_uploader.browse_files': 'Browse files',
+    'image_uploader.max_size': 'PNG, JPG, GIF up to 10MB',
+    'image_uploader.paste_hint': 'You can also paste images from clipboard (Ctrl+V)',
+    'image_uploader.hosted_by': 'Images uploaded via TelePublisher',
+    'image_uploader.uploading': 'Uploading',
+    'image_uploader.change_image': 'Change',
+    'image_uploader.remove': 'Remove',
+    'image_uploader.error_not_image': 'The file is not an image',
+    'image_uploader.error_too_large': 'The file is too large (max 10MB)',
+    'image_uploader.error_upload_failed': 'Failed to upload image',
+
     // Channels Manager
     'channels_manager.title': 'Channel Management',
     'channels_manager.add_new_channel': 'Add new channel',
@@ -432,6 +450,24 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.success_publish': 'Успешно опубликовано в:',
     'publish_panel.failed_publish': 'Не удалось опубликовать в:',
     'publish_panel.telegram_preview': 'Предпросмотр в Telegram',
+
+    // Image Uploader
+    'image_uploader.label': 'Изображение',
+    'image_uploader.url_mode': 'Ссылка',
+    'image_uploader.upload_mode': 'Загрузка',
+    'image_uploader.url_placeholder': 'https://example.com/image.jpg',
+    'image_uploader.drag_drop': 'Перетащите изображение сюда',
+    'image_uploader.or': 'или',
+    'image_uploader.browse_files': 'Выберите файл',
+    'image_uploader.max_size': 'PNG, JPG, GIF до 10МБ',
+    'image_uploader.paste_hint': 'Вы также можете вставить изображения из буфера обмена (Ctrl+V)',
+    'image_uploader.hosted_by': 'Изображения загружаются через TelePublisher',
+    'image_uploader.uploading': 'Загрузка',
+    'image_uploader.change_image': 'Изменить',
+    'image_uploader.remove': 'Удалить',
+    'image_uploader.error_not_image': 'Файл не является изображением',
+    'image_uploader.error_too_large': 'Файл слишком большой (макс. 10МБ)',
+    'image_uploader.error_upload_failed': 'Не удалось загрузить изображение',
 
     // Channels Manager
     'channels_manager.title': 'Управление каналами',

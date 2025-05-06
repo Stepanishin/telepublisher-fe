@@ -249,10 +249,37 @@ export const generateText = async (prompt: string): Promise<string> => {
     const response = await api.post('/ai/generate-text', { prompt });
     return response.data.data.text;
   } catch (error) {
-    console.error('Generate text error:', error);
-    if (axios.isAxiosError(error) && error.response?.status === 403) {
-      throw new Error('Недостаточно кредитов для генерации текста');
+    console.error('Error generating text:', error);
+    throw error;
+  }
+};
+
+// Upload image via our backend proxy
+export const uploadImage = async (file: File): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    // Используем наш собственный бэкенд для проксирования запросов
+    const response = await api.post(
+      '/upload/image', 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    console.log('Image upload response:', response);
+    
+    if (response.data && response.data.imageUrl) {
+      return response.data.imageUrl;
+    } else {
+      throw new Error('Failed to upload image');
     }
+  } catch (error) {
+    console.error('Error uploading image:', error);
     throw error;
   }
 };
@@ -322,23 +349,69 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     
     // If there's an image, send a photo with caption
     if (params.imageUrl) {
+      // Prepare chat_id - if it looks like a username without @, add it
+      let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
+      if (!chatId) {
+        // If no chatId, use title and prefix with @ if it's a username
+        chatId = channel.title;
+        if (chatId && !chatId.startsWith('@') && !chatId.match(/^-?\d+$/)) {
+          chatId = '@' + chatId;
+        }
+      }
+
+      // Make sure the image URL is properly formatted
+      let photoUrl = params.imageUrl;
+      
+      // If it's a relative URL from our server, convert it to an absolute URL
+      if (photoUrl.startsWith('/uploads')) {
+        const baseUrl = window.location.origin;
+        photoUrl = `${baseUrl}${photoUrl}`;
+      }
+      
+      // Check for URLs from our own API as well
+      if (photoUrl.includes('/api/upload/image') || photoUrl.includes('/uploads/')) {
+        try {
+          // For Telegram, we need to make sure the image is directly accessible
+          // We'll see if we should use a sendMediaGroup approach or file upload instead
+          console.log('Image is from our own server:', photoUrl);
+        } catch (error) {
+          console.error('Error preparing image for Telegram:', error);
+        }
+      }
+      
+      // Log the details for debugging
+      console.log('Sending photo to Telegram with:', {
+        chat_id: chatId,
+        photo: photoUrl
+      });
+      
       result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendPhoto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: channel.title,
-          photo: params.imageUrl,
+          chat_id: chatId,
+          photo: photoUrl,
           caption: messageText,
           parse_mode: 'HTML'
         })
       });
     } else {
+      // Prepare chat_id - if it looks like a username without @, add it
+      let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
+      if (!chatId) {
+        // If no chatId, use title and prefix with @ if it's a username
+        chatId = channel.title;
+        if (chatId && !chatId.startsWith('@') && !chatId.match(/^-?\d+$/)) {
+          chatId = '@' + chatId;
+        }
+      }
+      
       // Otherwise just send a text message
       result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: channel.title,
+          chat_id: chatId,
           text: messageText,
           parse_mode: 'HTML'
         })
@@ -348,6 +421,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     const data = await result.json();
     
     if (!result.ok) {
+      console.error('Telegram API error:', data);
       throw new Error(data.description || 'Ошибка публикации');
     }
     

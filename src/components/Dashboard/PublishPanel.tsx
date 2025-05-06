@@ -3,11 +3,11 @@ import { Send, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import TextArea from '../ui/TextArea';
-import Input from '../ui/Input';
 import MultiSelect from '../ui/MultiSelect';
 import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
 import TelegramPostPreview from '../ui/TelegramPostPreview';
+import ImageUploader from '../ui/ImageUploader';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -29,6 +29,7 @@ const PublishPanel: React.FC = () => {
   const [publishImageUrl, setPublishImageUrl] = useState('');
   const [publishTags, setPublishTags] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const [publishingProgress, setPublishingProgress] = useState<{
     total: number;
     current: number;
@@ -256,12 +257,18 @@ const PublishPanel: React.FC = () => {
           rows={4}
         />
         
-        <Input
-          label={t('publish_panel.image_url')}
-          placeholder={t('publish_panel.image_url_placeholder')}
+        {uploadError && (
+          <Alert
+            variant="error"
+            message={uploadError}
+            onClose={() => setUploadError('')}
+          />
+        )}
+        
+        <ImageUploader
           value={publishImageUrl}
-          onChange={(e) => setPublishImageUrl(e.target.value)}
-          fullWidth
+          onChange={setPublishImageUrl}
+          onError={setUploadError}
         />
         
         <TagInput

@@ -58,3 +58,22 @@ export interface GeneratedContent {
   imageUrl: string;
   tags: string[];
 }
+
+export interface PostimagesResponse {
+  status: string;
+  id: string;
+  name: string;
+  url: string;
+  direct_url: string;
+  width: number;
+  height: number;
+  filesize: number;
+  adult: string;
+  thumb_url: string;
+  thumb: string;
+  medium: string;
+  avatar: string;
+  delete_code: string;
+  size_text: string;
+  timestamp: number;
+}
