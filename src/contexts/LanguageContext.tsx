@@ -182,6 +182,13 @@ const translations: Record<Language, Record<string, string>> = {
     'image_uploader.error_too_large': 'The file is too large (max 10MB)',
     'image_uploader.error_upload_failed': 'Failed to upload image',
 
+    // Alert component
+    'alert.success_title': 'Success!',
+    'alert.error_title': 'Error!',
+    'alert.warning_title': 'Warning!',
+    'alert.info_title': 'Information',
+    'common.close': 'Close',
+
     // Channels Manager
     'channels_manager.title': 'Channel Management',
     'channels_manager.add_new_channel': 'Add new channel',
@@ -468,6 +475,13 @@ const translations: Record<Language, Record<string, string>> = {
     'image_uploader.error_not_image': 'Файл не является изображением',
     'image_uploader.error_too_large': 'Файл слишком большой (макс. 10МБ)',
     'image_uploader.error_upload_failed': 'Не удалось загрузить изображение',
+
+    // Alert component
+    'alert.success_title': 'Успех!',
+    'alert.error_title': 'Ошибка!',
+    'alert.warning_title': 'Предупреждение!',
+    'alert.info_title': 'Информация',
+    'common.close': 'Закрыть',
 
     // Channels Manager
     'channels_manager.title': 'Управление каналами',

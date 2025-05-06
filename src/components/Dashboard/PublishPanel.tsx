@@ -277,11 +277,14 @@ const PublishPanel: React.FC = () => {
           onChange={setPublishTags}
         />
         
-        <TelegramPostPreview
-          text={publishText}
-          imageUrl={publishImageUrl}
-          tags={publishTags}
-        />
+        {/* Show preview only if there's content */}
+        {(publishText || publishImageUrl || publishTags.length > 0) && (
+          <TelegramPostPreview
+            text={publishText}
+            imageUrl={publishImageUrl}
+            tags={publishTags}
+          />
+        )}
       </CardContent>
       <CardFooter>
         <Button
