@@ -6,6 +6,7 @@ import BotInstructionsPanel from '../components/Dashboard/BotInstructionsPanel';
 import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
 import { useChannelsStore } from '../store/channelsStore';
 import { Zap, Settings, BookOpen, Crown } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Tab types for navigation
 type TabType = 'content' | 'channels' | 'instructions' | 'subscription';
@@ -13,6 +14,7 @@ type TabType = 'content' | 'channels' | 'instructions' | 'subscription';
 const DashboardPage: React.FC = () => {
   const { fetchChannels } = useChannelsStore();
   const [activeTab, setActiveTab] = useState<TabType>('content');
+  const { t } = useLanguage();
   
   useEffect(() => {
     fetchChannels();
@@ -20,18 +22,18 @@ const DashboardPage: React.FC = () => {
 
   // Tab configuration
   const tabs = [
-    { id: 'content', label: 'Генерация контента', icon: <Zap className="h-5 w-5" /> },
-    { id: 'channels', label: 'Управление каналами', icon: <Settings className="h-5 w-5" /> },
-    { id: 'instructions', label: 'Инструкция', icon: <BookOpen className="h-5 w-5" /> },
-    { id: 'subscription', label: 'Подписка', icon: <Crown className="h-5 w-5" /> },
+    { id: 'content', label: t('dashboard.tab_content'), icon: <Zap className="h-5 w-5" /> },
+    { id: 'channels', label: t('dashboard.tab_channels'), icon: <Settings className="h-5 w-5" /> },
+    { id: 'instructions', label: t('dashboard.tab_instructions'), icon: <BookOpen className="h-5 w-5" /> },
+    { id: 'subscription', label: t('dashboard.tab_subscription'), icon: <Crown className="h-5 w-5" /> },
   ];
   
   return (
     <div className="space-y-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Управление контентом</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.title')}</h1>
         <p className="text-gray-600">
-          Создавайте, редактируйте и публикуйте контент в Telegram-каналы
+          {t('dashboard.subtitle')}
         </p>
       </div>
       

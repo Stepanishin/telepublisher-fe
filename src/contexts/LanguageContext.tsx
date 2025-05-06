@@ -116,6 +116,14 @@ const translations: Record<Language, Record<string, string>> = {
     'login.back_to_normal': 'Back to normal login',
     'login.terms_agreement': 'By clicking the button, you agree to the terms of service',
     'login.loading': 'Loading...',
+
+    // Dashboard Page
+    'dashboard.title': 'Content Management',
+    'dashboard.subtitle': 'Create, edit, and publish content to Telegram channels',
+    'dashboard.tab_content': 'Content Generation',
+    'dashboard.tab_channels': 'Channel Management',
+    'dashboard.tab_instructions': 'Instructions',
+    'dashboard.tab_subscription': 'Subscription',
   },
   ru: {
     // Navbar
@@ -216,6 +224,14 @@ const translations: Record<Language, Record<string, string>> = {
     'login.back_to_normal': 'Вернуться к обычному входу',
     'login.terms_agreement': 'Нажимая кнопку, вы соглашаетесь с условиями использования сервиса',
     'login.loading': 'Загрузка...',
+
+    // Dashboard Page
+    'dashboard.title': 'Управление контентом',
+    'dashboard.subtitle': 'Создавайте, редактируйте и публикуйте контент в Telegram-каналы',
+    'dashboard.tab_content': 'Генерация контента',
+    'dashboard.tab_channels': 'Управление каналами',
+    'dashboard.tab_instructions': 'Инструкция',
+    'dashboard.tab_subscription': 'Подписка',
   },
 };
 
