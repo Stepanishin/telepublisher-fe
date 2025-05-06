@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, Send, Coins, Info } from 'lucide-react';
 import Button from '../ui/Button';
 import { useUserStore } from '../../store/userStore';
@@ -9,6 +9,7 @@ const Navbar: React.FC = () => {
   const { user, logout } = useUserStore();
   const { creditInfo, fetchCreditInfo } = useCreditStore();
   const [showTooltip, setShowTooltip] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -17,7 +18,12 @@ const Navbar: React.FC = () => {
   }, [user, fetchCreditInfo]);
 
   const handleLogout = () => {
+    // Remove token from localStorage
+    localStorage.removeItem('token');
+    // Call the logout function from the store
     logout();
+    // Navigate to login page
+    navigate('/login');
   };
 
   // Format date to a readable string
