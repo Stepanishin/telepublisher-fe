@@ -184,6 +184,19 @@ export const createPortalSession = async (returnUrl: string): Promise<string> =>
     }
   } catch (error) {
     console.error('Error creating portal session:', error);
+    
+    // Проверка, связана ли ошибка с настройкой Customer Portal
+    if (axios.isAxiosError(error) && error.response) {
+      const responseData = error.response.data;
+      
+      // Проверка, содержит ли ответ сервера информацию о проблеме с конфигурацией
+      if (responseData && responseData.details && 
+          responseData.details.includes('Customer Portal') || 
+          (responseData.message && responseData.message.includes('портал'))) {
+        throw new Error('Портал управления подпиской не настроен. Пожалуйста, обратитесь к администратору.');
+      }
+    }
+    
     throw error;
   }
 };

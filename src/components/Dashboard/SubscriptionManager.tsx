@@ -158,9 +158,18 @@ const SubscriptionManager: React.FC = () => {
       
       // Redirect to customer portal
       window.location.href = portalUrl;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating portal session:', error);
-      toast.error('Произошла ошибка при создании сессии управления подпиской');
+      
+      // Проверка, связана ли ошибка с настройкой Customer Portal
+      if (error instanceof Error && error.message && (
+        error.message.includes('Portal not configured') || 
+        error.message.includes('not been created') ||
+        error.message.includes('configuration'))) {
+        toast.error('Портал управления подпиской не настроен. Пожалуйста, обратитесь к администратору.');
+      } else {
+        toast.error('Произошла ошибка при создании сессии управления подпиской. Пожалуйста, попробуйте позже.');
+      }
     } finally {
       setManagePaymentLoading(false);
     }
