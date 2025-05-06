@@ -7,7 +7,6 @@ export interface TelegramUser {
 export enum SubscriptionType {
   FREE = 'free',
   BASIC = 'basic',
-  PROFESSIONAL = 'professional',
   BUSINESS = 'business'
 }
 
