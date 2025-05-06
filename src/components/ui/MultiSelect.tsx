@@ -23,7 +23,6 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   error,
   placeholder = 'Select options...'
 }) => {
-  console.log('options', options);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectedOptions = options.filter(option => value.includes(option.value));
