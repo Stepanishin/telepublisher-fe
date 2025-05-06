@@ -9,6 +9,7 @@ import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const PublishPanel: React.FC = () => {
   const { channels } = useChannelsStore();
@@ -20,6 +21,7 @@ const PublishPanel: React.FC = () => {
     publish, 
     resetPublishResult
   } = useContentStore();
+  const { t } = useLanguage();
   
   const [selectedChannelId, setSelectedChannelId] = useState('');
   const [publishText, setPublishText] = useState('');
@@ -54,12 +56,12 @@ const PublishPanel: React.FC = () => {
   const handlePublish = async () => {
     // Validate form
     if (!selectedChannelId) {
-      setFormError('Выберите канал для публикации');
+      setFormError(t('publish_panel.no_channel_error'));
       return;
     }
     
     if (!publishText && !publishImageUrl) {
-      setFormError('Добавьте текст или изображение для публикации');
+      setFormError(t('publish_panel.no_content_error'));
       return;
     }
     console.log('Publishing to channel ID:', selectedChannelId);
@@ -84,7 +86,7 @@ const PublishPanel: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Панель публикации</CardTitle>
+        <CardTitle>{t('publish_panel.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         {publishResult && (
@@ -111,31 +113,31 @@ const PublishPanel: React.FC = () => {
         )}
         
         <Select
-          label="Выберите канал"
+          label={t('publish_panel.select_channel')}
           options={channelOptions}
           value={selectedChannelId}
           onChange={handleChannelChange}
-          error={formError && !selectedChannelId ? 'Выберите канал' : ''}
+          error={formError && !selectedChannelId ? t('publish_panel.select_channel_error') : ''}
         />
         
         <TextArea
-          label="Текст публикации"
-          placeholder="Введите текст публикации..."
+          label={t('publish_panel.text_label')}
+          placeholder={t('publish_panel.text_placeholder')}
           value={publishText}
           onChange={(e) => setPublishText(e.target.value)}
           rows={4}
         />
         
         <Input
-          label="URL изображения"
-          placeholder="https://example.com/image.jpg"
+          label={t('publish_panel.image_url')}
+          placeholder={t('publish_panel.image_url_placeholder')}
           value={publishImageUrl}
           onChange={(e) => setPublishImageUrl(e.target.value)}
           fullWidth
         />
         
         <TagInput
-          label="Теги"
+          label={t('publish_panel.tags')}
           tags={publishTags}
           onChange={setPublishTags}
         />
@@ -143,7 +145,7 @@ const PublishPanel: React.FC = () => {
         {publishImageUrl && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Предпросмотр изображения
+              {t('publish_panel.image_preview')}
             </label>
             <div className="border border-gray-300 rounded-md p-2">
               <img 
@@ -163,7 +165,7 @@ const PublishPanel: React.FC = () => {
           disabled={isPublishing || (!publishText && !publishImageUrl)}
           leftIcon={<Send size={16} />}
         >
-          Опубликовать
+          {t('publish_panel.publish_button')}
         </Button>
       </CardFooter>
     </Card>

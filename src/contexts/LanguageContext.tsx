@@ -141,6 +141,20 @@ const translations: Record<Language, Record<string, string>> = {
     'content_generator.error_text': 'Error generating text',
     'content_generator.error_image': 'Error generating image',
     'content_generator.error_tags': 'Error generating tags',
+
+    // Publish Panel
+    'publish_panel.title': 'Publication Panel',
+    'publish_panel.select_channel': 'Select channel',
+    'publish_panel.select_channel_error': 'Select a channel',
+    'publish_panel.no_channel_error': 'Select a channel for publication',
+    'publish_panel.no_content_error': 'Add text or image for publication',
+    'publish_panel.text_label': 'Publication text',
+    'publish_panel.text_placeholder': 'Enter publication text...',
+    'publish_panel.image_url': 'Image URL',
+    'publish_panel.image_url_placeholder': 'https://example.com/image.jpg',
+    'publish_panel.tags': 'Tags',
+    'publish_panel.image_preview': 'Image preview',
+    'publish_panel.publish_button': 'Publish',
   },
   ru: {
     // Navbar
@@ -266,6 +280,20 @@ const translations: Record<Language, Record<string, string>> = {
     'content_generator.error_text': 'Ошибка при генерации текста',
     'content_generator.error_image': 'Ошибка при генерации изображения',
     'content_generator.error_tags': 'Ошибка при генерации тегов',
+
+    // Publish Panel
+    'publish_panel.title': 'Панель публикации',
+    'publish_panel.select_channel': 'Выберите канал',
+    'publish_panel.select_channel_error': 'Выберите канал',
+    'publish_panel.no_channel_error': 'Выберите канал для публикации',
+    'publish_panel.no_content_error': 'Добавьте текст или изображение для публикации',
+    'publish_panel.text_label': 'Текст публикации',
+    'publish_panel.text_placeholder': 'Введите текст публикации...',
+    'publish_panel.image_url': 'URL изображения',
+    'publish_panel.image_url_placeholder': 'https://example.com/image.jpg',
+    'publish_panel.tags': 'Теги',
+    'publish_panel.image_preview': 'Предпросмотр изображения',
+    'publish_panel.publish_button': 'Опубликовать',
   },
 };
 
