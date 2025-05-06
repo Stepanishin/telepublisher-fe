@@ -21,12 +21,15 @@ const MainLayout: React.FC = () => {
   }, [isAuthenticated, navigate, location.pathname]);
 
   const isHomePage = location.pathname === '/';
-  const showAuthNavbar = isAuthenticated && !isHomePage;
+  const isContactPage = location.pathname === '/contact';
+  const showAuthNavbar = isAuthenticated && !isHomePage && !isContactPage;
+
+  const isWidthFull = isHomePage || isContactPage;
 
   return (
     <div className="min-h-screen bg-gray-50">
       {showAuthNavbar && <Navbar />}
-      <main className={isHomePage ? 'w-full' : 'container mx-auto py-6 px-4 sm:px-6 lg:px-8'}>
+      <main className={isWidthFull ? 'w-full' : 'container mx-auto py-6 px-4 sm:px-6 lg:px-8'}>
         <Outlet />
       </main>
     </div>

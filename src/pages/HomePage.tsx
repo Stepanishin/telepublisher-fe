@@ -292,7 +292,7 @@ const HomePage: React.FC = () => {
                 </h3>
                 <ul className="space-y-3">
                   <li>
-                    <a href="#" className="hover:text-white">{t('footer.contact')}</a>
+                    <Link to="/contact" className="hover:text-white">{t('footer.contact')}</Link>
                   </li>
                 </ul>
               </div>

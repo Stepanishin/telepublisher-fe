@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 import HomePage from './pages/HomePage';
+import ContactPage from './pages/ContactPage';
 import { useUserStore } from './store/userStore';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<HomePage />} />
             <Route path="login" element={<LoginPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route 
               path="dashboard" 
               element={
