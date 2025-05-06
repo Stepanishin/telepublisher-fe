@@ -1,21 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import TelegramLoginButton, { TelegramUser } from 'react-telegram-login';
-import { verifyTelegramLogin } from '../services/api';
+import { verifyTelegramLogin, getUserProfile } from '../services/api';
 import { useUserStore } from '../store/userStore';
 
 const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
-  const { login: loginUser } = useUserStore();
+  const [loading, setLoading] = useState(true);
+  const { login: loginUser, isAuthenticated } = useUserStore();
+
+  // Try to auto-login when component mounts
+  useEffect(() => {
+    const autoLogin = async () => {
+      try {
+        // Check if token exists in localStorage
+        const token = localStorage.getItem('token');
+        if (token && !isAuthenticated) {
+          setLoading(true);
+          // Try to get user profile with existing token
+          const user = await getUserProfile();
+          loginUser(user);
+        }
+      } catch (error) {
+        console.error('Auto-login failed:', error);
+        // Clear token if it's invalid
+        localStorage.removeItem('token');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    autoLogin();
+  }, [loginUser, isAuthenticated]);
 
   const handleTelegramResponse = async (response: TelegramUser) => {
     try {
       setError('');
+      setLoading(true);
       const user = await verifyTelegramLogin(response);
       loginUser(user);
     } catch (error) {
       console.error('Login error:', error);
       setError('Ошибка входа. Пожалуйста, попробуйте снова.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,29 +62,37 @@ const LoginPage: React.FC = () => {
           Вход в систему
         </h2>
         
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
+        ) : (
+          <>
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-center mb-6">
+              <TelegramLoginButton
+                botName="tele_publisher_login_bot"
+                dataOnauth={handleTelegramResponse}
+                buttonSize="large"
+                cornerRadius={8}
+                requestAccess="write"
+              />
+            </div>
+            
+            <p className="mt-6 text-center text-xs text-gray-500">
+              Нажимая кнопку, вы соглашаетесь с условиями использования сервиса
+            </p>
+          </>
         )}
-        
-        <div className="flex justify-center mb-6">
-          <TelegramLoginButton
-            botName="tele_publisher_login_bot"
-            dataOnauth={handleTelegramResponse}
-            buttonSize="large"
-            cornerRadius={8}
-            requestAccess="write"
-          />
-        </div>
-        
-        <p className="mt-6 text-center text-xs text-gray-500">
-          Нажимая кнопку, вы соглашаетесь с условиями использования сервиса
-        </p>
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export const verifyTelegramLogin = async (authData: TelegramUser) => {
 // User API
 export const getUserProfile = async () => {
   try {
-    const response = await api.get('/users/profile');
+    const response = await api.get('/users/me');
     return response.data.user;
   } catch (error) {
     console.error('Error getting user profile:', error);
