@@ -333,7 +333,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     );
     
     if (!channel || !channel.botToken) {
-      throw new Error('Канал не найден или отсутствует токен бота');
+      throw new Error('channel_not_found');
     }
     
     // Check if this is a scheduled post
@@ -350,7 +350,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
         
         return {
           success: true,
-          message: `Пост запланирован в канале ${channel.title} на ${params.scheduledDate.toLocaleString()}`
+          message: `scheduled_success:${channel.title}:${params.scheduledDate.toLocaleString()}`
         };
       } catch (error) {
         console.error('Error scheduling post:', error);
@@ -358,7 +358,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
           success: false,
           message: error instanceof Error 
             ? error.message 
-            : 'Ошибка при планировании публикации. Пожалуйста, попробуйте снова.'
+            : 'error_scheduling'
         };
       }
     }
@@ -449,18 +449,18 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     
     if (!result.ok) {
       console.error('Telegram API error:', data);
-      throw new Error(data.description || 'Ошибка публикации');
+      throw new Error(data.description || 'error_publishing');
     }
     
     return {
       success: true,
-      message: `Успешно опубликовано в канале ${channel.title}`
+      message: `publish_success:${channel.title}`
     };
   } catch (error) {
     console.error('Publish error:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Ошибка публикации. Пожалуйста, попробуйте снова.'
+      message: error instanceof Error ? error.message : 'error_publishing'
     };
   }
 };

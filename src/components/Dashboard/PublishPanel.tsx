@@ -28,12 +28,27 @@ const PublishPanel: React.FC = () => {
   } = useContentStore();
   const { t } = useLanguage();
   
+  // Map of common Telegram error messages to translation keys
+  const telegramErrorTranslations: Record<string, string> = {
+    'message is too long': 'publish_panel.message_too_long',
+    'chat not found': 'publish_panel.error_chat_not_found',
+    'bot was kicked': 'publish_panel.error_bot_kicked',
+    'not enough rights': 'publish_panel.error_not_enough_rights',
+    'bot is not a member': 'publish_panel.error_bot_not_member',
+    'bot can\'t': 'publish_panel.error_bot_cant',
+    'forbidden': 'publish_panel.error_forbidden',
+    'permission denied': 'publish_panel.error_permission_denied',
+    'message caption is too long': 'publish_panel.error_caption_too_long',
+    'caption is too long': 'publish_panel.error_caption_too_long'
+  };
+  
   const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
   const [publishText, setPublishText] = useState('');
   const [publishImageUrl, setPublishImageUrl] = useState('');
   const [publishTags, setPublishTags] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [showLengthWarning, setShowLengthWarning] = useState(true);
   
   // Schedule related states
   const [scheduleType, setScheduleType] = useState<ScheduleType>('now');
@@ -45,6 +60,91 @@ const PublishPanel: React.FC = () => {
     success: string[];
     failed: string[];
   }>({ total: 0, current: 0, success: [], failed: [] });
+  
+  // Calculate total message length including tags
+  const getTotalMessageLength = (): number => {
+    let totalLength = publishText.length;
+    
+    // Add space for tags if they exist
+    if (publishTags.length > 0) {
+      // Two newlines and a space between tags
+      totalLength += 2; // For "\n\n"
+      
+      // Add length of each tag
+      publishTags.forEach((tag, index) => {
+        totalLength += tag.length;
+        // Add space between tags
+        if (index < publishTags.length - 1) {
+          totalLength += 1;
+        }
+      });
+    }
+    
+    return totalLength;
+  };
+  
+  // Get message length limits
+  const getMessageLengthLimits = () => {
+    if (publishImageUrl) {
+      return {
+        warningThreshold: 900,
+        errorThreshold: 1024,
+        maxLimit: 1024,
+        warningMessage: 'publish_panel.approaching_caption_limit',
+        errorMessage: 'publish_panel.error_caption_too_long',
+        limitLabel: 'publish_panel.caption_limit'
+      };
+    } else {
+      return {
+        warningThreshold: 3800,
+        errorThreshold: 4096,
+        maxLimit: 4096,
+        warningMessage: 'publish_panel.approaching_limit',
+        errorMessage: 'publish_panel.message_too_long',
+        limitLabel: 'publish_panel.message_limit'
+      };
+    }
+  };
+  
+  // Message character counter component
+  const MessageLengthCounter = () => {
+    const totalLength = getTotalMessageLength();
+    const { warningThreshold, errorThreshold, maxLimit, limitLabel } = getMessageLengthLimits();
+    
+    let colorClass = 'bg-green-500';
+    let textColorClass = 'text-gray-500';
+    
+    if (totalLength > errorThreshold) {
+      colorClass = 'bg-red-500';
+      textColorClass = 'text-red-500 font-medium';
+    } else if (totalLength > warningThreshold) {
+      colorClass = 'bg-yellow-500';
+      textColorClass = 'text-yellow-600';
+    }
+    
+    const percentFilled = Math.min((totalLength / maxLimit) * 100, 100);
+    
+    return (
+      <div className="mb-6 mt-2">
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-gray-600">
+            {t(limitLabel)}: {maxLimit} {t('publish_panel.characters')}
+            {publishTags.length > 0 && ` (${t('publish_panel.including_tags')})`}
+          </span>
+          <span className={textColorClass}>
+            {totalLength} / {maxLimit}
+          </span>
+        </div>
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className={`h-2 rounded-full ${colorClass}`} 
+            style={{ width: `${percentFilled}%` }}
+          ></div>
+        </div>
+      </div>
+    );
+  };
   
   // Helper function to format messages with parameters
   const formatMessage = (key: string, params: Record<string, string>): string => {
@@ -76,9 +176,31 @@ const PublishPanel: React.FC = () => {
     }
   }, [publishResult, resetPublishResult]);
   
+  // Reset length warning when text length changes significantly
+  useEffect(() => {
+    if (publishText.length <= 3800) {
+      setShowLengthWarning(true); // Reset when back under threshold
+    }
+  }, [publishText]);
+  
   const handleChannelChange = (selectedValues: string[]) => {
     setSelectedChannelIds(selectedValues);
     setFormError('');
+  };
+  
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setPublishText(newText);
+    
+    // Clear errors when text is okay
+    if (newText.length <= 4096 && formError === t('publish_panel.message_too_long')) {
+      setFormError('');
+    }
+    
+    // Set error when text is too long
+    if (newText.length > 4096 && formError !== t('publish_panel.message_too_long')) {
+      setFormError(t('publish_panel.message_too_long'));
+    }
   };
   
   const handleScheduleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -152,11 +274,94 @@ const PublishPanel: React.FC = () => {
 
         // Update success/fail lists based on result
         if (result.success) {
+          // Add translation support for success messages
+          // Check for special formatted success messages
+          if (result.message && result.message.startsWith('scheduled_success:')) {
+            // Parse the scheduled message format
+            const parts = result.message.split(':');
+            if (parts.length >= 3) {
+              const channelTitle = parts[1];
+              const scheduledDate = parts.slice(2).join(':'); // Rejoin in case the date contains colons
+              
+              
+              // Format with translation
+              result.message = formatMessage('publish_panel.success_scheduled', {
+                channel: channelTitle,
+                date: scheduledDate
+              });
+            }
+          } else if (result.message && result.message.startsWith('publish_success:')) {
+            // Parse the publish message format
+            const parts = result.message.split(':');
+            if (parts.length >= 2) {
+              const channelTitle = parts[1];
+              
+              
+              // Format with translation
+              result.message = formatMessage('publish_panel.success_published', {
+                channel: channelTitle
+              });
+            }
+          } else if (result.message && result.message.includes('успешно') && result.message.includes('опубликовано')) {
+            // Fallback for old format success messages in Russian
+            result.message = formatMessage('publish_panel.success_published', {
+              channel: channelName
+            });
+          } else if (result.message && result.message.includes('successfully') && result.message.includes('published')) {
+            // Fallback for old format success messages in English
+            result.message = formatMessage('publish_panel.success_published', {
+              channel: channelName
+            });
+          }
+          
           setPublishingProgress(prev => ({
             ...prev,
             success: [...prev.success, channelName]
           }));
         } else {
+          // Check for special error codes
+          if (result.message === 'channel_not_found') {
+            setFormError(t('publish_panel.error_channel_not_found'));
+          } else if (result.message === 'error_scheduling') {
+            setFormError(t('publish_panel.error_scheduling'));
+          } else if (result.message === 'error_publishing') {
+            setFormError(t('alert.error_title'));
+          }
+          // Check for message too long error
+          else if (result.message && (
+            result.message.includes("Bad Request: message is too long") || 
+            result.message.includes("message is too long") ||
+            result.message.toLowerCase().includes("too long")
+          )) {
+            setFormError(t('publish_panel.message_too_long'));
+          } else if (result.message) {
+            // For other Telegram API errors, attempt to find translation
+            const errorLowerCase = result.message.toLowerCase();
+            
+            // Check for common error patterns from Telegram API
+            let translatedError = '';
+            
+            // Check against our dictionary of known errors
+            for (const [errorKey, translationKey] of Object.entries(telegramErrorTranslations)) {
+              if (errorLowerCase.includes(errorKey)) {
+                translatedError = t(translationKey);
+                break;
+              }
+            }
+            
+            // If translation found, use it; otherwise show generic error with original message
+            if (translatedError) {
+              setFormError(translatedError);
+            } else {
+              // Format generic error message with Telegram's description
+              const genericMessage = result.message.startsWith('Bad Request:') 
+                ? result.message.replace('Bad Request:', '').trim()
+                : result.message;
+                
+              setFormError(`${t('alert.error_title')} ${genericMessage}`);
+            }
+          }
+          
           setPublishingProgress(prev => ({
             ...prev,
             failed: [...prev.failed, channelName]
@@ -278,6 +483,9 @@ const PublishPanel: React.FC = () => {
         {/* Publishing progress summary */}
         {renderPublishingSummary()}
         
+        {/* Character counter with dynamic limits based on content type */}
+        <MessageLengthCounter />
+        
         <MultiSelect
           label={t('publish_panel.select_channels')}
           options={channelOptions}
@@ -291,9 +499,43 @@ const PublishPanel: React.FC = () => {
           label={t('publish_panel.text_label')}
           placeholder={t('publish_panel.text_placeholder')}
           value={publishText}
-          onChange={(e) => setPublishText(e.target.value)}
+          onChange={handleTextChange}
           rows={12}
         />
+        
+        {/* Show warning when approaching character limit */}
+        {publishText.length > 3800 && showLengthWarning && (
+          <Alert
+            variant="warning"
+            message={publishText.length > 4096 
+              ? t('publish_panel.message_too_long') 
+              : formatMessage('publish_panel.approaching_limit', { 
+                  remaining: (4096 - publishText.length).toString() 
+                })
+            }
+            onClose={() => setShowLengthWarning(false)}
+          />
+        )}
+        
+        {/* Show warning when approaching caption limit with image */}
+        {publishImageUrl && publishText.length > 900 && publishText.length <= 1024 && showLengthWarning && (
+          <Alert
+            variant="warning"
+            message={formatMessage('publish_panel.approaching_caption_limit', { 
+              remaining: (1024 - publishText.length).toString() 
+            })}
+            onClose={() => setShowLengthWarning(false)}
+          />
+        )}
+        
+        {/* Show error when exceeding caption limit with image */}
+        {publishImageUrl && publishText.length > 1024 && (
+          <Alert
+            variant="error"
+            message={t('publish_panel.error_caption_too_long')}
+            onClose={() => {}}
+          />
+        )}
         
         {uploadError && (
           <Alert
@@ -357,7 +599,12 @@ const PublishPanel: React.FC = () => {
           fullWidth
           onClick={handlePublish}
           isLoading={isPublishing}
-          disabled={isPublishing || (!publishText && !publishImageUrl) || selectedChannelIds.length === 0 || (scheduleType === 'later' && !scheduledDate)}
+          disabled={!!(isPublishing || 
+            (!publishText && !publishImageUrl) || 
+            selectedChannelIds.length === 0 || 
+            (scheduleType === 'later' && !scheduledDate) ||
+            (publishText.length > 4096) ||
+            (publishImageUrl && publishText.length > 1024))}
           leftIcon={scheduleType === 'now' ? <Send size={16} /> : <Calendar size={16} />}
         >
           {scheduleType === 'now' ? (
