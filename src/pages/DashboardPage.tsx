@@ -5,16 +5,40 @@ import PublishPanel from '../components/Dashboard/PublishPanel';
 import BotInstructionsPanel from '../components/Dashboard/BotInstructionsPanel';
 import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
 import { useChannelsStore } from '../store/channelsStore';
+import { useContentStore } from '../store/contentStore';
 import { Zap, Settings, BookOpen, Crown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import TelegramPostPreview from '../components/ui/TelegramPostPreview';
 
 // Tab types for navigation
 type TabType = 'content' | 'channels' | 'instructions' | 'subscription';
 
+// Preview content type
+interface PreviewContent {
+  text: string;
+  imageUrl: string;
+  tags: string[];
+}
+
 const DashboardPage: React.FC = () => {
   const { fetchChannels } = useChannelsStore();
+  const { content } = useContentStore();
   const [activeTab, setActiveTab] = useState<TabType>('content');
+  const [previewContent, setPreviewContent] = useState<PreviewContent>({
+    text: '',
+    imageUrl: '',
+    tags: []
+  });
   const { t } = useLanguage();
+  
+  // Update preview when content from store changes
+  useEffect(() => {
+    setPreviewContent({
+      text: content.text,
+      imageUrl: content.imageUrl,
+      tags: content.tags
+    });
+  }, [content]);
   
   useEffect(() => {
     fetchChannels();
@@ -130,10 +154,19 @@ const DashboardPage: React.FC = () => {
         {activeTab === 'content' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <PublishPanel />
+              <PublishPanel onContentChange={setPreviewContent} />
             </div>
             <div className="lg:col-span-1">
               <ContentGenerator />
+              {(previewContent.text || previewContent.imageUrl || previewContent.tags.length > 0) && (
+                <div className="mt-6">
+                  <TelegramPostPreview
+                    text={previewContent.text}
+                    imageUrl={previewContent.imageUrl}
+                    tags={previewContent.tags}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

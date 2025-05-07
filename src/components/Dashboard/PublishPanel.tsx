@@ -6,7 +6,6 @@ import TextArea from '../ui/TextArea';
 import MultiSelect from '../ui/MultiSelect';
 import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
-import TelegramPostPreview from '../ui/TelegramPostPreview';
 import ImageUploader from '../ui/ImageUploader';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
@@ -16,7 +15,12 @@ import DateTimePicker from '../ui/DateTimePicker';
 // Scheduled post types
 type ScheduleType = 'now' | 'later';
 
-const PublishPanel: React.FC = () => {
+// Define the props for the component
+interface PublishPanelProps {
+  onContentChange?: (content: { text: string; imageUrl: string; tags: string[] }) => void;
+}
+
+const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
   const { channels } = useChannelsStore();
   const { 
     content, 
@@ -164,6 +168,17 @@ const PublishPanel: React.FC = () => {
     setPublishImageUrl(content.imageUrl);
     setPublishTags(content.tags);
   }, [content]);
+  
+  // Notify parent component when content changes
+  useEffect(() => {
+    if (onContentChange) {
+      onContentChange({
+        text: publishText,
+        imageUrl: publishImageUrl,
+        tags: publishTags
+      });
+    }
+  }, [publishText, publishImageUrl, publishTags, onContentChange]);
   
   // Reset alert after 5 seconds
   useEffect(() => {
@@ -584,15 +599,6 @@ const PublishPanel: React.FC = () => {
             )}
           </div>
         </div>
-        
-        {/* Show preview only if there's content */}
-        {(publishText || publishImageUrl || publishTags.length > 0) && (
-          <TelegramPostPreview
-            text={publishText}
-            imageUrl={publishImageUrl}
-            tags={publishTags}
-          />
-        )}
       </CardContent>
       <CardFooter>
         <Button 
@@ -620,6 +626,11 @@ const PublishPanel: React.FC = () => {
       </CardFooter>
     </Card>
   );
+};
+
+// Set default props
+PublishPanel.defaultProps = {
+  onContentChange: undefined
 };
 
 export default PublishPanel;
