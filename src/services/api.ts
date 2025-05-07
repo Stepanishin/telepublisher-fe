@@ -336,6 +336,33 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
       throw new Error('Канал не найден или отсутствует токен бота');
     }
     
+    // Check if this is a scheduled post
+    if (params.scheduledDate) {
+      try {
+        // Store scheduled post in the database
+        await api.post('/scheduled-posts', {
+          channelId: params.channelId,
+          text: params.text,
+          imageUrl: params.imageUrl,
+          tags: params.tags,
+          scheduledDate: params.scheduledDate.toISOString()
+        });
+        
+        return {
+          success: true,
+          message: `Пост запланирован в канале ${channel.title} на ${params.scheduledDate.toLocaleString()}`
+        };
+      } catch (error) {
+        console.error('Error scheduling post:', error);
+        return {
+          success: false,
+          message: error instanceof Error 
+            ? error.message 
+            : 'Ошибка при планировании публикации. Пожалуйста, попробуйте снова.'
+        };
+      }
+    }
+    
     let messageText = params.text;
     
     // Append tags to the message if available

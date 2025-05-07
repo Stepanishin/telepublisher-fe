@@ -323,6 +323,15 @@ const translations: Record<Language, Record<string, string>> = {
     // NotFoundPage
     'not_found.message': 'Page not found',
     'not_found.back_home': 'Back to home',
+
+    // Publish Panel
+    'publish_panel.schedule_label': 'Scheduling',
+    'publish_panel.publish_now': 'Publish now',
+    'publish_panel.schedule_for_later': 'Schedule for later',
+    'publish_panel.select_date_time': 'Select date and time',
+    'publish_panel.no_schedule_date_error': 'Please select a date and time for scheduling',
+    'publish_panel.schedule_in_past_error': 'Date and time cannot be in the past',
+    'publish_panel.schedule_button': 'Schedule',
   },
   ru: {
     // Navbar
@@ -630,6 +639,15 @@ const translations: Record<Language, Record<string, string>> = {
     // NotFoundPage
     'not_found.message': 'Страница не найдена',
     'not_found.back_home': 'Вернуться на главную',
+
+    // Publish Panel
+    'publish_panel.schedule_label': 'Планирование',
+    'publish_panel.publish_now': 'Опубликовать сейчас',
+    'publish_panel.schedule_for_later': 'Запланировать',
+    'publish_panel.select_date_time': 'Выберите дату и время',
+    'publish_panel.no_schedule_date_error': 'Пожалуйста, выберите дату и время для планирования',
+    'publish_panel.schedule_in_past_error': 'Дата и время не могут быть в прошлом',
+    'publish_panel.schedule_button': 'Запланировать',
   },
 };
 

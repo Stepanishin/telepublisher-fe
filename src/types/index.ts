@@ -46,6 +46,7 @@ export interface PublishParams {
   text: string;
   imageUrl: string;
   tags: string[];
+  scheduledDate?: Date | null;
 }
 
 export interface PublishResult {

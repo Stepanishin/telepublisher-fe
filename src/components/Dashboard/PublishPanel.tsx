@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Send, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import TextArea from '../ui/TextArea';
@@ -11,6 +11,10 @@ import ImageUploader from '../ui/ImageUploader';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
+import DateTimePicker from '../ui/DateTimePicker';
+
+// Scheduled post types
+type ScheduleType = 'now' | 'later';
 
 const PublishPanel: React.FC = () => {
   const { channels } = useChannelsStore();
@@ -30,6 +34,11 @@ const PublishPanel: React.FC = () => {
   const [publishTags, setPublishTags] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
   const [uploadError, setUploadError] = useState('');
+  
+  // Schedule related states
+  const [scheduleType, setScheduleType] = useState<ScheduleType>('now');
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  
   const [publishingProgress, setPublishingProgress] = useState<{
     total: number;
     current: number;
@@ -72,6 +81,20 @@ const PublishPanel: React.FC = () => {
     setFormError('');
   };
   
+  const handleScheduleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setScheduleType(event.target.value as ScheduleType);
+    
+    // If switching back to "now", clear the scheduled date
+    if (event.target.value === 'now') {
+      setScheduledDate(null);
+    } else if (!scheduledDate) {
+      // Set default scheduled time to 1 hour from now
+      const defaultDate = new Date();
+      defaultDate.setHours(defaultDate.getHours() + 1);
+      setScheduledDate(defaultDate);
+    }
+  };
+  
   const handlePublish = async () => {
     // Validate form
     if (selectedChannelIds.length === 0) {
@@ -82,6 +105,20 @@ const PublishPanel: React.FC = () => {
     if (!publishText && !publishImageUrl) {
       setFormError(t('publish_panel.no_content_error'));
       return;
+    }
+    
+    // Validate scheduled date if scheduling
+    if (scheduleType === 'later') {
+      if (!scheduledDate) {
+        setFormError(t('publish_panel.no_schedule_date_error'));
+        return;
+      }
+      
+      const now = new Date();
+      if (scheduledDate <= now) {
+        setFormError(t('publish_panel.schedule_in_past_error'));
+        return;
+      }
     }
 
     // Initialize publishing progress
@@ -109,7 +146,8 @@ const PublishPanel: React.FC = () => {
           channelId,
           text: publishText,
           imageUrl: publishImageUrl,
-          tags: publishTags
+          tags: publishTags,
+          scheduledDate: scheduleType === 'later' ? scheduledDate : null
         });
 
         // Update success/fail lists based on result
@@ -277,6 +315,34 @@ const PublishPanel: React.FC = () => {
           onChange={setPublishTags}
         />
         
+        {/* Scheduling options */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('publish_panel.schedule_label')}
+          </label>
+          <div className="flex flex-col sm:flex-col sm:items-start gap-4">
+            <select
+              value={scheduleType}
+              onChange={handleScheduleTypeChange}
+              className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="now">{t('publish_panel.publish_now')}</option>
+              <option value="later">{t('publish_panel.schedule_for_later')}</option>
+            </select>
+            
+            {scheduleType === 'later' && (
+              <div className="flex-grow w-full">
+                <DateTimePicker
+                  value={scheduledDate}
+                  onChange={setScheduledDate}
+                  minDate={new Date()}
+                  placeholder={t('publish_panel.select_date_time')}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        
         {/* Show preview only if there's content */}
         {(publishText || publishImageUrl || publishTags.length > 0) && (
           <TelegramPostPreview
@@ -287,16 +353,22 @@ const PublishPanel: React.FC = () => {
         )}
       </CardContent>
       <CardFooter>
-        <Button
+        <Button 
           fullWidth
           onClick={handlePublish}
           isLoading={isPublishing}
-          disabled={isPublishing || (!publishText && !publishImageUrl) || selectedChannelIds.length === 0}
-          leftIcon={<Send size={16} />}
+          disabled={isPublishing || (!publishText && !publishImageUrl) || selectedChannelIds.length === 0 || (scheduleType === 'later' && !scheduledDate)}
+          leftIcon={scheduleType === 'now' ? <Send size={16} /> : <Calendar size={16} />}
         >
-          {selectedChannelIds.length > 1 
-            ? formatMessage('publish_panel.publish_to_multiple', { count: selectedChannelIds.length.toString() }) 
-            : t('publish_panel.publish_button')}
+          {scheduleType === 'now' ? (
+            selectedChannelIds.length > 1 
+              ? formatMessage('publish_panel.publish_to_multiple', { count: selectedChannelIds.length.toString() }) 
+              : t('publish_panel.publish_button')
+          ) : (
+            selectedChannelIds.length > 1
+              ? formatMessage('publish_panel.schedule_to_multiple', { count: selectedChannelIds.length.toString() })
+              : t('publish_panel.schedule_button')
+          )}
         </Button>
       </CardFooter>
     </Card>
