@@ -345,7 +345,7 @@ const SubscriptionManager: React.FC = () => {
 
             {/* Manage Subscription Buttons */}
             <div className="mt-4 flex flex-col sm:flex-row gap-4">
-              {creditInfo && creditInfo.subscriptionType !== 'free' && !creditInfo.downgradeOnExpiry && (
+              {creditInfo && creditInfo.subscriptionType !== 'free' && (
                 <Button
                   variant="secondary"
                   onClick={handleManageSubscription}
@@ -359,24 +359,6 @@ const SubscriptionManager: React.FC = () => {
                     </div>
                   ) : (
                     <span>{t('subscription.manage_payments')}</span>
-                  )}
-                </Button>
-              )}
-              
-              {creditInfo && (creditInfo.subscriptionType === 'free' || creditInfo.downgradeOnExpiry) && (
-                <Button
-                  variant="primary"
-                  onClick={() => handleUpgrade('basic')}
-                  disabled={processingPayment}
-                  className="flex-1"
-                >
-                  {processingPayment ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      <span>{t('subscription.loading')}</span>
-                    </div>
-                  ) : (
-                    <span>{creditInfo.downgradeOnExpiry ? t('subscription.renew_subscription') : t('subscription.subscribe_button')}</span>
                   )}
                 </Button>
               )}
