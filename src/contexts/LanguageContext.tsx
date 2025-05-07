@@ -319,6 +319,10 @@ const translations: Record<Language, Record<string, string>> = {
     'subscription.payment_success': 'Payment successful! Your subscription has been activated.',
     'subscription.payment_cancelled': 'Payment was cancelled.',
     'subscription.error_load': 'Failed to load subscription information',
+    'subscription.error_payment': 'Failed to create payment session',
+    'subscription.test_mode_warning': 'Test mode detected: Your subscription may be updated without completing payment.',
+    'subscription.continue_to_payment_confirm': 'Your plan was already updated in test mode. Do you still want to proceed to the payment page?',
+    'subscription.payment_processed_not_updated': 'Payment was processed but subscription not updated. Please contact support.',
 
     // NotFoundPage
     'not_found.message': 'Page not found',
@@ -340,15 +344,15 @@ const translations: Record<Language, Record<string, string>> = {
     'navbar.credit_info': 'Информация о кредитах',
     'navbar.subscription_type': 'Тип подписки',
     'navbar.total_used': 'Всего использовано',
-    'navbar.reset_date': 'Сброс кредитов',
+    'navbar.reset_date': 'Дата обновления',
     'navbar.subscription_status': 'Статус подписки',
     'navbar.active': 'Активна',
     'navbar.inactive': 'Неактивна',
     'navbar.no_data': 'Нет данных',
-
+    
     // Hero section
     'hero.title': 'TelePublisher',
-    'hero.description': 'Профессиональная система для управления контентом в Telegram-каналах. Создавайте, редактируйте и публикуйте контент с легкостью.',
+    'hero.description': 'Профессиональная система управления контентом для Telegram-каналов. Создавайте, редактируйте и публикуйте контент с легкостью.',
     'hero.start_free': 'Начать бесплатно',
     'hero.learn_more': 'Узнать больше',
 
@@ -635,6 +639,10 @@ const translations: Record<Language, Record<string, string>> = {
     'subscription.payment_success': 'Оплата прошла успешно! Подписка активирована.',
     'subscription.payment_cancelled': 'Оплата была отменена.',
     'subscription.error_load': 'Не удалось загрузить информацию о подписке',
+    'subscription.error_payment': 'Не удалось создать платежную сессию',
+    'subscription.test_mode_warning': 'Обнаружен тестовый режим: подписка может быть обновлена без завершения оплаты.',
+    'subscription.continue_to_payment_confirm': 'Ваш тариф уже был обновлен в тестовом режиме. Вы все еще хотите перейти на страницу оплаты?',
+    'subscription.payment_processed_not_updated': 'Платеж обработан, но подписка не обновлена. Пожалуйста, обратитесь в службу поддержки.',
 
     // NotFoundPage
     'not_found.message': 'Страница не найдена',

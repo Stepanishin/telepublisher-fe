@@ -97,6 +97,62 @@ const SubscriptionManager: React.FC = () => {
     fetchCreditInfo();
   }, [t]);
 
+  // Check for payment status in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentSuccess = params.get('payment_success');
+    const paymentCancelled = params.get('payment_cancelled');
+    
+    if (paymentSuccess === 'true') {
+      toast.success(t('subscription.payment_success'));
+      
+      // Refresh credit info only after successful payment
+      const fetchCreditInfo = async () => {
+        try {
+          // Add a small delay to give the server webhook time to process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Fetch updated subscription info
+          const creditData = await getCreditInfo();
+          console.log('Updated subscription data after payment:', creditData);
+          setCreditInfo(creditData);
+          
+          // Verify the subscription was actually updated
+          if (creditData.subscriptionType === 'free') {
+            console.warn('Payment successful but subscription not updated');
+            toast.error(t('subscription.payment_processed_not_updated'));
+          }
+        } catch (error) {
+          console.error('Error fetching credit info:', error);
+          toast.error(t('subscription.error_load'));
+        }
+      };
+      
+      fetchCreditInfo();
+      
+      // Remove query params from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (paymentCancelled === 'true') {
+      toast.error(t('subscription.payment_cancelled'));
+      
+      // Refresh credit info to ensure we have the correct state
+      const fetchCreditInfo = async () => {
+        try {
+          // We still need the latest info even if cancelled
+          const creditData = await getCreditInfo();
+          setCreditInfo(creditData);
+        } catch (error) {
+          console.error('Error fetching credit info:', error);
+        }
+      };
+      
+      fetchCreditInfo();
+      
+      // Remove query params from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [t]);
+
   const handleUpgrade = async (subscriptionType: string) => {
     console.log('handleUpgrade', subscriptionType, user);
     if (!user) return;
@@ -123,12 +179,11 @@ const SubscriptionManager: React.FC = () => {
         `${returnUrl}?payment_cancelled=true`
       );
       
-      // Redirect to checkout
+      // Redirect to checkout page
       window.location.href = checkoutUrl;
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      toast.error('Произошла ошибка при создании платежной сессии');
-    } finally {
+      toast.error(t('subscription.error_payment'));
       setProcessingPayment(false);
     }
   };
@@ -220,37 +275,6 @@ const SubscriptionManager: React.FC = () => {
       setCancelSubscriptionLoading(false);
     }
   };
-
-  // Check for payment status in URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const paymentSuccess = params.get('payment_success');
-    const paymentCancelled = params.get('payment_cancelled');
-    
-    if (paymentSuccess === 'true') {
-      toast.success(t('subscription.payment_success'));
-      
-      // Refresh credit info
-      const fetchCreditInfo = async () => {
-        try {
-          const creditData = await getCreditInfo();
-          setCreditInfo(creditData);
-        } catch (error) {
-          console.error('Error fetching credit info:', error);
-        }
-      };
-      
-      fetchCreditInfo();
-      
-      // Remove query params from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (paymentCancelled === 'true') {
-      toast.error(t('subscription.payment_cancelled'));
-      
-      // Remove query params from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [t]);
 
   // Helper function to format a translated string with parameters
   const formatString = (key: string, ...params: (string | number)[]) => {
