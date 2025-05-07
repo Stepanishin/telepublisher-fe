@@ -40,7 +40,6 @@ const SubscriptionManager: React.FC = () => {
         t('subscription.free_features_4'),
       ],
       isPopular: false,
-      buttonText: t('subscription.current_plan_button'),
       buttonVariant: 'outline' as const,
     },
     {
@@ -57,7 +56,6 @@ const SubscriptionManager: React.FC = () => {
         t('subscription.standard_features_4'),
       ],
       isPopular: true,
-      buttonText: t('subscription.subscribe_button'),
       buttonVariant: 'primary' as const,
     },
     {
@@ -74,7 +72,6 @@ const SubscriptionManager: React.FC = () => {
         t('subscription.business_features_4'),
       ],
       isPopular: false,
-      buttonText: t('subscription.subscribe_button'),
       buttonVariant: 'outline' as const,
     },
   ];
@@ -344,6 +341,18 @@ const SubscriptionManager: React.FC = () => {
                 
                 console.log(`Plan type: "${planType}", current subscription type: "${currentType}", isMatch: ${isCurrentPlan}`);
                 
+                // Определяем текст и состояние кнопки в зависимости от текущего плана
+                const buttonText = isCurrentPlan 
+                  ? t('subscription.current_plan_button')
+                  : t('subscription.subscribe_button');
+                
+                // Для текущего плана используем disabled, для остальных проверяем processingPayment
+                const isButtonDisabled = processingPayment || loading || isCurrentPlan;
+                
+                // Проверяем, нужно ли показывать кнопку
+                // Не показываем кнопку для бесплатного тарифа, если у пользователя платный тариф
+                const shouldShowButton = !(planType === 'free' && currentType !== 'free' && !creditInfo?.downgradeOnExpiry);
+                
                 return (
                   <Card 
                     key={plan.id} 
@@ -372,20 +381,20 @@ const SubscriptionManager: React.FC = () => {
                       </ul>
                     </CardContent>
                     <CardFooter className="pb-5">
-                      <Button
-                        variant={plan.buttonVariant}
-                        className={`w-full`}
-                        disabled={processingPayment || loading || isCurrentPlan}
-                        onClick={() => plan.type !== 'free' && handleUpgrade(plan.type)}
-                      >
-                        {processingPayment ? (
-                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                        ) : isCurrentPlan ? (
-                          t('subscription.current_plan_button')
-                        ) : (
-                          plan.buttonText
-                        )}
-                      </Button>
+                      {shouldShowButton && (
+                        <Button
+                          variant={isCurrentPlan ? 'outline' : plan.buttonVariant}
+                          className={`w-full`}
+                          disabled={isButtonDisabled}
+                          onClick={() => plan.type !== 'free' && !isCurrentPlan && handleUpgrade(plan.type)}
+                        >
+                          {processingPayment ? (
+                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                          ) : (
+                            buttonText
+                          )}
+                        </Button>
+                      )}
                     </CardFooter>
                   </Card>
                 );
