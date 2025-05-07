@@ -4,8 +4,8 @@ import Button from '../ui/Button';
 import { CheckCircle, Crown, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 import { toast } from 'react-hot-toast';
-import { getCreditInfo, createCheckoutSession, createPortalSession, cancelSubscription } from '../../services/api';
-import { SubscriptionType, CreditInfo } from '../../types';
+import { getCreditInfo, createCheckoutSession, createPortalSession } from '../../services/api';
+import { CreditInfo } from '../../types/index';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Helper function to format a date in the current locale
@@ -21,7 +21,6 @@ const SubscriptionManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [managePaymentLoading, setManagePaymentLoading] = useState(false);
-  const [cancelSubscriptionLoading, setCancelSubscriptionLoading] = useState(false);
   const { t } = useLanguage();
 
   // Create plans dynamically based on translations
@@ -216,63 +215,6 @@ const SubscriptionManager: React.FC = () => {
     }
   };
 
-  const handleCancelSubscription = async () => {
-    if (!user) return;
-    
-    setCancelSubscriptionLoading(true);
-    
-    try {
-      console.log('Sending cancel subscription request...');
-      const response = await cancelSubscription();
-      console.log('Server response:', response);
-      
-      if (response.success) {
-        toast.success(response.message || 'Subscription cancelled. Your privileges will remain until the end of the current period.');
-        
-        // Update credit info with data directly from the response
-        if (response.data) {
-          // Only update if we have creditInfo
-          if (creditInfo) {
-            const updatedCreditInfo: CreditInfo = {
-              ...creditInfo,
-              downgradeOnExpiry: response.data.downgradeOnExpiry || true,
-              endDate: response.data.endDate ? new Date(response.data.endDate) : creditInfo.endDate,
-              subscriptionType: (response.data.subscriptionType || creditInfo.subscriptionType) as SubscriptionType,
-              isActive: response.data.isActive !== undefined ? response.data.isActive : creditInfo.isActive
-            };
-            
-            console.log('Updating subscription info:', updatedCreditInfo);
-            setCreditInfo(updatedCreditInfo);
-          } else {
-            // If we don't have creditInfo, fetch it from the server
-            const creditData = await getCreditInfo();
-            setCreditInfo(creditData);
-          }
-        } else {
-          // Fallback: fetch fresh data from server
-          const creditData = await getCreditInfo();
-          setCreditInfo(creditData);
-        }
-      } else {
-        console.error('Error cancelling subscription:', response.message);
-        toast.error(response.message || 'Unable to cancel subscription');
-      }
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      toast.error('An error occurred while cancelling your subscription. Please try again or contact support.');
-      
-      // Always refresh data on error to ensure UI is in sync
-      try {
-        const creditData = await getCreditInfo();
-        setCreditInfo(creditData);
-      } catch (refreshError) {
-        console.error('Error refreshing credit info:', refreshError);
-      }
-    } finally {
-      setCancelSubscriptionLoading(false);
-    }
-  };
-
   // Helper function to format a translated string with parameters
   const formatString = (key: string, ...params: (string | number)[]) => {
     let result = t(key);
@@ -404,39 +346,21 @@ const SubscriptionManager: React.FC = () => {
             {/* Manage Subscription Buttons */}
             <div className="mt-4 flex flex-col sm:flex-row gap-4">
               {creditInfo && creditInfo.subscriptionType !== 'free' && !creditInfo.downgradeOnExpiry && (
-                <>
-                  <Button
-                    variant="secondary"
-                    onClick={handleManageSubscription}
-                    disabled={managePaymentLoading}
-                    className="flex-1"
-                  >
-                    {managePaymentLoading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        <span>{t('subscription.loading')}</span>
-                      </div>
-                    ) : (
-                      <span>{t('subscription.manage_payments')}</span>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="danger"
-                    onClick={handleCancelSubscription}
-                    disabled={cancelSubscriptionLoading || creditInfo.downgradeOnExpiry}
-                    className="flex-1"
-                  >
-                    {cancelSubscriptionLoading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        <span>{t('subscription.cancelling')}</span>
-                      </div>
-                    ) : (
-                      <span>{t('subscription.cancel_subscription')}</span>
-                    )}
-                  </Button>
-                </>
+                <Button
+                  variant="secondary"
+                  onClick={handleManageSubscription}
+                  disabled={managePaymentLoading}
+                  className="w-full"
+                >
+                  {managePaymentLoading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <span>{t('subscription.loading')}</span>
+                    </div>
+                  ) : (
+                    <span>{t('subscription.manage_payments')}</span>
+                  )}
+                </Button>
               )}
               
               {creditInfo && (creditInfo.subscriptionType === 'free' || creditInfo.downgradeOnExpiry) && (
