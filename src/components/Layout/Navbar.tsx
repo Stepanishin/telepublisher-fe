@@ -166,7 +166,7 @@ const Navbar: React.FC = () => {
               size="sm"
               leftIcon={<LogOut size={16} />}
               onClick={handleLogout}
-              className="hover:!bg-blue-700"
+              className="hover:!bg-gray-200"
             >
               {t('navbar.logout')}
             </Button>
@@ -244,7 +244,7 @@ const Navbar: React.FC = () => {
                 size="sm"
                 leftIcon={<LogOut size={16} />}
                 onClick={handleLogout}
-                className="w-full hover:!bg-blue-700"
+                className="w-full hover:!bg-gray-200"
               >
                 {t('navbar.logout')}
               </Button>

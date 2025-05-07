@@ -23,7 +23,7 @@ const HomePage: React.FC = () => {
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Link to="/login">
-              <Button size="lg" className="bg-white !text-blue-700 hover:bg-gray-200 hover:!text-blue-700">
+              <Button size="lg" className="bg-white !text-blue-700 hover:bg-gray-200">
                 {t('hero.start_free')}
               </Button>
             </Link>
