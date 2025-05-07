@@ -292,7 +292,7 @@ const PublishPanel: React.FC = () => {
           placeholder={t('publish_panel.text_placeholder')}
           value={publishText}
           onChange={(e) => setPublishText(e.target.value)}
-          rows={4}
+          rows={12}
         />
         
         {uploadError && (
