@@ -1,18 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, ImageIcon, Link, X, Loader, AlertCircle } from 'lucide-react';
+import { Upload, ImageIcon, Link, X, Loader, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { uploadImage } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ImageUploaderProps {
   value: string;
+  values?: string[];
   onChange: (url: string) => void;
+  onMultipleChange?: (urls: string[]) => void;
   onError?: (error: string) => void;
+  multiple?: boolean;
+  maxImages?: number;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ 
   value, 
+  values = [],
   onChange,
-  onError 
+  onMultipleChange,
+  onError,
+  multiple = false,
+  maxImages = 10
 }) => {
   const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
@@ -20,6 +28,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [inputMode, setInputMode] = useState<'url' | 'upload'>('url');
   const [error, setError] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -55,7 +64,20 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      await uploadFile(files[0]);
+      if (multiple) {
+        // For multiple mode, we upload each file
+        for (let i = 0; i < files.length; i++) {
+          if (multiple && values.length >= maxImages) {
+            const message = t('image_uploader.max_images_reached');
+            setError(message);
+            onError?.(message);
+            break;
+          }
+          await uploadFile(files[i]);
+        }
+      } else {
+        await uploadFile(files[0]);
+      }
     }
   };
   
@@ -77,12 +99,26 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      await uploadFile(files[0]);
+      if (multiple) {
+        // For multiple mode, we upload each file
+        for (let i = 0; i < files.length; i++) {
+          if (multiple && values.length >= maxImages) {
+            const message = t('image_uploader.max_images_reached');
+            setError(message);
+            onError?.(message);
+            break;
+          }
+          await uploadFile(files[i]);
+        }
+      } else {
+        await uploadFile(files[0]);
+      }
     }
   };
   
   const uploadFile = async (file: File) => {
     console.log('uploadFile', file);
+    setCurrentFile(file.name);
     // Clear any previous errors
     setError(null);
     
@@ -123,16 +159,23 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       setUploadProgress(100);
       
       // Update the parent component with the new image URL
-      onChange(imageUrl);
+      if (multiple) {
+        const newValues = [...values, imageUrl];
+        onMultipleChange?.(newValues);
+      } else {
+        onChange(imageUrl);
+      }
       
       // Reset state after a short delay
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
+        setCurrentFile(null);
       }, 500);
     } catch (error) {
       setIsUploading(false);
       setUploadProgress(0);
+      setCurrentFile(null);
       const message = t('image_uploader.error_upload_failed');
       setError(message);
       onError?.(message);
@@ -145,9 +188,21 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
   
   const handleClear = () => {
-    onChange('');
+    if (multiple) {
+      onMultipleChange?.([]);
+    } else {
+      onChange('');
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    if (multiple && values.length > 0) {
+      const newValues = [...values];
+      newValues.splice(index, 1);
+      onMultipleChange?.(newValues);
     }
   };
   
@@ -156,11 +211,48 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       fileInputRef.current.click();
     }
   };
+
+  // Render image thumbnails for multiple mode
+  const renderImageThumbnails = () => {
+    if (!multiple || values.length === 0) return null;
+
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-3">
+        {values.map((imageUrl, index) => (
+          <div key={index} className="relative rounded-md overflow-hidden border border-gray-300">
+            <div className="aspect-square bg-gray-100 relative">
+              <img 
+                src={imageUrl} 
+                alt={`Uploaded ${index + 1}`}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <button
+                className="absolute top-1 right-1 p-1 bg-black bg-opacity-60 rounded-full text-white hover:bg-opacity-80"
+                onClick={() => handleRemoveImage(index)}
+                title={t('image_uploader.remove_image') || 'Remove image'}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {values.length < maxImages && (
+          <div 
+            className="border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center p-4 aspect-square cursor-pointer hover:border-blue-500 hover:bg-blue-50"
+            onClick={triggerFileInput}
+          >
+            <Plus size={24} className="text-gray-400" />
+          </div>
+        )}
+      </div>
+    );
+  };
   
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {t('image_uploader.label')}
+        {multiple ? t('image_uploader.label_multiple') || 'Upload Images (max 10)' : t('image_uploader.label')}
       </label>
       
       <div className="flex mb-2">
@@ -169,7 +261,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           onClick={() => {
             setInputMode('url');
             setError(null);
-            onChange('');
+            if (multiple) {
+              onMultipleChange?.([]);
+            } else {
+              onChange('');
+            }
           }}
           className={`px-3 py-1 text-xs rounded-l-md ${
             inputMode === 'url' 
@@ -185,7 +281,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           onClick={() => {
             setInputMode('upload');
             setError(null);
-            onChange('');
+            if (multiple) {
+              onMultipleChange?.([]);
+            } else {
+              onChange('');
+            }
           }}
           className={`px-3 py-1 text-xs rounded-r-md ${
             inputMode === 'upload' 
@@ -207,7 +307,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       )}
       
       {/* URL input mode */}
-      {inputMode === 'url' && (
+      {inputMode === 'url' && !multiple && (
         <div className="relative">
           <input
             type="text"
@@ -229,6 +329,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         </div>
       )}
       
+      {/* Multiple URL input mode - Not implemented for simplicity */}
+      {inputMode === 'url' && multiple && (
+        <div className="p-3 bg-yellow-50 text-yellow-700 rounded border border-yellow-200 text-sm">
+          {t('image_uploader.multiple_url_not_supported') || 'URL mode with multiple images is not supported. Please use upload mode for multiple images.'}
+        </div>
+      )}
+      
       {/* Upload mode */}
       {inputMode === 'upload' && (
         <div
@@ -245,73 +352,74 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             ref={fileInputRef}
             onChange={handleFileChange}
             accept="image/*"
+            multiple={multiple}
             className="hidden"
           />
           
           {isUploading ? (
             <div className="space-y-2">
-              <Loader className="animate-spin h-6 w-6 mx-auto text-blue-500" />
-              <div className="text-sm text-gray-600">
-                {t('image_uploader.uploading')} ({uploadProgress}%)
+              <div className="flex items-center justify-center">
+                <Loader className="animate-spin h-6 w-6 text-blue-500 mr-2" />
+                <span className="text-sm text-gray-600">
+                  {t('image_uploader.uploading')} {currentFile && `${currentFile}...`}
+                </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
-                  className="bg-blue-500 h-2 rounded-full" 
+                  className="bg-blue-600 h-2.5 rounded-full" 
                   style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
-          ) : value ? (
-            <div className="space-y-2">
-              <img 
-                src={value} 
-                alt="Uploaded preview" 
-                className="max-h-32 mx-auto object-contain" 
-              />
-              <div className="flex justify-center space-x-2">
-                <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  className="text-sm text-blue-500 hover:text-blue-700"
-                >
-                  {t('image_uploader.change_image')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="text-sm text-red-500 hover:text-red-700"
-                >
-                  {t('image_uploader.remove')}
-                </button>
+                ></div>
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
-              <ImageIcon className="h-12 w-12 mx-auto text-gray-400" />
-              <div className="flex flex-col items-center text-sm text-gray-600">
-                <p>{t('image_uploader.drag_drop')}</p>
-                <p>{t('image_uploader.or')}</p>
+            <div
+              onClick={triggerFileInput}
+              className="cursor-pointer"
+            >
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="p-2 rounded-full bg-blue-100">
+                  <ImageIcon className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="text-sm text-gray-600">
+                  {multiple 
+                    ? t('image_uploader.drag_multiple') || 'Drag & drop images here or click to select'
+                    : t('image_uploader.drag_single') || 'Drag & drop image here or click to select'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {t('image_uploader.supported_formats')}
+                </div>
+                {multiple && (
+                  <div className="text-xs text-gray-500">
+                    {t('image_uploader.max_count_message') || `You can upload up to ${maxImages} images`}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Show image preview if not in multiple mode */}
+          {!multiple && !isUploading && value && (
+            <div className="mt-4">
+              <div className="relative rounded-md overflow-hidden border border-gray-300 max-w-md mx-auto">
+                <img 
+                  src={value} 
+                  alt="Uploaded" 
+                  className="max-w-full" 
+                />
                 <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  className="font-medium text-blue-500 hover:text-blue-700"
+                  className="absolute top-2 right-2 p-1 bg-black bg-opacity-60 rounded-full text-white hover:bg-opacity-80"
+                  onClick={handleClear}
                 >
-                  {t('image_uploader.browse_files')}
+                  <X size={16} />
                 </button>
               </div>
-              <p className="text-xs text-gray-500">
-                {t('image_uploader.max_size')}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {t('image_uploader.paste_hint')}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {t('image_uploader.hosted_by')}
-              </p>
             </div>
           )}
         </div>
       )}
+
+      {/* Multiple images thumbnails */}
+      {renderImageThumbnails()}
     </div>
   );
 };

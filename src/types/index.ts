@@ -45,6 +45,7 @@ export interface PublishParams {
   channelId: string;
   text: string;
   imageUrl: string;
+  imageUrls?: string[];
   tags: string[];
   scheduledDate?: Date | null;
 }
@@ -70,6 +71,7 @@ export interface PublishResult {
 export interface GeneratedContent {
   text: string;
   imageUrl: string;
+  imageUrls: string[];
   tags: string[];
 }
 

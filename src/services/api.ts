@@ -344,6 +344,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
           channelId: params.channelId,
           text: params.text,
           imageUrl: params.imageUrl,
+          imageUrls: params.imageUrls || [],
           tags: params.tags,
           scheduledDate: params.scheduledDate.toISOString()
         });
@@ -374,18 +375,64 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
 
     console.log('channel123', channel);
     
-    // If there's an image, send a photo with caption
-    if (params.imageUrl) {
-      // Prepare chat_id - if it looks like a username without @, add it
-      let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
-      if (!chatId) {
-        // If no chatId, use title and prefix with @ if it's a username
-        chatId = channel.title;
-        if (chatId && !chatId.startsWith('@') && !chatId.match(/^-?\d+$/)) {
-          chatId = '@' + chatId;
-        }
+    // Prepare chat_id - if it looks like a username without @, add it
+    let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
+    if (!chatId) {
+      // If no chatId, use title and prefix with @ if it's a username
+      chatId = channel.title;
+      if (chatId && !chatId.startsWith('@') && !chatId.match(/^-?\d+$/)) {
+        chatId = '@' + chatId;
       }
-
+    }
+    
+    // Check for multiple images
+    if (params.imageUrls && params.imageUrls.length > 0) {
+      // Use Telegram's Media Group API for multiple images
+      const media = params.imageUrls.map((url, index) => {
+        // The first media item will contain the caption (message text)
+        return {
+          type: 'photo',
+          media: url,
+          caption: index === 0 ? messageText : undefined,
+          parse_mode: 'HTML'
+        };
+      });
+      
+      // If there are no images in the imageUrls array, check the single imageUrl
+      if (media.length === 0 && params.imageUrl) {
+        media.push({
+          type: 'photo',
+          media: params.imageUrl,
+          caption: messageText,
+          parse_mode: 'HTML'
+        });
+      }
+      
+      // Send media group if we have media items
+      if (media.length > 0) {
+        result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMediaGroup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            media: media
+          })
+        });
+      } else {
+        // Fallback to sending a text message if no images
+        result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: messageText,
+            parse_mode: 'HTML'
+          })
+        });
+      }
+    }
+    // If a single image is provided
+    else if (params.imageUrl) {
       // Make sure the image URL is properly formatted
       let photoUrl = params.imageUrl;
       
@@ -399,7 +446,6 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
       if (photoUrl.includes('/api/upload/image') || photoUrl.includes('/uploads/')) {
         try {
           // For Telegram, we need to make sure the image is directly accessible
-          // We'll see if we should use a sendMediaGroup approach or file upload instead
           console.log('Image is from our own server:', photoUrl);
         } catch (error) {
           console.error('Error preparing image for Telegram:', error);
@@ -423,16 +469,6 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
         })
       });
     } else {
-      // Prepare chat_id - if it looks like a username without @, add it
-      let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
-      if (!chatId) {
-        // If no chatId, use title and prefix with @ if it's a username
-        chatId = channel.title;
-        if (chatId && !chatId.startsWith('@') && !chatId.match(/^-?\d+$/)) {
-          chatId = '@' + chatId;
-        }
-      }
-      
       // Otherwise just send a text message
       result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
         method: 'POST',

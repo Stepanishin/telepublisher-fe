@@ -20,6 +20,7 @@ interface ContentState {
 const initialContent: GeneratedContent = {
   text: '',
   imageUrl: '',
+  imageUrls: [],
   tags: [],
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, CheckCircle, AlertTriangle, Calendar } from 'lucide-react';
+import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import TextArea from '../ui/TextArea';
@@ -7,6 +7,7 @@ import MultiSelect from '../ui/MultiSelect';
 import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
 import ImageUploader from '../ui/ImageUploader';
+import MultipleImageUploader from '../ui/MultipleImageUploader';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -17,7 +18,7 @@ type ScheduleType = 'now' | 'later';
 
 // Define the props for the component
 interface PublishPanelProps {
-  onContentChange?: (content: { text: string; imageUrl: string; tags: string[] }) => void;
+  onContentChange?: (content: { text: string; imageUrl: string; imageUrls: string[]; tags: string[] }) => void;
 }
 
 const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
@@ -49,6 +50,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
   const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
   const [publishText, setPublishText] = useState('');
   const [publishImageUrl, setPublishImageUrl] = useState('');
+  const [publishImageUrls, setPublishImageUrls] = useState<string[]>([]);
+  const [useMultipleImages, setUseMultipleImages] = useState(false);
   const [publishTags, setPublishTags] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
   const [uploadError, setUploadError] = useState('');
@@ -89,7 +92,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
   
   // Get message length limits
   const getMessageLengthLimits = () => {
-    if (publishImageUrl) {
+    if (publishImageUrl || publishImageUrls.length > 0) {
       return {
         warningThreshold: 900,
         errorThreshold: 1024,
@@ -166,7 +169,13 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
   useEffect(() => {
     setPublishText(content.text);
     setPublishImageUrl(content.imageUrl);
+    setPublishImageUrls(content.imageUrls || []);
     setPublishTags(content.tags);
+    
+    // If we already have multiple images, enable multiple image mode
+    if (content.imageUrls && content.imageUrls.length > 0) {
+      setUseMultipleImages(true);
+    }
   }, [content]);
   
   // Notify parent component when content changes
@@ -175,10 +184,11 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
       onContentChange({
         text: publishText,
         imageUrl: publishImageUrl,
+        imageUrls: publishImageUrls,
         tags: publishTags
       });
     }
-  }, [publishText, publishImageUrl, publishTags, onContentChange]);
+  }, [publishText, publishImageUrl, publishImageUrls, publishTags, onContentChange]);
   
   // Reset alert after 5 seconds
   useEffect(() => {
@@ -232,6 +242,20 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
     }
   };
   
+  const toggleImageMode = () => {
+    setUseMultipleImages(!useMultipleImages);
+    
+    // When switching to single image mode, use the first image from multiple images if available
+    if (useMultipleImages && publishImageUrls.length > 0) {
+      setPublishImageUrl(publishImageUrls[0]);
+    }
+    
+    // When switching to multiple images mode, add the current single image if available
+    if (!useMultipleImages && publishImageUrl) {
+      setPublishImageUrls([publishImageUrl]);
+    }
+  };
+  
   const handlePublish = async () => {
     // Validate form
     if (selectedChannelIds.length === 0) {
@@ -239,7 +263,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
       return;
     }
     
-    if (!publishText && !publishImageUrl) {
+    if (!publishText && !publishImageUrl && publishImageUrls.length === 0) {
       setFormError(t('publish_panel.no_content_error'));
       return;
     }
@@ -282,7 +306,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
         const result = await publish({
           channelId,
           text: publishText,
-          imageUrl: publishImageUrl,
+          imageUrl: useMultipleImages ? '' : publishImageUrl,
+          imageUrls: useMultipleImages ? publishImageUrls : [],
           tags: publishTags,
           scheduledDate: scheduleType === 'later' ? scheduledDate : null
         });
@@ -353,10 +378,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
             // For other Telegram API errors, attempt to find translation
             const errorLowerCase = result.message.toLowerCase();
             
-            // Check for common error patterns from Telegram API
+            // Check against our dictionary of known errors
             let translatedError = '';
             
-            // Check against our dictionary of known errors
             for (const [errorKey, translationKey] of Object.entries(telegramErrorTranslations)) {
               if (errorLowerCase.includes(errorKey)) {
                 translatedError = t(translationKey);
@@ -534,7 +558,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
         )}
         
         {/* Show warning when approaching caption limit with image */}
-        {publishImageUrl && publishText.length > 900 && publishText.length <= 1024 && showLengthWarning && (
+        {(publishImageUrl || publishImageUrls.length > 0) && publishText.length > 900 && publishText.length <= 1024 && showLengthWarning && (
           <Alert
             variant="warning"
             message={formatMessage('publish_panel.approaching_caption_limit', { 
@@ -545,7 +569,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
         )}
         
         {/* Show error when exceeding caption limit with image */}
-        {publishImageUrl && publishText.length > 1024 && (
+        {(publishImageUrl || publishImageUrls.length > 0) && publishText.length > 1024 && (
           <Alert
             variant="error"
             message={t('publish_panel.error_caption_too_long')}
@@ -561,11 +585,42 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
           />
         )}
         
-        <ImageUploader
-          value={publishImageUrl}
-          onChange={setPublishImageUrl}
-          onError={setUploadError}
-        />
+        {/* Toggle between single and multiple image modes */}
+        <div className="mb-4">
+          <div className="flex items-center justify-end mb-2">
+            <label className="text-sm text-gray-600 mr-2 flex items-center">
+              <ImageIcon size={16} className="mr-1" />
+              {t('publish_panel.multiple_images') || 'Multiple Images'}
+            </label>
+            <div 
+              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer ${
+                useMultipleImages ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+              onClick={toggleImageMode}
+            >
+              <div 
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                  useMultipleImages ? 'translate-x-5' : 'translate-x-0'
+                }`} 
+              />
+            </div>
+          </div>
+          
+          {!useMultipleImages ? (
+            <ImageUploader
+              value={publishImageUrl}
+              onChange={setPublishImageUrl}
+              onError={setUploadError}
+            />
+          ) : (
+            <MultipleImageUploader
+              values={publishImageUrls}
+              onChange={setPublishImageUrls}
+              onError={setUploadError}
+              maxImages={10}
+            />
+          )}
+        </div>
         
         <TagInput
           label={t('publish_panel.tags')}
@@ -607,11 +662,11 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
           onClick={handlePublish}
           isLoading={isPublishing}
           disabled={!!(isPublishing || 
-            (!publishText && !publishImageUrl) || 
+            (!publishText && !publishImageUrl && publishImageUrls.length === 0) || 
             selectedChannelIds.length === 0 || 
             (scheduleType === 'later' && !scheduledDate) ||
             (publishText.length > 4096) ||
-            (publishImageUrl && publishText.length > 1024))}
+            ((publishImageUrl || publishImageUrls.length > 0) && publishText.length > 1024))}
           leftIcon={scheduleType === 'now' ? <Send size={16} /> : <Calendar size={16} />}
         >
           {scheduleType === 'now' ? (
