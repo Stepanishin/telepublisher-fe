@@ -457,7 +457,20 @@ const translations: Record<Language, Record<string, string>> = {
     'scheduled_posts.poll': 'Poll',
     'scheduled_posts.poll_edit_not_available': 'Poll editing is not yet available',
     'publish_panel.update_success': 'Post has been updated successfully',
-    'publish_panel.error_updating': 'Failed to update post'
+    'publish_panel.error_updating': 'Failed to update post',
+
+    // Tokens translations for English
+    'tokens.title': 'Purchase AI Tokens',
+    'tokens.description': 'Boost your AI capabilities with additional tokens. These tokens can be used for AI-powered content generation, image creation, and other AI features.',
+    'tokens.small_package': '100 AI Tokens',
+    'tokens.small_description': 'Perfect for casual users',
+    'tokens.large_package': '400 AI Tokens',
+    'tokens.large_description': 'Best value for regular users',
+    'tokens.includes': 'Includes {count} AI tokens',
+    'tokens.buy_button': 'Purchase Tokens',
+    'tokens.note': 'Note: Purchased tokens will be added to your account immediately after payment and do not expire.',
+    'tokens.purchase_success': 'Tokens purchased successfully!',
+    'tokens.error_purchase': 'Error processing token purchase'
   },
   ru: {
     // Navbar
@@ -899,7 +912,20 @@ const translations: Record<Language, Record<string, string>> = {
     'scheduled_posts.poll': 'Опрос',
     'scheduled_posts.poll_edit_not_available': 'Редактирование опросов пока недоступно',
     'publish_panel.update_success': 'Публикация успешно обновлена',
-    'publish_panel.error_updating': 'Не удалось обновить публикацию'
+    'publish_panel.error_updating': 'Не удалось обновить публикацию',
+
+    // Tokens translations for Russian
+    'tokens.title': 'Купить AI Токены',
+    'tokens.description': 'Увеличьте возможности искусственного интеллекта с помощью дополнительных токенов. Эти токены можно использовать для генерации контента, создания изображений и других AI-функций.',
+    'tokens.small_package': '100 AI Токенов',
+    'tokens.small_description': 'Идеально для нечастого использования',
+    'tokens.large_package': '400 AI Токенов',
+    'tokens.large_description': 'Лучшая ценность для регулярных пользователей',
+    'tokens.includes': 'Включает {count} AI токенов',
+    'tokens.buy_button': 'Купить токены',
+    'tokens.note': 'Примечание: Купленные токены будут добавлены на ваш счет сразу после оплаты и не имеют срока действия.',
+    'tokens.purchase_success': 'Токены успешно куплены!',
+    'tokens.error_purchase': 'Ошибка при обработке покупки токенов'
   },
 };
 

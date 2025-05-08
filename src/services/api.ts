@@ -712,3 +712,29 @@ export const publishScheduledPoll = async (pollId: string) => {
     throw error;
   }
 };
+
+// Purchase AI tokens
+export const purchaseTokens = async (
+  tokenAmount: number, 
+  price: number,
+  successUrl: string, 
+  cancelUrl: string
+): Promise<string> => {
+  try {
+    const response = await api.post('/stripe/purchase-tokens', {
+      tokenAmount,
+      price,
+      successUrl,
+      cancelUrl,
+    });
+    
+    if (response.data.success && response.data.data.url) {
+      return response.data.data.url;
+    } else {
+      throw new Error('Failed to create token purchase session');
+    }
+  } catch (error) {
+    console.error('Error creating token purchase session:', error);
+    throw error;
+  }
+};

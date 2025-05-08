@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
-import { CheckCircle, Crown, AlertCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Crown, AlertCircle, AlertTriangle, Zap } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 import { toast } from 'react-hot-toast';
-import { getCreditInfo, createCheckoutSession, createPortalSession } from '../../services/api';
+import { getCreditInfo, createCheckoutSession, createPortalSession, purchaseTokens } from '../../services/api';
 import { CreditInfo } from '../../types/index';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -20,8 +20,27 @@ const SubscriptionManager: React.FC = () => {
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [processingTokenPurchase, setProcessingTokenPurchase] = useState(false);
   const [managePaymentLoading, setManagePaymentLoading] = useState(false);
   const { t } = useLanguage();
+
+  // Token packages
+  const tokenPackages = [
+    {
+      id: 'small',
+      tokens: 100,
+      price: 8,
+      name: t('tokens.small_package') || '100 AI Tokens',
+      description: t('tokens.small_description') || 'Perfect for casual users'
+    },
+    {
+      id: 'large',
+      tokens: 400,
+      price: 25,
+      name: t('tokens.large_package') || '400 AI Tokens',
+      description: t('tokens.large_description') || 'Best value for regular users'
+    }
+  ];
 
   // Create plans dynamically based on translations
   const plans = [
@@ -98,6 +117,7 @@ const SubscriptionManager: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const paymentSuccess = params.get('payment_success');
     const paymentCancelled = params.get('payment_cancelled');
+    const tokensSuccess = params.get('tokens_success');
     
     if (paymentSuccess === 'true') {
       toast.success(t('subscription.payment_success'));
@@ -120,6 +140,29 @@ const SubscriptionManager: React.FC = () => {
           }
         } catch (error) {
           console.error('Error fetching credit info:', error);
+          toast.error(t('subscription.error_load'));
+        }
+      };
+      
+      fetchCreditInfo();
+      
+      // Remove query params from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (tokensSuccess === 'true') {
+      toast.success(t('tokens.purchase_success') || 'Tokens purchased successfully!');
+      
+      // Refresh credit info to update token count
+      const fetchCreditInfo = async () => {
+        try {
+          // Add a small delay to give the server webhook time to process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Fetch updated subscription info
+          const creditData = await getCreditInfo();
+          console.log('Updated credit data after token purchase:', creditData);
+          setCreditInfo(creditData);
+        } catch (error) {
+          console.error('Error fetching credit info after token purchase:', error);
           toast.error(t('subscription.error_load'));
         }
       };
@@ -184,6 +227,35 @@ const SubscriptionManager: React.FC = () => {
     }
   };
 
+  const handlePurchaseTokens = async (tokenPackageId: string) => {
+    if (!user) return;
+    
+    const tokenPackage = tokenPackages.find(pkg => pkg.id === tokenPackageId);
+    if (!tokenPackage) return;
+    
+    setProcessingTokenPurchase(true);
+    
+    try {
+      // Current URL for return after payment
+      const returnUrl = window.location.href;
+      
+      // Call API to create token purchase session
+      const checkoutUrl = await purchaseTokens(
+        tokenPackage.tokens,
+        tokenPackage.price,
+        `${returnUrl}?tokens_success=true`,
+        `${returnUrl}?payment_cancelled=true`
+      );
+      
+      // Redirect to checkout page
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error('Error creating token purchase session:', error);
+      toast.error(t('tokens.error_purchase') || 'Error processing token purchase');
+      setProcessingTokenPurchase(false);
+    }
+  };
+
   const handleManageSubscription = async () => {
     if (!user) return;
     
@@ -225,148 +297,208 @@ const SubscriptionManager: React.FC = () => {
   };
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <div className="flex items-center">
-          <Crown className="h-5 w-5 text-blue-600 mr-2" />
-          <CardTitle>{t('subscription.title')}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <div className="space-y-6">
+      {/* Subscription Plans */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center">
+            <Crown className="h-5 w-5 text-blue-600 mr-2" />
+            <CardTitle>{t('subscription.title')}</CardTitle>
           </div>
-        ) : (
-          <div>
-            {creditInfo && (
-              <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">
-                      {t('subscription.current_plan')}: {plans.find(p => String(p.type).toLowerCase() === String(creditInfo.subscriptionType).toLowerCase())?.name || creditInfo.subscriptionType}
-                    </h3>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <p>{formatString('subscription.credits_available', creditInfo.currentCredits, creditInfo.maxCredits)}</p>
-                      <p>{formatString('subscription.total_used', creditInfo.totalUsed)}</p>
-                      {creditInfo.resetDate && (
-                        <p>{formatString('subscription.reset_date', formatDate(creditInfo.resetDate))}</p>
-                      )}
-                      
-                      {/* Show downgrade notice if applicable */}
-                      {creditInfo.downgradeOnExpiry && creditInfo.endDate && (
-                        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
-                          <p className="text-amber-700 font-medium">
-                            <AlertTriangle className="inline-block h-4 w-4 mr-1" />
-                            {t('subscription.cancelled')}
-                          </p>
-                          <p className="text-amber-600 text-xs mt-1">
-                            {formatString('subscription.cancel_notice', formatDate(creditInfo.endDate))}
-                          </p>
-                        </div>
-                      )}
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <div>
+              {creditInfo && (
+                <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        {t('subscription.current_plan')}: {plans.find(p => String(p.type).toLowerCase() === String(creditInfo.subscriptionType).toLowerCase())?.name || creditInfo.subscriptionType}
+                      </h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>{formatString('subscription.credits_available', creditInfo.currentCredits, creditInfo.maxCredits)}</p>
+                        <p>{formatString('subscription.total_used', creditInfo.totalUsed)}</p>
+                        {creditInfo.resetDate && (
+                          <p>{formatString('subscription.reset_date', formatDate(creditInfo.resetDate))}</p>
+                        )}
+                        
+                        {/* Show downgrade notice if applicable */}
+                        {creditInfo.downgradeOnExpiry && creditInfo.endDate && (
+                          <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                            <p className="text-amber-700 font-medium">
+                              <AlertTriangle className="inline-block h-4 w-4 mr-1" />
+                              {t('subscription.cancelled')}
+                            </p>
+                            <p className="text-amber-600 text-xs mt-1">
+                              {formatString('subscription.cancel_notice', formatDate(creditInfo.endDate))}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {plans.map((plan) => {
-                // Более надежная проверка с приведением типов и значений к строке
-                const currentType = String(creditInfo?.subscriptionType || '').toLowerCase();
-                const planType = String(plan.type || '').toLowerCase();
-                const isCurrentPlan = currentType === planType;
-                
-                console.log(`Plan type: "${planType}", current subscription type: "${currentType}", isMatch: ${isCurrentPlan}`);
-                
-                // Определяем текст и состояние кнопки в зависимости от текущего плана
-                const buttonText = isCurrentPlan 
-                  ? t('subscription.current_plan_button')
-                  : t('subscription.subscribe_button');
-                
-                // Для текущего плана используем disabled, для остальных проверяем processingPayment
-                const isButtonDisabled = processingPayment || loading || isCurrentPlan;
-                
-                // Проверяем, нужно ли показывать кнопку
-                // Не показываем кнопку для бесплатного тарифа, если у пользователя платный тариф
-                const shouldShowButton = !(planType === 'free' && currentType !== 'free' && !creditInfo?.downgradeOnExpiry);
-                
-                return (
-                  <Card 
-                    key={plan.id} 
-                    className={`border ${plan.isPopular ? 'border-blue-500 shadow-md' : 'border-gray-200'} relative`}
-                  >
-                    {plan.isPopular && (
-                      <div className="absolute top-2 right-2">
-                        <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                          {t('subscription.popular')}
-                        </span>
-                      </div>
-                    )}
-                    <CardContent className="pt-6">
-                      <h3 className="text-lg font-semibold">{plan.name}</h3>
-                      <p className="mt-2 text-2xl font-bold text-gray-900">
-                        {plan.price}
-                        <span className="text-sm font-normal text-gray-500">/{plan.period}</span>
-                      </p>
-                      <ul className="mt-4 space-y-2">
-                        {plan.features.map((feature, idx) => (
-                          <li key={idx} className="flex items-start">
-                            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mr-2" />
-                            <span className="text-gray-600 text-sm">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                    <CardFooter className="pb-5">
-                      {shouldShowButton && (
-                        <Button
-                          variant={isCurrentPlan ? 'outline' : plan.buttonVariant}
-                          className={`w-full`}
-                          disabled={isButtonDisabled}
-                          onClick={() => plan.type !== 'free' && !isCurrentPlan && handleUpgrade(plan.type)}
-                        >
-                          {processingPayment ? (
-                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                          ) : (
-                            buttonText
-                          )}
-                        </Button>
-                      )}
-                    </CardFooter>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Manage Subscription Buttons */}
-            <div className="mt-4 flex flex-col sm:flex-row gap-4">
-              {creditInfo && creditInfo.subscriptionType !== 'free' && (
-                <Button
-                  variant="secondary"
-                  onClick={handleManageSubscription}
-                  disabled={managePaymentLoading}
-                  className="w-full"
-                >
-                  {managePaymentLoading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      <span>{t('subscription.loading')}</span>
-                    </div>
-                  ) : (
-                    <span>{t('subscription.manage_payments')}</span>
-                  )}
-                </Button>
               )}
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {plans.map((plan) => {
+                  // Более надежная проверка с приведением типов и значений к строке
+                  const currentType = String(creditInfo?.subscriptionType || '').toLowerCase();
+                  const planType = String(plan.type || '').toLowerCase();
+                  const isCurrentPlan = currentType === planType;
+                  
+                  console.log(`Plan type: "${planType}", current subscription type: "${currentType}", isMatch: ${isCurrentPlan}`);
+                  
+                  // Определяем текст и состояние кнопки в зависимости от текущего плана
+                  const buttonText = isCurrentPlan 
+                    ? t('subscription.current_plan_button')
+                    : t('subscription.subscribe_button');
+                  
+                  // Для текущего плана используем disabled, для остальных проверяем processingPayment
+                  const isButtonDisabled = processingPayment || loading || isCurrentPlan;
+                  
+                  // Проверяем, нужно ли показывать кнопку
+                  // Не показываем кнопку для бесплатного тарифа, если у пользователя платный тариф
+                  const shouldShowButton = !(planType === 'free' && currentType !== 'free' && !creditInfo?.downgradeOnExpiry);
+                  
+                  return (
+                    <Card 
+                      key={plan.id} 
+                      className={`border ${plan.isPopular ? 'border-blue-500 shadow-md' : 'border-gray-200'} relative`}
+                    >
+                      {plan.isPopular && (
+                        <div className="absolute top-2 right-2">
+                          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                            {t('subscription.popular')}
+                          </span>
+                        </div>
+                      )}
+                      <CardContent className="pt-6">
+                        <h3 className="text-lg font-semibold">{plan.name}</h3>
+                        <p className="mt-2 text-2xl font-bold text-gray-900">
+                          {plan.price}
+                          <span className="text-sm font-normal text-gray-500">/{plan.period}</span>
+                        </p>
+                        <ul className="mt-4 space-y-2">
+                          {plan.features.map((feature, idx) => (
+                            <li key={idx} className="flex items-start">
+                              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mr-2" />
+                              <span className="text-gray-600 text-sm">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                      <CardFooter className="pb-5">
+                        {shouldShowButton && (
+                          <Button
+                            variant={isCurrentPlan ? 'outline' : plan.buttonVariant}
+                            className={`w-full`}
+                            disabled={isButtonDisabled}
+                            onClick={() => plan.type !== 'free' && !isCurrentPlan && handleUpgrade(plan.type)}
+                          >
+                            {processingPayment ? (
+                              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                            ) : (
+                              buttonText
+                            )}
+                          </Button>
+                        )}
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Manage Subscription Buttons */}
+              <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                {creditInfo && creditInfo.subscriptionType !== 'free' && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleManageSubscription}
+                    disabled={managePaymentLoading}
+                    className="w-full"
+                  >
+                    {managePaymentLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <span>{t('subscription.loading')}</span>
+                      </div>
+                    ) : (
+                      <span>{t('subscription.manage_payments')}</span>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AI Tokens Purchase */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center">
+            <Zap className="h-5 w-5 text-purple-600 mr-2" />
+            <CardTitle>{t('tokens.title') || 'Purchase AI Tokens'}</CardTitle>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <p className="text-gray-600">
+              {t('tokens.description') || 'Boost your AI capabilities with additional tokens. These tokens can be used for AI-powered content generation, image creation, and other AI features.'}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {tokenPackages.map((pkg) => (
+              <Card key={pkg.id} className="border border-purple-200 hover:border-purple-300 transition-colors">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <Zap className="h-4 w-4 text-purple-500 mr-1" />
+                    {pkg.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-1">{pkg.description}</p>
+                  <p className="mt-3 text-2xl font-bold text-gray-900">
+                    ${pkg.price}
+                  </p>
+                  <div className="mt-2 bg-purple-50 p-2 rounded text-purple-700 text-sm">
+                    {formatString('tokens.includes', pkg.tokens)}
+                  </div>
+                </CardContent>
+                <CardFooter className="pb-5">
+                  <Button
+                    variant="secondary"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={processingTokenPurchase}
+                    onClick={() => handlePurchaseTokens(pkg.id)}
+                  >
+                    {processingTokenPurchase ? (
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                    ) : (
+                      t('tokens.buy_button') || 'Purchase Tokens'
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-4 text-sm text-gray-500">
+            <p>
+              {t('tokens.note') || 'Note: Purchased tokens will be added to your account immediately after payment and do not expire.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
