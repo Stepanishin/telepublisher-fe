@@ -608,22 +608,22 @@ export const getScheduledPosts = async () => {
   }
 };
 
-export const deleteScheduledPost = async (postId: string) => {
-  try {
-    const response = await api.delete(`/scheduled-posts/${postId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting scheduled post:', error);
-    throw error;
-  }
-};
-
 export const getScheduledPost = async (postId: string) => {
   try {
     const response = await api.get(`/scheduled-posts/${postId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching scheduled post:', error);
+    throw error;
+  }
+};
+
+export const deleteScheduledPost = async (postId: string) => {
+  try {
+    const response = await api.delete(`/scheduled-posts/${postId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting scheduled post:', error);
     throw error;
   }
 };
@@ -652,5 +652,63 @@ export const updateScheduledPost = async (postId: string, data: ScheduledPostUpd
       success: false,
       message: error instanceof Error ? error.message : 'Failed to update scheduled post'
     };
+  }
+};
+
+// Scheduled polls
+export const getScheduledPolls = async () => {
+  try {
+    const response = await api.get('/scheduled-polls');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching scheduled polls:', error);
+    throw error;
+  }
+};
+
+export const getScheduledPoll = async (pollId: string) => {
+  try {
+    const response = await api.get(`/scheduled-polls/${pollId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching scheduled poll:', error);
+    throw error;
+  }
+};
+
+export const deleteScheduledPoll = async (pollId: string) => {
+  try {
+    const response = await api.delete(`/scheduled-polls/${pollId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting scheduled poll:', error);
+    throw error;
+  }
+};
+
+export const updateScheduledPoll = async (pollId: string, data: {
+  channelId?: string;
+  question?: string;
+  options?: Array<{ text: string }>;
+  isAnonymous?: boolean;
+  allowsMultipleAnswers?: boolean;
+  scheduledDate?: Date | null;
+}) => {
+  try {
+    const response = await api.put(`/scheduled-polls/${pollId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating scheduled poll:', error);
+    throw error;
+  }
+};
+
+export const publishScheduledPoll = async (pollId: string) => {
+  try {
+    const response = await api.post(`/scheduled-polls/${pollId}/publish`);
+    return response.data;
+  } catch (error) {
+    console.error('Error publishing scheduled poll:', error);
+    throw error;
   }
 };

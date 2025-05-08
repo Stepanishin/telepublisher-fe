@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Edit, Trash2, Image as ImageIcon, Send } from 'lucide-react';
+import { Calendar, Edit, Trash2, Image as ImageIcon, Send, BarChart2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -7,7 +7,14 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatDate } from '../../utils/dateUtils';
 import { useChannelsStore } from '../../store/channelsStore';
-import { getScheduledPosts, deleteScheduledPost, publishScheduledPost } from '../../services/api';
+import { 
+  getScheduledPosts, 
+  deleteScheduledPost, 
+  publishScheduledPost,
+  getScheduledPolls,
+  deleteScheduledPoll,
+  publishScheduledPoll
+} from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 interface ScheduledPost {
@@ -18,18 +25,37 @@ interface ScheduledPost {
   channelId: string;
   scheduledDate: string;
   tags: string[];
+  type?: 'post';
 }
 
+interface ScheduledPoll {
+  _id: string;
+  question: string;
+  options: string[];
+  channelId: string;
+  scheduledDate: string;
+  isAnonymous: boolean;
+  allowsMultipleAnswers: boolean;
+  type?: 'poll';
+}
+
+type ScheduledItem = ScheduledPost | ScheduledPoll;
+
+// Type guard to check if an item is a ScheduledPoll
+const isPoll = (item: ScheduledItem): item is ScheduledPoll => {
+  return 'question' in item && 'options' in item;
+};
+
 const ScheduledPosts: React.FC = () => {
-  const [posts, setPosts] = useState<ScheduledPost[]>([]);
+  const [items, setItems] = useState<ScheduledItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
-  const [postToDelete, setPostToDelete] = useState<string | null>(null);
-  const [postToPublish, setPostToPublish] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{id: string, type: 'post' | 'poll'} | null>(null);
+  const [itemToPublish, setItemToPublish] = useState<{id: string, type: 'post' | 'poll'} | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const { t } = useLanguage();
@@ -37,54 +63,80 @@ const ScheduledPosts: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchScheduledPosts();
+    fetchScheduledItems();
   }, []);
 
-  const fetchScheduledPosts = async () => {
+  const fetchScheduledItems = async () => {
     try {
       setLoading(true);
-      const response = await getScheduledPosts();
-      setPosts(response.posts || []);
+      // Load both posts and polls
+      const [postsResponse, pollsResponse] = await Promise.all([
+        getScheduledPosts(),
+        getScheduledPolls()
+      ]);
+      
+      // Mark each item with its type
+      const posts = (postsResponse.posts || []).map((post: ScheduledPost) => ({
+        ...post,
+        type: 'post' as const
+      }));
+      
+      const polls = (pollsResponse.polls || []).map((poll: ScheduledPoll) => ({
+        ...poll,
+        type: 'poll' as const
+      }));
+      
+      // Combine and sort by scheduledDate
+      const combinedItems = [...posts, ...polls].sort((a, b) => 
+        new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
+      );
+      
+      setItems(combinedItems);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch scheduled posts:', err);
+      console.error('Failed to fetch scheduled items:', err);
       setError(t('scheduled_posts.error_fetch'));
     } finally {
       setLoading(false);
     }
   };
 
-  const openDeleteDialog = (postId: string) => {
-    setPostToDelete(postId);
+  const openDeleteDialog = (id: string, type: 'post' | 'poll') => {
+    setItemToDelete({ id, type });
     setDeleteDialogOpen(true);
   };
 
   const closeDeleteDialog = () => {
     setDeleteDialogOpen(false);
-    setPostToDelete(null);
+    setItemToDelete(null);
   };
 
-  const openPublishDialog = (postId: string) => {
-    setPostToPublish(postId);
+  const openPublishDialog = (id: string, type: 'post' | 'poll') => {
+    setItemToPublish({ id, type });
     setPublishDialogOpen(true);
   };
 
   const closePublishDialog = () => {
     setPublishDialogOpen(false);
-    setPostToPublish(null);
+    setItemToPublish(null);
   };
 
   const handleDelete = async () => {
-    if (!postToDelete) return;
+    if (!itemToDelete) return;
     
     try {
-      await deleteScheduledPost(postToDelete);
-      setPosts(posts.filter(post => post._id !== postToDelete));
+      if (itemToDelete.type === 'post') {
+        await deleteScheduledPost(itemToDelete.id);
+      } else {
+        await deleteScheduledPoll(itemToDelete.id);
+      }
+      
+      setItems(items.filter(item => item._id !== itemToDelete.id));
       setDeleteSuccess(t('scheduled_posts.delete_success'));
       setDeleteError(null);
       setTimeout(() => setDeleteSuccess(null), 3000);
     } catch (err) {
-      console.error('Failed to delete scheduled post:', err);
+      console.error('Failed to delete scheduled item:', err);
       setDeleteError(t('scheduled_posts.error_delete'));
       setTimeout(() => setDeleteError(null), 3000);
     } finally {
@@ -93,17 +145,22 @@ const ScheduledPosts: React.FC = () => {
   };
 
   const handlePublishNow = async () => {
-    if (!postToPublish) return;
+    if (!itemToPublish) return;
     
     try {
       setLoading(true);
-      await publishScheduledPost(postToPublish);
-      setPosts(posts.filter(post => post._id !== postToPublish));
+      if (itemToPublish.type === 'post') {
+        await publishScheduledPost(itemToPublish.id);
+      } else {
+        await publishScheduledPoll(itemToPublish.id);
+      }
+      
+      setItems(items.filter(item => item._id !== itemToPublish.id));
       setPublishSuccess(t('scheduled_posts.publish_success'));
       setPublishError(null);
       setTimeout(() => setPublishSuccess(null), 3000);
     } catch (err) {
-      console.error('Failed to publish post:', err);
+      console.error('Failed to publish item:', err);
       setPublishError(t('scheduled_posts.error_publish'));
       setTimeout(() => setPublishError(null), 3000);
     } finally {
@@ -112,8 +169,13 @@ const ScheduledPosts: React.FC = () => {
     }
   };
 
-  const handleEdit = (postId: string) => {
-    navigate(`/edit-scheduled-post/${postId}`);
+  const handleEdit = (item: ScheduledItem) => {
+    if (isPoll(item)) {
+      // TODO: Implement edit for polls when available
+      alert(t('scheduled_posts.poll_edit_not_available'));
+    } else {
+      navigate(`/edit-scheduled-post/${item._id}`);
+    }
   };
 
   const getChannelName = (channelId: string) => {
@@ -121,25 +183,43 @@ const ScheduledPosts: React.FC = () => {
     return channel ? channel.title : channelId;
   };
 
-  const renderPostContent = (post: ScheduledPost) => {
-    // Truncate text to a reasonable length
+  const renderItemContent = (item: ScheduledItem) => {
+    // For polls, show the question
+    if (isPoll(item)) {
+      const maxLength = 100;
+      const displayText = item.question.length > maxLength
+        ? `${item.question.substring(0, maxLength)}...`
+        : item.question;
+      return displayText;
+    }
+    
+    // For posts, show the text
     const maxLength = 100;
-    const displayText = post.text.length > maxLength
-      ? `${post.text.substring(0, maxLength)}...`
-      : post.text;
+    const displayText = item.text.length > maxLength
+      ? `${item.text.substring(0, maxLength)}...`
+      : item.text;
 
     return displayText;
   };
 
-  const renderPostType = (post: ScheduledPost) => {
-    if (post.imageUrls && post.imageUrls.length > 1) {
+  const renderItemType = (item: ScheduledItem) => {
+    if (isPoll(item)) {
+      return (
+        <span className="flex items-center">
+          <BarChart2 size={16} className="mr-1" />
+          {t('scheduled_posts.poll')} ({item.options.length})
+        </span>
+      );
+    }
+    
+    if (item.imageUrls && item.imageUrls.length > 1) {
       return (
         <span className="flex items-center">
           <ImageIcon size={16} className="mr-1" />
-          {t('scheduled_posts.album')} ({post.imageUrls.length})
+          {t('scheduled_posts.album')} ({item.imageUrls.length})
         </span>
       );
-    } else if (post.imageUrl || (post.imageUrls && post.imageUrls.length === 1)) {
+    } else if (item.imageUrl || (item.imageUrls && item.imageUrls.length === 1)) {
       return (
         <span className="flex items-center">
           <ImageIcon size={16} className="mr-1" />
@@ -203,7 +283,7 @@ const ScheduledPosts: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-gray-500">{t('scheduled_posts.loading')}</p>
           </div>
-        ) : posts.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-gray-500">{t('scheduled_posts.no_posts')}</p>
           </div>
@@ -230,33 +310,34 @@ const ScheduledPosts: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {posts.map(post => (
-                  <tr key={post._id}>
+                {items.map(item => (
+                  <tr key={item._id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Calendar size={16} className="mr-2 text-blue-500" />
-                        {formatDate(new Date(post.scheduledDate))}
+                        {formatDate(new Date(item.scheduledDate))}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getChannelName(post.channelId)}
+                      {getChannelName(item.channelId)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900 line-clamp-2">
-                        {renderPostContent(post)}
+                        {renderItemContent(item)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {renderPostType(post)}
+                      {renderItemType(item)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEdit(post._id)}
+                          onClick={() => handleEdit(item)}
                           className="p-1"
                           title={t('scheduled_posts.edit')}
+                          disabled={isPoll(item)} // Disable for polls until edit functionality is implemented
                         >
                           <Edit size={16} />
                         </Button>
@@ -264,7 +345,7 @@ const ScheduledPosts: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="p-1 text-blue-500 border-blue-500 hover:bg-blue-50"
-                          onClick={() => openPublishDialog(post._id)}
+                          onClick={() => openPublishDialog(item._id, isPoll(item) ? 'poll' : 'post')}
                           title={t('scheduled_posts.publish_now')}
                         >
                           <Send size={16} />
@@ -273,7 +354,7 @@ const ScheduledPosts: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="p-1 text-red-500 border-red-500 hover:bg-red-50"
-                          onClick={() => openDeleteDialog(post._id)}
+                          onClick={() => openDeleteDialog(item._id, isPoll(item) ? 'poll' : 'post')}
                           title={t('scheduled_posts.delete')}
                         >
                           <Trash2 size={16} />

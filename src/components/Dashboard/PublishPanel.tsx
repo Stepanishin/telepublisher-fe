@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
@@ -10,6 +10,7 @@ import ImageUploader from '../ui/ImageUploader';
 import MultipleImageUploader from '../ui/MultipleImageUploader';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
+import { useTabContentStore } from '../../store/tabContentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
 import DateTimePicker from '../ui/DateTimePicker';
 
@@ -38,6 +39,10 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     setPublishResult
   } = useContentStore();
   const { t } = useLanguage();
+  const { postState, savePostState } = useTabContentStore();
+  
+  // Ref to track if we've loaded from saved state
+  const hasInitializedFromSavedState = useRef(false);
   
   // Map of common Telegram error messages to translation keys
   const telegramErrorTranslations: Record<string, string> = {
@@ -53,19 +58,26 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     'caption is too long': 'publish_panel.error_caption_too_long'
   };
   
-  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
-  const [publishText, setPublishText] = useState('');
-  const [publishImageUrl, setPublishImageUrl] = useState('');
-  const [publishImageUrls, setPublishImageUrls] = useState<string[]>([]);
-  const [useMultipleImages, setUseMultipleImages] = useState(false);
-  const [publishTags, setPublishTags] = useState<string[]>([]);
+  // Use stored values from tabContentStore as initial state or default to empty values
+  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>(
+    editMode && initialChannelId ? [initialChannelId] : postState.selectedChannelIds || []
+  );
+  const [publishText, setPublishText] = useState(postState.text || '');
+  const [publishImageUrl, setPublishImageUrl] = useState(postState.imageUrl || '');
+  const [publishImageUrls, setPublishImageUrls] = useState<string[]>(postState.imageUrls || []);
+  const [useMultipleImages, setUseMultipleImages] = useState(postState.useMultipleImages || false);
+  const [publishTags, setPublishTags] = useState<string[]>(postState.tags || []);
   const [formError, setFormError] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [showLengthWarning, setShowLengthWarning] = useState(true);
   
   // Schedule related states
-  const [scheduleType, setScheduleType] = useState<ScheduleType>('now');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [scheduleType, setScheduleType] = useState<ScheduleType>(postState.scheduleType || 'now');
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(
+    editMode && initialScheduledDate 
+      ? initialScheduledDate 
+      : (postState.scheduledDate ? new Date(postState.scheduledDate) : null)
+  );
   
   const [publishingProgress, setPublishingProgress] = useState<{
     total: number;
@@ -171,18 +183,56 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     return message;
   };
   
-  // Update form values when content changes
+  // Update form values when content changes - but prioritize saved state on initial load
   useEffect(() => {
-    setPublishText(content.text);
-    setPublishImageUrl(content.imageUrl);
-    setPublishImageUrls(content.imageUrls || []);
-    setPublishTags(content.tags);
-    
-    // If we already have multiple images, enable multiple image mode
-    if (content.imageUrls && content.imageUrls.length > 0) {
-      setUseMultipleImages(true);
+    // In edit mode, always use content from the content store
+    if (editMode) {
+      setPublishText(content.text);
+      setPublishImageUrl(content.imageUrl);
+      setPublishImageUrls(content.imageUrls || []);
+      setPublishTags(content.tags);
+      
+      // If we already have multiple images, enable multiple image mode
+      if (content.imageUrls && content.imageUrls.length > 0) {
+        setUseMultipleImages(true);
+      }
     }
-  }, [content]);
+    // Otherwise, only update from content if explicitly transferring from contentStore
+    // (i.e., when using the "Use this text" button from ContentGenerator)
+    else if (content.text && content.text !== publishText && hasInitializedFromSavedState.current) {
+      setPublishText(content.text);
+      setPublishImageUrl(content.imageUrl);
+      setPublishImageUrls(content.imageUrls || []);
+      setPublishTags(content.tags);
+      
+      // If we already have multiple images, enable multiple image mode
+      if (content.imageUrls && content.imageUrls.length > 0) {
+        setUseMultipleImages(true);
+      }
+    }
+  }, [content, editMode, publishText]);
+  
+  // Initialize from saved state on first mount
+  useEffect(() => {
+    // Only apply saved state if not in edit mode and we have valid saved state
+    if (!editMode && !hasInitializedFromSavedState.current && 
+        (postState.text || postState.imageUrl || postState.imageUrls.length > 0 || postState.tags.length > 0)) {
+      setPublishText(postState.text || '');
+      setPublishImageUrl(postState.imageUrl || '');
+      setPublishImageUrls(postState.imageUrls || []);
+      setPublishTags(postState.tags || []);
+      setUseMultipleImages(postState.useMultipleImages || false);
+      setSelectedChannelIds(postState.selectedChannelIds || []);
+      setScheduleType(postState.scheduleType || 'now');
+      
+      if (postState.scheduledDate) {
+        setScheduledDate(new Date(postState.scheduledDate));
+      }
+      
+      // Mark as initialized
+      hasInitializedFromSavedState.current = true;
+    }
+  }, [editMode, postState]);
   
   // Set initial channel and scheduled date for edit mode
   useEffect(() => {
@@ -226,6 +276,34 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     }
   }, [publishText]);
   
+  // Save panel state to storage whenever any state changes
+  useEffect(() => {
+    // Don't save anything if in edit mode
+    if (editMode) return;
+    
+    savePostState({
+      text: publishText,
+      imageUrl: publishImageUrl,
+      imageUrls: publishImageUrls,
+      tags: publishTags,
+      selectedChannelIds,
+      scheduleType,
+      scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
+      useMultipleImages
+    });
+  }, [
+    publishText,
+    publishImageUrl,
+    publishImageUrls,
+    publishTags,
+    selectedChannelIds,
+    scheduleType,
+    scheduledDate,
+    useMultipleImages,
+    editMode,
+    savePostState
+  ]);
+  
   const handleChannelChange = (selectedValues: string[]) => {
     setSelectedChannelIds(selectedValues);
     setFormError('');
@@ -263,6 +341,20 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     
     // Reset publishing progress
     setPublishingProgress({ total: 0, current: 0, success: [], failed: [] });
+    
+    // Also clear stored state in tabContentStore (only if not in edit mode)
+    if (!editMode) {
+      savePostState({
+        text: '',
+        imageUrl: '',
+        imageUrls: [],
+        tags: [],
+        selectedChannelIds: [],
+        scheduleType: 'now',
+        scheduledDate: null,
+        useMultipleImages: false
+      });
+    }
   };
   
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

@@ -8,6 +8,7 @@ import MultiSelect from '../ui/MultiSelect';
 import Alert from '../ui/Alert';
 import { useChannelsStore } from '../../store/channelsStore';
 import { usePollStore } from '../../store/pollStore';
+import { useTabContentStore } from '../../store/tabContentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
 import DateTimePicker from '../ui/DateTimePicker';
 
@@ -32,9 +33,11 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
     setIsAnonymous,
     setAllowsMultipleAnswers,
     publishPoll: publishPollAction,
-    resetPublishResult
+    resetPublishResult,
+    setOptions
   } = usePollStore();
   const { t } = useLanguage();
+  const { pollState, savePollState } = useTabContentStore();
   
   // Map of common Telegram error messages to translation keys
   const telegramErrorTranslations: Record<string, string> = {
@@ -47,12 +50,15 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
     'permission denied': 'publish_panel.error_permission_denied',
   };
   
-  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
+  // Use stored values from tabContentStore as initial state
+  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>(pollState.selectedChannelIds || []);
   const [formError, setFormError] = useState('');
   
-  // Schedule related states
-  const [scheduleType, setScheduleType] = useState<ScheduleType>('now');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  // Schedule related states - restore from stored state
+  const [scheduleType, setScheduleType] = useState<ScheduleType>(pollState.scheduleType || 'now');
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(
+    pollState.scheduledDate ? new Date(pollState.scheduledDate) : null
+  );
   
   const [publishingProgress, setPublishingProgress] = useState<{
     total: number;
@@ -90,6 +96,51 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
       return () => clearTimeout(timer);
     }
   }, [publishResult, resetPublishResult]);
+  
+  // Initialize poll with stored values
+  useEffect(() => {
+    if (!pollState.question && !pollState.options.length) {
+      // No stored data, use defaults
+      return;
+    }
+    
+    // Set the question
+    if (pollState.question) {
+      setQuestion(pollState.question);
+    }
+    
+    // Set options directly instead of removing/adding one by one
+    if (pollState.options && pollState.options.length >= 2) {
+      setOptions(pollState.options);
+    } else {
+      setOptions([{ text: '' }, { text: '' }]);
+    }
+    
+    setIsAnonymous(pollState.isAnonymous !== undefined ? pollState.isAnonymous : true);
+    setAllowsMultipleAnswers(pollState.allowsMultipleAnswers || false);
+  }, []);
+  
+  // Save poll state whenever it changes
+  useEffect(() => {
+    savePollState({
+      question: poll.question,
+      options: poll.options,
+      isAnonymous: poll.isAnonymous,
+      allowsMultipleAnswers: poll.allowsMultipleAnswers,
+      selectedChannelIds,
+      scheduleType,
+      scheduledDate: scheduledDate ? scheduledDate.toISOString() : null
+    });
+  }, [
+    poll.question,
+    poll.options,
+    poll.isAnonymous,
+    poll.allowsMultipleAnswers,
+    selectedChannelIds,
+    scheduleType,
+    scheduledDate,
+    savePollState
+  ]);
   
   const handleChannelChange = (selectedValues: string[]) => {
     setSelectedChannelIds(selectedValues);
@@ -209,9 +260,8 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
     // Clear poll question
     setQuestion('');
     
-    // Reset options to two empty options (minimum required)
-    removeOption(0); // Clear all options
-    removeOption(0);
+    // Reset options directly
+    setOptions([{ text: '' }, { text: '' }]);
     
     // Reset poll settings
     setIsAnonymous(true); // Default to anonymous
@@ -229,6 +279,17 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
     
     // Reset publishing progress
     setPublishingProgress({ total: 0, current: 0, success: [], failed: [] });
+    
+    // Also clear stored state
+    savePollState({
+      question: '',
+      options: [{ text: '' }, { text: '' }],
+      isAnonymous: true,
+      allowsMultipleAnswers: false,
+      selectedChannelIds: [],
+      scheduleType: 'now',
+      scheduledDate: null
+    });
   };
   
   const renderPublishingSummary = () => {
@@ -277,7 +338,7 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
       if (parts.length >= 3) {
         const channelName = parts[1];
         const dateStr = parts.slice(2).join(':'); // In case the date itself contains colons
-        return formatMessage('publish_panel.scheduled_success', { 
+        return formatMessage('publish_panel.success_scheduled', { 
           channel: channelName,
           date: dateStr
         });

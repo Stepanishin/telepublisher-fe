@@ -4,10 +4,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import PublishPanel from '../components/Dashboard/PublishPanel';
 import Alert from '../components/ui/Alert';
 import Button from '../components/ui/Button';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getScheduledPost, deleteScheduledPost } from '../services/api';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { useContentStore } from '../store/contentStore';
+import { useTabContentStore } from '../store/tabContentStore';
 
 interface ScheduledPostData {
   _id: string;
@@ -23,11 +25,24 @@ const EditScheduledPostPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { setContent } = useContentStore();
+  const { setContent, resetContent } = useContentStore();
+  const { clearPostState } = useTabContentStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [post, setPost] = useState<ScheduledPostData | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Очищаем сохраненное состояние и сбрасываем контент при входе
+  useEffect(() => {
+    // Очищаем сохраненное состояние tabContentStore, чтобы избежать конфликтов
+    clearPostState();
+    
+    return () => {
+      // Сбрасываем контент в contentStore при выходе со страницы
+      resetContent();
+    };
+  }, [clearPostState, resetContent]);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -63,20 +78,20 @@ const EditScheduledPostPage: React.FC = () => {
   const handleDelete = async () => {
     if (!id) return;
     
-    if (window.confirm(t('scheduled_posts.confirm_delete'))) {
-      try {
-        await deleteScheduledPost(id);
-        navigate('/dashboard', { state: { 
+    try {
+      await deleteScheduledPost(id);
+      navigate('/dashboard', { 
+        state: { 
           tab: 'scheduled', 
           notification: { 
             type: 'success', 
             message: t('scheduled_posts.delete_success') 
           }
-        }});
-      } catch (err) {
-        console.error('Failed to delete scheduled post:', err);
-        setDeleteError(t('scheduled_posts.error_delete'));
-      }
+        }
+      });
+    } catch (err) {
+      console.error('Failed to delete scheduled post:', err);
+      setDeleteError(t('scheduled_posts.error_delete'));
     }
   };
 
@@ -114,6 +129,16 @@ const EditScheduledPostPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title={t('scheduled_posts.delete_confirm_title')}
+        message={t('scheduled_posts.confirm_delete')}
+        confirmText={t('scheduled_posts.delete')}
+        cancelText={t('common.cancel')}
+      />
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -133,7 +158,7 @@ const EditScheduledPostPage: React.FC = () => {
             <Button 
               variant="outline" 
               className="text-red-500 border-red-500 hover:bg-red-50"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               leftIcon={<Trash2 size={16} />}
             >
               {t('scheduled_posts.delete')}
