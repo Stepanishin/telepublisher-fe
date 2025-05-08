@@ -27,9 +27,6 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
     publishResult, 
     error: pollError,
     setQuestion,
-    addOption,
-    removeOption,
-    updateOption,
     setIsAnonymous,
     setAllowsMultipleAnswers,
     publishPoll: publishPollAction,
@@ -38,6 +35,10 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
   } = usePollStore();
   const { t } = useLanguage();
   const { pollState, savePollState } = useTabContentStore();
+  
+  // Local state for question and options to handle user input
+  const [localQuestion, setLocalQuestion] = useState(poll.question);
+  const [localOptions, setLocalOptions] = useState<Array<{ text: string }>>(poll.options);
   
   // Map of common Telegram error messages to translation keys
   const telegramErrorTranslations: Record<string, string> = {
@@ -66,6 +67,27 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
     success: string[];
     failed: string[];
   }>({ total: 0, current: 0, success: [], failed: [] });
+  
+  // Sync local question with store
+  useEffect(() => {
+    if (localQuestion !== poll.question) {
+      setQuestion(localQuestion);
+    }
+  }, [localQuestion, setQuestion]);
+  
+  // Sync local options with store
+  useEffect(() => {
+    // Only update if there's been a real change
+    if (JSON.stringify(localOptions) !== JSON.stringify(poll.options)) {
+      setOptions(localOptions);
+    }
+  }, [localOptions, setOptions]);
+  
+  // Keep local state in sync with store (for external changes)
+  useEffect(() => {
+    setLocalQuestion(poll.question);
+    setLocalOptions(poll.options);
+  }, [poll.question, poll.options]);
   
   // Helper function to format messages with parameters
   const formatMessage = (key: string, params: Record<string, string>): string => {
@@ -243,25 +265,30 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
   };
   
   const handleOptionChange = (index: number, text: string) => {
-    updateOption(index, text);
+    const updatedOptions = [...localOptions];
+    if (index >= 0 && index < updatedOptions.length) {
+      updatedOptions[index] = { text };
+      setLocalOptions(updatedOptions);
+    }
   };
   
   const handleAddOption = () => {
-    if (poll.options.length < 10) { // Telegram limits polls to 10 options
-      addOption('');
+    if (localOptions.length < 10) { // Telegram limits polls to 10 options
+      setLocalOptions([...localOptions, { text: '' }]);
     }
   };
 
   const handleRemoveOption = (index: number) => {
-    removeOption(index);
+    if (localOptions.length <= 2) return; // Keep at least 2 options
+    setLocalOptions(localOptions.filter((_, i) => i !== index));
   };
   
   const handleClearFields = () => {
     // Clear poll question
-    setQuestion('');
+    setLocalQuestion('');
     
     // Reset options directly
-    setOptions([{ text: '' }, { text: '' }]);
+    setLocalOptions([{ text: '' }, { text: '' }]);
     
     // Reset poll settings
     setIsAnonymous(true); // Default to anonymous
@@ -382,8 +409,8 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
             {t('poll_publish.question_label') || 'Poll Question'}
           </label>
           <TextArea
-            value={poll.question}
-            onChange={e => setQuestion(e.target.value)}
+            value={localQuestion}
+            onChange={e => setLocalQuestion(e.target.value)}
             placeholder={t('poll_publish.question_placeholder') || 'Enter your poll question'}
             rows={2}
           />
@@ -395,15 +422,15 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
             {t('poll_publish.options_label') || 'Poll Options'}
           </label>
           <div className="space-y-2">
-            {poll.options.map((option, index) => (
-              <div key={index} className="flex space-x-2">
+            {localOptions.map((option, index) => (
+              <div key={`poll-option-${index}`} className="flex space-x-2">
                 <Input
                   value={option.text}
                   onChange={e => handleOptionChange(index, e.target.value)}
                   placeholder={`${t('poll_publish.option_placeholder') || 'Option'} ${index + 1}`}
                   className="flex-1"
                 />
-                {poll.options.length > 2 && (
+                {localOptions.length > 2 && (
                   <Button
                     onClick={() => handleRemoveOption(index)}
                     size="sm"
@@ -417,7 +444,7 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
             ))}
           </div>
           
-          {poll.options.length < 10 && (
+          {localOptions.length < 10 && (
             <Button
               onClick={handleAddOption}
               variant="outline"

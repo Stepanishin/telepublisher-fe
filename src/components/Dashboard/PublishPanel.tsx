@@ -36,7 +36,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     publish, 
     resetPublishResult,
     updateScheduledPost,
-    setPublishResult
+    setPublishResult,
+    setContent
   } = useContentStore();
   const { t } = useLanguage();
   const { postState, savePostState } = useTabContentStore();
@@ -183,34 +184,52 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     return message;
   };
   
-  // Update form values when content changes - but prioritize saved state on initial load
+  // Update form values when content changes from content store
   useEffect(() => {
-    // In edit mode, always use content from the content store
-    if (editMode) {
-      setPublishText(content.text);
-      setPublishImageUrl(content.imageUrl);
-      setPublishImageUrls(content.imageUrls || []);
-      setPublishTags(content.tags);
-      
-      // If we already have multiple images, enable multiple image mode
-      if (content.imageUrls && content.imageUrls.length > 0) {
-        setUseMultipleImages(true);
-      }
+    // Skip if not initialized from saved state yet and not in edit mode
+    if (!hasInitializedFromSavedState.current && !editMode) {
+      // Mark as initialized to allow updates to flow through on first render
+      hasInitializedFromSavedState.current = true;
+      return; // Exit early to avoid updates during initialization
     }
-    // Otherwise, only update from content if explicitly transferring from contentStore
-    // (i.e., when using the "Use this text" button from ContentGenerator)
-    else if (content.text && content.text !== publishText && hasInitializedFromSavedState.current) {
-      setPublishText(content.text);
-      setPublishImageUrl(content.imageUrl);
-      setPublishImageUrls(content.imageUrls || []);
-      setPublishTags(content.tags);
+    
+    // Use JSON.stringify for deep comparison of arrays
+    const hasContentChanges = 
+      content.text !== publishText ||
+      content.imageUrl !== publishImageUrl ||
+      JSON.stringify(content.imageUrls) !== JSON.stringify(publishImageUrls) ||
+      JSON.stringify(content.tags) !== JSON.stringify(publishTags);
       
-      // If we already have multiple images, enable multiple image mode
-      if (content.imageUrls && content.imageUrls.length > 0) {
-        setUseMultipleImages(true);
-      }
+    // Only proceed if there are actual changes to avoid update loops
+    if (!hasContentChanges) return;
+    
+    // Use a batch update approach to avoid multiple renders
+    const updates: Array<() => void> = [];
+    
+    if (content.text !== publishText) {
+      updates.push(() => setPublishText(content.text));
     }
-  }, [content, editMode, publishText]);
+    
+    if (content.imageUrl !== publishImageUrl) {
+      updates.push(() => setPublishImageUrl(content.imageUrl));
+    }
+    
+    if (JSON.stringify(content.imageUrls) !== JSON.stringify(publishImageUrls)) {
+      updates.push(() => setPublishImageUrls(content.imageUrls || []));
+    }
+    
+    if (JSON.stringify(content.tags) !== JSON.stringify(publishTags)) {
+      updates.push(() => setPublishTags(content.tags));
+    }
+    
+    // Enable multiple image mode if needed
+    if (content.imageUrls && content.imageUrls.length > 0 && !useMultipleImages) {
+      updates.push(() => setUseMultipleImages(true));
+    }
+    
+    // Execute state updates in sequence
+    updates.forEach(update => update());
+  }, [content]); // Only depend on content to avoid circular dependencies
   
   // Initialize from saved state on first mount
   useEffect(() => {
@@ -276,9 +295,29 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     }
   }, [publishText]);
   
-  // Save panel state to storage whenever any state changes
+  // Sync local values to content store
   useEffect(() => {
-    // Don't save anything if in edit mode
+    // Only update content store if we've fully initialized
+    if (!hasInitializedFromSavedState.current && !editMode) return;
+    
+    // Prevent potential loop by checking if values are actually different
+    if (content.text !== publishText ||
+        content.imageUrl !== publishImageUrl ||
+        JSON.stringify(content.imageUrls) !== JSON.stringify(publishImageUrls) ||
+        JSON.stringify(content.tags) !== JSON.stringify(publishTags)) {
+      
+      setContent({
+        text: publishText,
+        imageUrl: publishImageUrl,
+        imageUrls: publishImageUrls,
+        tags: publishTags
+      });
+    }
+  }, [publishText, publishImageUrl, publishImageUrls, publishTags, editMode]);
+  
+  // Use a separate effect to handle saving to persistent storage 
+  // to avoid creating a cyclical dependency
+  const saveToLocalStorage = useRef(() => {
     if (editMode) return;
     
     savePostState({
@@ -291,6 +330,24 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
       scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
       useMultipleImages
     });
+  });
+  
+  // Update ref with latest values
+  useEffect(() => {
+    saveToLocalStorage.current = () => {
+      if (editMode) return;
+      
+      savePostState({
+        text: publishText,
+        imageUrl: publishImageUrl,
+        imageUrls: publishImageUrls,
+        tags: publishTags,
+        selectedChannelIds,
+        scheduleType,
+        scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
+        useMultipleImages
+      });
+    };
   }, [
     publishText,
     publishImageUrl,
@@ -302,6 +359,27 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     useMultipleImages,
     editMode,
     savePostState
+  ]);
+  
+  // Use debounce to avoid saving on every keystroke
+  useEffect(() => {
+    // Skip first run
+    if (!hasInitializedFromSavedState.current) return;
+    
+    const timeoutId = setTimeout(() => {
+      saveToLocalStorage.current();
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [
+    publishText,
+    publishImageUrl,
+    publishImageUrls,
+    publishTags,
+    selectedChannelIds,
+    scheduleType,
+    scheduledDate,
+    useMultipleImages
   ]);
   
   const handleChannelChange = (selectedValues: string[]) => {
