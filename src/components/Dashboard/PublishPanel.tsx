@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon } from 'lucide-react';
+import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import TextArea from '../ui/TextArea';
@@ -229,6 +229,40 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   const handleChannelChange = (selectedValues: string[]) => {
     setSelectedChannelIds(selectedValues);
     setFormError('');
+  };
+  
+  const handleClearFields = () => {
+    // Clear text
+    setPublishText('');
+    
+    // Clear images
+    setPublishImageUrl('');
+    setPublishImageUrls([]);
+    setUseMultipleImages(false);
+    
+    // Clear tags
+    setPublishTags([]);
+    
+    // Reset channel selection if not in edit mode
+    if (!editMode) {
+      setSelectedChannelIds([]);
+    }
+    
+    // Reset schedule
+    if (!editMode || !initialScheduledDate) {
+      setScheduleType('now');
+      setScheduledDate(null);
+    }
+    
+    // Clear errors
+    setFormError('');
+    setUploadError('');
+    
+    // Reset warnings
+    setShowLengthWarning(true);
+    
+    // Reset publishing progress
+    setPublishingProgress({ total: 0, current: 0, success: [], failed: [] });
   };
   
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -705,9 +739,17 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex justify-between gap-4">
         <Button 
-          fullWidth
+          variant="outline"
+          onClick={handleClearFields}
+          leftIcon={<RefreshCw size={16} />}
+          className="flex-none"
+        >
+          {t('publish_panel.clear_fields')}
+        </Button>
+        <Button 
+          className="flex-grow"
           onClick={handlePublish}
           isLoading={isPublishing}
           disabled={!!(isPublishing || 

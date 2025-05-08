@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Calendar, Plus, Trash2 } from 'lucide-react';
+import { Send, Calendar, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -203,6 +203,32 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
 
   const handleRemoveOption = (index: number) => {
     removeOption(index);
+  };
+  
+  const handleClearFields = () => {
+    // Clear poll question
+    setQuestion('');
+    
+    // Reset options to two empty options (minimum required)
+    removeOption(0); // Clear all options
+    removeOption(0);
+    
+    // Reset poll settings
+    setIsAnonymous(true); // Default to anonymous
+    setAllowsMultipleAnswers(false); // Default to single answer
+    
+    // Reset channel selection
+    setSelectedChannelIds([]);
+    
+    // Reset scheduling
+    setScheduleType('now');
+    setScheduledDate(null);
+    
+    // Clear errors
+    setFormError('');
+    
+    // Reset publishing progress
+    setPublishingProgress({ total: 0, current: 0, success: [], failed: [] });
   };
   
   const renderPublishingSummary = () => {
@@ -434,9 +460,17 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
         {renderPublishingSummary()}
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="flex justify-between gap-4">
         <Button 
-          fullWidth
+          variant="outline"
+          onClick={handleClearFields}
+          leftIcon={<RefreshCw size={16} />}
+          className="flex-none"
+        >
+          {t('publish_panel.clear_fields')}
+        </Button>
+        <Button 
+          className="flex-grow"
           onClick={handlePublish}
           isLoading={isPublishing}
           leftIcon={scheduleType === 'later' ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
