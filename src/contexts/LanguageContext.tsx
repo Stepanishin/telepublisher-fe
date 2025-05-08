@@ -147,6 +147,12 @@ const translations: Record<Language, Record<string, string>> = {
     'content_generator.error_text': 'Error generating text',
     'content_generator.error_image': 'Error generating image',
     'content_generator.error_tags': 'Error generating tags',
+    'content_generator.use_text': 'Use this text',
+    'content_generator.use_image': 'Use this image',
+    'content_generator.use_tags': 'Use these tags',
+    'content_generator.text_copied': 'Text copied to publication panel',
+    'content_generator.image_copied': 'Image copied to publication panel',
+    'content_generator.tags_copied': 'Tags copied to publication panel',
 
     // Publish Panel
     'publish_panel.title': 'Publication Panel',
@@ -543,6 +549,12 @@ const translations: Record<Language, Record<string, string>> = {
     'content_generator.error_text': 'Ошибка при генерации текста',
     'content_generator.error_image': 'Ошибка при генерации изображения',
     'content_generator.error_tags': 'Ошибка при генерации тегов',
+    'content_generator.use_text': 'Использовать этот текст',
+    'content_generator.use_image': 'Использовать это изображение',
+    'content_generator.use_tags': 'Использовать эти теги',
+    'content_generator.text_copied': 'Текст скопирован в панель публикации',
+    'content_generator.image_copied': 'Изображение скопировано в панель публикации',
+    'content_generator.tags_copied': 'Теги скопированы в панель публикации',
 
     // Publish Panel
     'publish_panel.title': 'Панель публикации',

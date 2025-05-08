@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ImageIcon, Hash } from 'lucide-react';
+import { Sparkles, ImageIcon, Hash, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -11,12 +11,16 @@ import { useLanguage } from '../../contexts/LanguageContext';
 const ContentGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { 
-    content, 
+    generatedContent, 
     isGenerating, 
     generateText, 
     generateImage, 
-    generateTags 
+    generateTags,
+    transferGeneratedText,
+    transferGeneratedImage,
+    transferGeneratedTags
   } = useContentStore();
   const { creditInfo, fetchCreditInfo } = useCreditStore();
   const { t } = useLanguage();
@@ -30,6 +34,7 @@ const ContentGenerator: React.FC = () => {
     if (!prompt.trim()) return;
     try {
       setError('');
+      setSuccessMessage(null);
       await generateText(prompt);
       // Refresh credits after successful generation
       fetchCreditInfo();
@@ -43,6 +48,7 @@ const ContentGenerator: React.FC = () => {
     if (!prompt.trim()) return;
     try {
       setError('');
+      setSuccessMessage(null);
       await generateImage(prompt);
       // Refresh credits after successful generation
       fetchCreditInfo();
@@ -55,13 +61,14 @@ const ContentGenerator: React.FC = () => {
   const handleGenerateTags = async () => {
     try {
       setError('');
-      if (!content.text.trim()) {
+      setSuccessMessage(null);
+      if (!generatedContent.text.trim()) {
         // If no text is generated yet, generate tags based on prompt
         if (!prompt.trim()) return;
         await generateTags(prompt);
       } else {
         // Otherwise, generate tags based on generated text
-        await generateTags(content.text);
+        await generateTags(generatedContent.text);
       }
       // Refresh credits after successful generation
       fetchCreditInfo();
@@ -69,6 +76,14 @@ const ContentGenerator: React.FC = () => {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.error_tags');
       setError(errorMessage);
     }
+  };
+
+  // Function to display success message temporarily
+  const showSuccessMessage = (message: string) => {
+    setSuccessMessage(message);
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 3000);
   };
 
   return (
@@ -82,6 +97,14 @@ const ContentGenerator: React.FC = () => {
             variant="error"
             message={error}
             onClose={() => setError('')}
+          />
+        )}
+        
+        {successMessage && (
+          <Alert
+            variant="success"
+            message={successMessage}
+            onClose={() => setSuccessMessage(null)}
           />
         )}
         
@@ -122,7 +145,7 @@ const ContentGenerator: React.FC = () => {
             leftIcon={<Hash size={16} />}
             onClick={handleGenerateTags}
             isLoading={isGenerating}
-            disabled={(!prompt.trim() && !content.text.trim()) || isGenerating}
+            disabled={(!prompt.trim() && !generatedContent.text.trim()) || isGenerating}
           >
             {t('content_generator.generate_tags')}
             {creditInfo && <span className="ml-1 text-xs opacity-70">(1 {t('content_generator.credits')})</span>}
@@ -130,25 +153,51 @@ const ContentGenerator: React.FC = () => {
         </div>
       </CardContent>
       
-      {(content.text || content.imageUrl || content.tags.length > 0) && (
+      {(generatedContent.text || generatedContent.imageUrl || generatedContent.tags.length > 0) && (
         <CardFooter className="flex flex-col items-start">
           <h4 className="text-md font-medium mb-2">{t('content_generator.generation_results')}</h4>
           
           {/* Preview content */}
           <div className="w-full space-y-4">
-            {content.text && (
+            {generatedContent.text && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <h5 className="text-sm font-medium text-gray-700 mb-1">{t('content_generator.text')}</h5>
-                <p className="text-sm whitespace-pre-line">{content.text}</p>
+                <div className="flex justify-between items-start mb-2">
+                  <h5 className="text-sm font-medium text-gray-700">{t('content_generator.text')}</h5>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    leftIcon={<ArrowRight size={14} />}
+                    onClick={() => {
+                      transferGeneratedText();
+                      showSuccessMessage(t('content_generator.text_copied'));
+                    }}
+                  >
+                    {t('content_generator.use_text')}
+                  </Button>
+                </div>
+                <p className="text-sm whitespace-pre-line">{generatedContent.text}</p>
               </div>
             )}
             
-            {content.imageUrl && (
+            {generatedContent.imageUrl && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <h5 className="text-sm font-medium text-gray-700 mb-1">{t('content_generator.image')}</h5>
+                <div className="flex justify-between items-start mb-2">
+                  <h5 className="text-sm font-medium text-gray-700">{t('content_generator.image')}</h5>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    leftIcon={<ArrowRight size={14} />}
+                    onClick={() => {
+                      transferGeneratedImage();
+                      showSuccessMessage(t('content_generator.image_copied'));
+                    }}
+                  >
+                    {t('content_generator.use_image')}
+                  </Button>
+                </div>
                 <div className="relative w-full h-48 overflow-hidden rounded">
                   <img 
-                    src={content.imageUrl} 
+                    src={generatedContent.imageUrl} 
                     alt="Generated content" 
                     className="max-h-48 mx-auto object-contain rounded"
                   />
@@ -156,11 +205,24 @@ const ContentGenerator: React.FC = () => {
               </div>
             )}
             
-            {content.tags.length > 0 && (
+            {generatedContent.tags.length > 0 && (
               <div className="bg-gray-50 p-3 rounded-md">
-                <h5 className="text-sm font-medium text-gray-700 mb-1">{t('content_generator.tags')}</h5>
+                <div className="flex justify-between items-start mb-2">
+                  <h5 className="text-sm font-medium text-gray-700">{t('content_generator.tags')}</h5>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    leftIcon={<ArrowRight size={14} />}
+                    onClick={() => {
+                      transferGeneratedTags();
+                      showSuccessMessage(t('content_generator.tags_copied'));
+                    }}
+                  >
+                    {t('content_generator.use_tags')}
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {content.tags.map((tag, index) => (
+                  {generatedContent.tags.map((tag, index) => (
                     <span 
                       key={index} 
                       className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"

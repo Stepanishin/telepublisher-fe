@@ -4,6 +4,7 @@ import { generateText, generateImage, generateTags, publishContent } from '../se
 
 interface ContentState {
   content: GeneratedContent;
+  generatedContent: GeneratedContent;
   isGenerating: boolean;
   isPublishing: boolean;
   publishResult: PublishResult | null;
@@ -13,6 +14,9 @@ interface ContentState {
   generateText: (prompt: string) => Promise<void>;
   generateImage: (prompt: string) => Promise<void>;
   generateTags: (text: string) => Promise<void>;
+  transferGeneratedText: () => void;
+  transferGeneratedImage: () => void;
+  transferGeneratedTags: () => void;
   publish: (params: PublishParams) => Promise<PublishResult>;
   resetPublishResult: () => void;
 }
@@ -26,6 +30,7 @@ const initialContent: GeneratedContent = {
 
 export const useContentStore = create<ContentState>((set, get) => ({
   content: { ...initialContent },
+  generatedContent: { ...initialContent },
   isGenerating: false,
   isPublishing: false,
   publishResult: null,
@@ -44,7 +49,7 @@ export const useContentStore = create<ContentState>((set, get) => ({
     try {
       const text = await generateText(prompt);
       set({ 
-        content: { ...get().content, text }, 
+        generatedContent: { ...get().generatedContent, text }, 
         isGenerating: false 
       });
     } catch (error) {
@@ -60,7 +65,7 @@ export const useContentStore = create<ContentState>((set, get) => ({
     try {
       const imageUrl = await generateImage(prompt);
       set({ 
-        content: { ...get().content, imageUrl }, 
+        generatedContent: { ...get().generatedContent, imageUrl }, 
         isGenerating: false 
       });
     } catch (error) {
@@ -76,13 +81,40 @@ export const useContentStore = create<ContentState>((set, get) => ({
     try {
       const tags = await generateTags(text);
       set({ 
-        content: { ...get().content, tags }, 
+        generatedContent: { ...get().generatedContent, tags }, 
         isGenerating: false 
       });
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to generate tags', 
         isGenerating: false 
+      });
+    }
+  },
+  
+  transferGeneratedText: () => {
+    const { generatedContent } = get();
+    if (generatedContent.text) {
+      set({
+        content: { ...get().content, text: generatedContent.text }
+      });
+    }
+  },
+  
+  transferGeneratedImage: () => {
+    const { generatedContent } = get();
+    if (generatedContent.imageUrl) {
+      set({
+        content: { ...get().content, imageUrl: generatedContent.imageUrl }
+      });
+    }
+  },
+  
+  transferGeneratedTags: () => {
+    const { generatedContent } = get();
+    if (generatedContent.tags.length > 0) {
+      set({
+        content: { ...get().content, tags: generatedContent.tags }
       });
     }
   },
