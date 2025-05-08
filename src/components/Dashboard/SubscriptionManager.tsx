@@ -495,6 +495,45 @@ const SubscriptionManager: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Crypto Payment Information */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+              <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+            </svg>
+            <CardTitle>{t('crypto.title') || 'Cryptocurrency Payments'}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <h3 className="text-amber-800 font-medium mb-2">{t('crypto.available') || 'Cryptocurrency payments available'}</h3>
+            <p className="text-amber-700 mb-3">
+              {t('crypto.description') || 'To pay with Bitcoin, Ethereum or other cryptocurrencies, please contact us through our Telegram channel.'}
+            </p>
+            <div className="flex items-center">
+              <a 
+                href="https://t.me/telepublisher" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center text-blue-600 hover:text-blue-800 font-medium"
+              >
+                <svg className="h-5 w-5 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm.375 17.303l-.9-.033a2.032 2.032 0 01-1.316-.576 2.578 2.578 0 01-.715-1.256c-.032-.143-.054-.285-.054-.428v-.256a2.463 2.463 0 01.67-1.69 2.035 2.035 0 011.447-.639h.9c.571.032 1.1.3 1.484.744a2.45 2.45 0 01.582 1.6v.24a2.455 2.455 0 01-.631 1.683 2.057 2.057 0 01-1.467.611zm5.27-5.939l-1.406.991-5.199 3.686a.517.517 0 01-.8-.223l-.63-2.068-.328-1.078.008-.005a.054.054 0 01-.008-.01l-.018-.054-.068-.223a.405.405 0 01.018-.305c.044-.07.103-.124.174-.157l7.66-4.55a.513.513 0 01.611.073.52.52 0 01.126.598l-.14.325z" />
+                </svg>
+                {t('crypto.contact_button') || 'Contact us on Telegram'}
+              </a>
+            </div>
+          </div>
+          <div className="mt-4 text-sm text-gray-500">
+            <p>
+              {t('crypto.benefits') || 'Benefits of crypto payments: lower fees, faster international transactions, and enhanced privacy.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

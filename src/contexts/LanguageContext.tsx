@@ -470,7 +470,14 @@ const translations: Record<Language, Record<string, string>> = {
     'tokens.buy_button': 'Purchase Tokens',
     'tokens.note': 'Note: Purchased tokens will be added to your account immediately after payment and do not expire.',
     'tokens.purchase_success': 'Tokens purchased successfully!',
-    'tokens.error_purchase': 'Error processing token purchase'
+    'tokens.error_purchase': 'Error processing token purchase',
+
+    // Crypto payment translations
+    'crypto.title': 'Cryptocurrency Payments',
+    'crypto.available': 'Cryptocurrency payments available',
+    'crypto.description': 'To pay with Bitcoin, Ethereum or other cryptocurrencies, please contact us through our Telegram channel.',
+    'crypto.contact_button': 'Contact us on Telegram',
+    'crypto.benefits': 'Benefits of crypto payments: lower fees, faster international transactions, and enhanced privacy.',
   },
   ru: {
     // Navbar
@@ -925,7 +932,14 @@ const translations: Record<Language, Record<string, string>> = {
     'tokens.buy_button': 'Купить токены',
     'tokens.note': 'Примечание: Купленные токены будут добавлены на ваш счет сразу после оплаты и не имеют срока действия.',
     'tokens.purchase_success': 'Токены успешно куплены!',
-    'tokens.error_purchase': 'Ошибка при обработке покупки токенов'
+    'tokens.error_purchase': 'Ошибка при обработке покупки токенов',
+
+    // Crypto payment translations
+    'crypto.title': 'Оплата криптовалютой',
+    'crypto.available': 'Доступна оплата криптовалютой',
+    'crypto.description': 'Для оплаты Bitcoin, Ethereum или другими криптовалютами, пожалуйста, свяжитесь с нами через наш Telegram канал.',
+    'crypto.contact_button': 'Связаться в Telegram',
+    'crypto.benefits': 'Преимущества оплаты криптовалютой: низкие комиссии, быстрые международные транзакции и повышенная конфиденциальность.',
   },
 };
 
