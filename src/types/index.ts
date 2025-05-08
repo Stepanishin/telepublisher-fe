@@ -49,6 +49,19 @@ export interface PublishParams {
   scheduledDate?: Date | null;
 }
 
+export interface PollOption {
+  text: string;
+}
+
+export interface PollParams {
+  channelId: string;
+  question: string;
+  options: PollOption[];
+  isAnonymous?: boolean;
+  allowsMultipleAnswers?: boolean;
+  scheduledDate?: Date | null;
+}
+
 export interface PublishResult {
   success: boolean;
   message: string;

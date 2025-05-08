@@ -128,6 +128,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels_short': 'Channels',
     'dashboard.tab_instructions_short': 'Guide',
     'dashboard.tab_subscription_short': 'Sub',
+    'dashboard.tab_content_post': 'Post',
+    'dashboard.tab_content_poll': 'Poll',
 
     // Content Generator
     'content_generator.title': 'Content Generator',
@@ -355,6 +357,33 @@ const translations: Record<Language, Record<string, string>> = {
     // NotFoundPage
     'not_found.message': 'Page not found',
     'not_found.back_home': 'Back to home',
+    
+    // Poll Publisher
+    'poll_publish.title': 'Create Poll',
+    'poll_publish.question_label': 'Poll Question',
+    'poll_publish.question_placeholder': 'Enter your poll question',
+    'poll_publish.question_required': 'Poll question is required',
+    'poll_publish.options_label': 'Poll Options',
+    'poll_publish.option_placeholder': 'Option',
+    'poll_publish.options_help': 'Minimum 2, maximum 10 options',
+    'poll_publish.add_option': 'Add Option',
+    'poll_publish.min_two_options': 'Poll must have at least 2 options with text',
+    'poll_publish.settings_label': 'Poll Settings',
+    'poll_publish.anonymous_label': 'Anonymous voting',
+    'poll_publish.multiple_label': 'Allow multiple answers',
+    
+    // Poll Preview
+    'poll_preview.title': 'Telegram Poll Preview',
+    'poll_preview.question_placeholder': 'Your poll question will appear here',
+    'poll_preview.options_placeholder': 'Add at least two options to see the preview',
+    'poll_preview.anonymous': 'Anonymous',
+    'poll_preview.not_anonymous': 'Not anonymous',
+    'poll_preview.multiple_answers': 'Multiple answers',
+    'poll_preview.single_answer': 'Single answer',
+    'poll_preview.no_votes': '0 votes',
+
+    // Post Preview
+    'post_preview.title': 'Telegram Post Preview',
   },
   ru: {
     // Navbar
@@ -467,6 +496,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels_short': 'Каналы',
     'dashboard.tab_instructions_short': 'Гид',
     'dashboard.tab_subscription_short': 'Тариф',
+    'dashboard.tab_content_post': 'Пост',
+    'dashboard.tab_content_poll': 'Опрос',
 
     // Content Generator
     'content_generator.title': 'Генератор контента',
@@ -694,6 +725,33 @@ const translations: Record<Language, Record<string, string>> = {
     // NotFoundPage
     'not_found.message': 'Страница не найдена',
     'not_found.back_home': 'Вернуться на главную',
+    
+    // Poll Publisher
+    'poll_publish.title': 'Создать опрос',
+    'poll_publish.question_label': 'Вопрос опроса',
+    'poll_publish.question_placeholder': 'Введите вопрос опроса',
+    'poll_publish.question_required': 'Необходимо ввести вопрос опроса',
+    'poll_publish.options_label': 'Варианты ответов',
+    'poll_publish.option_placeholder': 'Вариант',
+    'poll_publish.options_help': 'Минимум 2, максимум 10 вариантов',
+    'poll_publish.add_option': 'Добавить вариант',
+    'poll_publish.min_two_options': 'Опрос должен содержать минимум 2 варианта ответа с текстом',
+    'poll_publish.settings_label': 'Настройки опроса',
+    'poll_publish.anonymous_label': 'Анонимное голосование',
+    'poll_publish.multiple_label': 'Разрешить выбор нескольких вариантов',
+    
+    // Poll Preview
+    'poll_preview.title': 'Предпросмотр опроса',
+    'poll_preview.question_placeholder': 'Здесь будет отображаться вопрос опроса',
+    'poll_preview.options_placeholder': 'Добавьте хотя бы два варианта ответа для предпросмотра',
+    'poll_preview.anonymous': 'Анонимно',
+    'poll_preview.not_anonymous': 'Не анонимно',
+    'poll_preview.multiple_answers': 'Несколько ответов',
+    'poll_preview.single_answer': 'Один ответ',
+    'poll_preview.no_votes': '0 голосов',
+
+    // Post Preview
+    'post_preview.title': 'Предпросмотр поста',
   },
 };
 

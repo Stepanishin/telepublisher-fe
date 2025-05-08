@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType } from '../types';
+import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType, PollParams } from '../types';
 import { TelegramUser } from 'react-telegram-login';
 
 // API base URL
@@ -461,6 +461,102 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     return {
       success: false,
       message: error instanceof Error ? error.message : 'error_publishing'
+    };
+  }
+};
+
+// Publishing polls
+export const publishPoll = async (params: PollParams): Promise<PublishResult> => {
+  try {
+    // Fetch channel info to get botToken
+    const channels = await fetchChannels();
+    
+    // Find channel by checking both id and _id
+    const channel = channels.find((ch: Channel) => 
+      (ch._id && ch._id === params.channelId) || 
+      (ch.id && ch.id === params.channelId)
+    );
+    
+    if (!channel || !channel.botToken) {
+      throw new Error('channel_not_found');
+    }
+    
+    // Check if this is a scheduled poll
+    if (params.scheduledDate) {
+      try {
+        // Store scheduled poll in the database
+        await api.post('/scheduled-polls', {
+          channelId: params.channelId,
+          question: params.question,
+          options: params.options,
+          isAnonymous: params.isAnonymous,
+          allowsMultipleAnswers: params.allowsMultipleAnswers,
+          scheduledDate: params.scheduledDate.toISOString()
+        });
+        
+        return {
+          success: true,
+          message: `scheduled_success:${channel.title}:${params.scheduledDate.toLocaleString()}`
+        };
+      } catch (error) {
+        console.error('Error scheduling poll:', error);
+        return {
+          success: false,
+          message: error instanceof Error 
+            ? error.message 
+            : 'error_scheduling'
+        };
+      }
+    }
+    
+    // Prepare chat_id - if it looks like a username without @, add it
+    let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
+    if (!chatId) {
+      // If no chatId, use title and prefix with @ if it's a username
+      chatId = channel.title;
+      if (chatId && !chatId.startsWith('@') && !chatId.match(/^-?\d+$/)) {
+        chatId = '@' + chatId;
+      }
+    }
+    
+    // Extract option texts to array
+    const optionTexts = params.options.map(option => option.text);
+    
+    // Send poll via Telegram API
+    const result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendPoll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        question: params.question,
+        options: optionTexts,
+        is_anonymous: params.isAnonymous ?? true,
+        allows_multiple_answers: params.allowsMultipleAnswers ?? false,
+        // We don't use these options in the basic implementation:
+        // correct_option_id: null,
+        // explanation: null,
+        // open_period: null,
+        // close_date: null,
+        // is_closed: false
+      })
+    });
+    
+    const data = await result.json();
+    
+    if (!result.ok) {
+      console.error('Telegram API error:', data);
+      throw new Error(data.description || 'error_publishing_poll');
+    }
+    
+    return {
+      success: true,
+      message: `publish_success:${channel.title}`
+    };
+  } catch (error) {
+    console.error('Publish poll error:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'error_publishing_poll'
     };
   }
 };

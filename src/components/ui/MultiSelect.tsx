@@ -13,6 +13,7 @@ interface MultiSelectProps {
   onChange: (selectedValues: string[]) => void;
   error?: string;
   placeholder?: string;
+  isRequired?: boolean;
 }
 
 const MultiSelect: React.FC<MultiSelectProps> = ({
@@ -21,7 +22,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   value,
   onChange,
   error,
-  placeholder = 'Select options...'
+  placeholder = 'Select options...',
+  isRequired = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -58,7 +60,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     <div className="mb-4">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
+          {label} {isRequired && <span className="text-red-500">*</span>}
         </label>
       )}
       

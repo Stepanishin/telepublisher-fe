@@ -36,16 +36,25 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
     : '';
 
   return (
-    <div className="telegram-preview mb-4">
-      {/* <label className="block text-sm font-medium text-gray-700 mb-1">
-        {t('publish_panel.telegram_preview')}
-      </label> */}
+    <div className="rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
+      <div className="bg-blue-50 p-4 border-b border-gray-200">
+        <h3 className="text-base font-medium text-gray-900 flex items-center">
+          <Send className="h-5 w-5 mr-2 text-blue-600" />
+          {t('post_preview.title') || 'Telegram Post Preview'}
+        </h3>
+      </div>
+    <div className="p-4 mb-4">
       <div className="border border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
         {/* Header - styled like Telegram */}
-        <div className="bg-[#8774E1] text-white p-2 text-sm font-medium flex items-center">
-        <Send className="h-5 w-5 text-white mr-2" />
-          {t('publish_panel.telegram_preview')}
-        </div>
+        <div className="bg-[#F0F2F5] p-3 flex items-start">
+            <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
+              <span className="text-sm font-medium">T</span>
+            </div>
+            <div className="ml-3">
+              <div className="font-semibold text-sm">Telegram</div>
+              <div className="text-xs text-gray-500">Post</div>
+            </div>
+          </div>
         
         {/* Message content container */}
         <div className="p-4 bg-white">
@@ -79,6 +88,7 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

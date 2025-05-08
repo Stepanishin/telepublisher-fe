@@ -4,14 +4,17 @@ import ChannelsManager from '../components/Dashboard/ChannelsManager';
 import PublishPanel from '../components/Dashboard/PublishPanel';
 import BotInstructionsPanel from '../components/Dashboard/BotInstructionsPanel';
 import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
+import PollPublishPanel from '../components/Dashboard/PollPublishPanel';
 import { useChannelsStore } from '../store/channelsStore';
 import { useContentStore } from '../store/contentStore';
-import { Zap, Settings, BookOpen, Crown } from 'lucide-react';
+import { Zap, Settings, BookOpen, Crown, FileText, BarChart2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import TelegramPostPreview from '../components/ui/TelegramPostPreview';
+import TelegramPollPreview from '../components/ui/TelegramPollPreview';
 
 // Tab types for navigation
 type TabType = 'content' | 'channels' | 'instructions' | 'subscription';
+type ContentSubTabType = 'post' | 'poll';
 
 // Preview content type
 interface PreviewContent {
@@ -20,14 +23,29 @@ interface PreviewContent {
   tags: string[];
 }
 
+// Poll preview content type
+interface PollPreviewContent {
+  question: string;
+  options: { text: string }[];
+  isAnonymous: boolean;
+  allowsMultipleAnswers: boolean;
+}
+
 const DashboardPage: React.FC = () => {
   const { fetchChannels } = useChannelsStore();
   const { content } = useContentStore();
   const [activeTab, setActiveTab] = useState<TabType>('content');
+  const [activeContentSubTab, setActiveContentSubTab] = useState<ContentSubTabType>('post');
   const [previewContent, setPreviewContent] = useState<PreviewContent>({
     text: '',
     imageUrl: '',
     tags: []
+  });
+  const [pollPreviewContent, setPollPreviewContent] = useState<PollPreviewContent>({
+    question: '',
+    options: [{ text: '' }, { text: '' }],
+    isAnonymous: true,
+    allowsMultipleAnswers: false
   });
   const { t } = useLanguage();
   
@@ -70,6 +88,20 @@ const DashboardPage: React.FC = () => {
       shortLabel: t('dashboard.tab_subscription_short') || 'Sub',
       icon: <Crown className="h-5 w-5" /> 
     },
+  ];
+
+  // Content subtabs
+  const contentSubTabs = [
+    {
+      id: 'post',
+      label: t('dashboard.tab_content_post') || 'Post',
+      icon: <FileText className="h-4 w-4" />
+    },
+    {
+      id: 'poll',
+      label: t('dashboard.tab_content_poll') || 'Poll',
+      icon: <BarChart2 className="h-4 w-4" />
+    }
   ];
   
   return (
@@ -152,23 +184,68 @@ const DashboardPage: React.FC = () => {
       {/* Tab content */}
       <div className="mt-8">
         {activeTab === 'content' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <PublishPanel onContentChange={setPreviewContent} />
+          <>
+            {/* Content subtabs */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="-mb-px flex space-x-6" aria-label="Content Tabs">
+                {contentSubTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveContentSubTab(tab.id as ContentSubTabType)}
+                    className={`
+                      whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
+                      ${activeContentSubTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                      flex items-center
+                    `}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
             </div>
-            <div className="lg:col-span-1">
-              <ContentGenerator />
-              {(previewContent.text || previewContent.imageUrl || previewContent.tags.length > 0) && (
-                <div className="mt-6">
-                  <TelegramPostPreview
-                    text={previewContent.text}
-                    imageUrl={previewContent.imageUrl}
-                    tags={previewContent.tags}
+
+            {/* Content subtab content */}
+            {activeContentSubTab === 'post' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <PublishPanel onContentChange={setPreviewContent} />
+                </div>
+                <div className="lg:col-span-1">
+                  <ContentGenerator />
+                  {(previewContent.text || previewContent.imageUrl || previewContent.tags.length > 0) && (
+                    <div className="mt-6">
+                      <TelegramPostPreview
+                        text={previewContent.text}
+                        imageUrl={previewContent.imageUrl}
+                        tags={previewContent.tags}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeContentSubTab === 'poll' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <PollPublishPanel 
+                    onPollChange={(pollData) => setPollPreviewContent(pollData)}
                   />
                 </div>
-              )}
-            </div>
-          </div>
+                <div className="lg:col-span-1">
+                  <TelegramPollPreview
+                    question={pollPreviewContent.question}
+                    options={pollPreviewContent.options}
+                    isAnonymous={pollPreviewContent.isAnonymous}
+                    allowsMultipleAnswers={pollPreviewContent.allowsMultipleAnswers}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
         
         {activeTab === 'channels' && (

@@ -508,6 +508,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
           onChange={handleChannelChange}
           error={formError && selectedChannelIds.length === 0 ? t('publish_panel.select_channel_error') : ''}
           placeholder={t('publish_panel.select_channels')}
+          isRequired={true}
         />
         
         <TextArea
