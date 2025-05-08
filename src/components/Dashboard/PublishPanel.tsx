@@ -19,9 +19,13 @@ type ScheduleType = 'now' | 'later';
 // Define the props for the component
 interface PublishPanelProps {
   onContentChange?: (content: { text: string; imageUrl: string; imageUrls: string[]; tags: string[] }) => void;
+  editMode?: boolean;
+  scheduledPostId?: string;
+  initialChannelId?: string;
+  initialScheduledDate?: Date;
 }
 
-const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
+const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, scheduledPostId, initialChannelId, initialScheduledDate }) => {
   const { channels } = useChannelsStore();
   const { 
     content, 
@@ -29,7 +33,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
     publishResult, 
     error, 
     publish, 
-    resetPublishResult
+    resetPublishResult,
+    updateScheduledPost,
+    setPublishResult
   } = useContentStore();
   const { t } = useLanguage();
   
@@ -178,6 +184,18 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
     }
   }, [content]);
   
+  // Set initial channel and scheduled date for edit mode
+  useEffect(() => {
+    if (editMode && initialChannelId) {
+      setSelectedChannelIds([initialChannelId]);
+    }
+    
+    if (editMode && initialScheduledDate) {
+      setScheduleType('later');
+      setScheduledDate(initialScheduledDate);
+    }
+  }, [editMode, initialChannelId, initialScheduledDate]);
+  
   // Notify parent component when content changes
   useEffect(() => {
     if (onContentChange) {
@@ -278,6 +296,37 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
       const now = new Date();
       if (scheduledDate <= now) {
         setFormError(t('publish_panel.schedule_in_past_error'));
+        return;
+      }
+    }
+
+    // If in edit mode and we have a scheduledPostId, update the post instead of creating a new one
+    if (editMode && scheduledPostId) {
+      try {
+        const result = await updateScheduledPost(scheduledPostId, {
+          channelId: selectedChannelIds[0],
+          text: publishText,
+          imageUrl: useMultipleImages ? '' : publishImageUrl,
+          imageUrls: useMultipleImages ? publishImageUrls : [],
+          tags: publishTags,
+          scheduledDate: scheduledDate
+        });
+
+        if (result.success) {
+          resetPublishResult();
+          // Show success message
+          setPublishResult({
+            success: true,
+            message: t('publish_panel.update_success')
+          });
+        } else {
+          setFormError(result.message || t('publish_panel.error_updating'));
+        }
+        
+        return;
+      } catch (error) {
+        console.error('Error updating scheduled post:', error);
+        setFormError(t('publish_panel.error_updating'));
         return;
       }
     }
@@ -686,7 +735,11 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange }) => {
 
 // Set default props
 PublishPanel.defaultProps = {
-  onContentChange: undefined
+  onContentChange: undefined,
+  editMode: false,
+  scheduledPostId: undefined,
+  initialChannelId: undefined,
+  initialScheduledDate: undefined
 };
 
 export default PublishPanel;

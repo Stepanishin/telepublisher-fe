@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { GeneratedContent, PublishParams, PublishResult } from '../types';
-import { generateText, generateImage, generateTags, publishContent } from '../services/api';
+import { GeneratedContent, PublishParams, PublishResult, ScheduledPostUpdate } from '../types';
+import { generateText, generateImage, generateTags, publishContent, updateScheduledPost as apiUpdateScheduledPost } from '../services/api';
 
 interface ContentState {
   content: GeneratedContent;
@@ -11,6 +11,7 @@ interface ContentState {
   error: string | null;
   setContent: (content: Partial<GeneratedContent>) => void;
   resetContent: () => void;
+  setPublishResult: (result: PublishResult | null) => void;
   generateText: (prompt: string) => Promise<void>;
   generateImage: (prompt: string) => Promise<void>;
   generateTags: (text: string) => Promise<void>;
@@ -19,6 +20,7 @@ interface ContentState {
   transferGeneratedTags: () => void;
   publish: (params: PublishParams) => Promise<PublishResult>;
   resetPublishResult: () => void;
+  updateScheduledPost: (postId: string, data: ScheduledPostUpdate) => Promise<PublishResult>;
 }
 
 const initialContent: GeneratedContent = {
@@ -42,6 +44,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
   
   resetContent: () => {
     set({ content: { ...initialContent } });
+  },
+  
+  setPublishResult: (result: PublishResult | null) => {
+    set({ publishResult: result });
   },
   
   generateText: async (prompt: string) => {
@@ -140,5 +146,23 @@ export const useContentStore = create<ContentState>((set, get) => ({
   
   resetPublishResult: () => {
     set({ publishResult: null });
+  },
+  
+  updateScheduledPost: async (postId: string, data: ScheduledPostUpdate) => {
+    set({ isPublishing: true, publishResult: null, error: null });
+    try {
+      const result = await apiUpdateScheduledPost(postId, data);
+      set({ publishResult: result, isPublishing: false });
+      return result;
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update scheduled post', 
+        isPublishing: false 
+      });
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to update scheduled post'
+      };
+    }
   }
 }));

@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType, PollParams } from '../types';
+import { Channel, PublishParams, PublishResult, CreditInfo, SubscriptionType, PollParams, ScheduledPostUpdate } from '../types';
 import { TelegramUser } from 'react-telegram-login';
 
 // API base URL
@@ -593,6 +593,64 @@ export const publishPoll = async (params: PollParams): Promise<PublishResult> =>
     return {
       success: false,
       message: error instanceof Error ? error.message : 'error_publishing_poll'
+    };
+  }
+};
+
+// Scheduled posts
+export const getScheduledPosts = async () => {
+  try {
+    const response = await api.get('/scheduled-posts');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching scheduled posts:', error);
+    throw error;
+  }
+};
+
+export const deleteScheduledPost = async (postId: string) => {
+  try {
+    const response = await api.delete(`/scheduled-posts/${postId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting scheduled post:', error);
+    throw error;
+  }
+};
+
+export const getScheduledPost = async (postId: string) => {
+  try {
+    const response = await api.get(`/scheduled-posts/${postId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching scheduled post:', error);
+    throw error;
+  }
+};
+
+export const publishScheduledPost = async (postId: string) => {
+  try {
+    const response = await api.post(`/scheduled-posts/${postId}/publish`);
+    return response.data;
+  } catch (error) {
+    console.error('Error publishing scheduled post:', error);
+    throw error;
+  }
+};
+
+export const updateScheduledPost = async (postId: string, data: ScheduledPostUpdate) => {
+  try {
+    const response = await api.put(`/scheduled-posts/${postId}`, data);
+    return {
+      success: true,
+      message: response.data.message || 'Post updated successfully',
+      data: response.data.data
+    };
+  } catch (error) {
+    console.error('Error updating scheduled post:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to update scheduled post'
     };
   }
 };

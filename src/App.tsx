@@ -7,6 +7,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import HomePage from './pages/HomePage';
 import ContactPage from './pages/ContactPage';
 import TermsPage from './pages/TermsPage';
+import EditScheduledPostPage from './pages/EditScheduledPostPage';
 import { useUserStore } from './store/userStore';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -26,6 +27,12 @@ function App() {
               path="dashboard" 
               element={
                 isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />
+              } 
+            />
+            <Route 
+              path="edit-scheduled-post/:id" 
+              element={
+                isAuthenticated ? <EditScheduledPostPage /> : <Navigate to="/login" replace />
               } 
             />
             <Route path="*" element={<NotFoundPage />} />

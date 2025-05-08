@@ -68,6 +68,15 @@ export interface PublishResult {
   message: string;
 }
 
+export interface ScheduledPostUpdate {
+  channelId: string;
+  text: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  tags: string[];
+  scheduledDate: Date | null;
+}
+
 export interface GeneratedContent {
   text: string;
   imageUrl: string;

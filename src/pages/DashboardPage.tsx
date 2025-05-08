@@ -5,15 +5,16 @@ import PublishPanel from '../components/Dashboard/PublishPanel';
 import BotInstructionsPanel from '../components/Dashboard/BotInstructionsPanel';
 import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
 import PollPublishPanel from '../components/Dashboard/PollPublishPanel';
+import ScheduledPosts from '../components/Dashboard/ScheduledPosts';
 import { useChannelsStore } from '../store/channelsStore';
 import { useContentStore } from '../store/contentStore';
-import { Zap, Settings, BookOpen, Crown, FileText, BarChart2 } from 'lucide-react';
+import { Zap, Settings, BookOpen, Crown, FileText, BarChart2, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import TelegramPostPreview from '../components/ui/TelegramPostPreview';
 import TelegramPollPreview from '../components/ui/TelegramPollPreview';
 
 // Tab types for navigation
-type TabType = 'content' | 'channels' | 'instructions' | 'subscription';
+type TabType = 'content' | 'channels' | 'instructions' | 'subscription' | 'scheduled';
 type ContentSubTabType = 'post' | 'poll';
 
 // Preview content type
@@ -87,6 +88,12 @@ const DashboardPage: React.FC = () => {
       label: t('dashboard.tab_subscription'),
       shortLabel: t('dashboard.tab_subscription_short') || 'Sub',
       icon: <Crown className="h-5 w-5" /> 
+    },
+    { 
+      id: 'scheduled', 
+      label: t('dashboard.tab_scheduled'),
+      shortLabel: t('dashboard.tab_scheduled_short') || 'Scheduled',
+      icon: <Calendar className="h-5 w-5" /> 
     },
   ];
 
@@ -263,6 +270,12 @@ const DashboardPage: React.FC = () => {
         {activeTab === 'subscription' && (
           <div>
             <SubscriptionManager />
+          </div>
+        )}
+        
+        {activeTab === 'scheduled' && (
+          <div>
+            <ScheduledPosts />
           </div>
         )}
       </div>

@@ -128,6 +128,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels_short': 'Channels',
     'dashboard.tab_instructions_short': 'Guide',
     'dashboard.tab_subscription_short': 'Sub',
+    'dashboard.tab_scheduled': 'Scheduled Posts',
+    'dashboard.tab_scheduled_short': 'Scheduled',
     'dashboard.tab_content_post': 'Post',
     'dashboard.tab_content_poll': 'Poll',
 
@@ -418,6 +420,36 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Post Preview
     'post_preview.title': 'Telegram Post Preview',
+
+    // Scheduled Posts
+    'scheduled_posts.title': 'Scheduled Posts',
+    'scheduled_posts.date': 'Date',
+    'scheduled_posts.channel': 'Channel',
+    'scheduled_posts.content': 'Content',
+    'scheduled_posts.type': 'Type',
+    'scheduled_posts.actions': 'Actions',
+    'scheduled_posts.edit': 'Edit',
+    'scheduled_posts.delete': 'Delete',
+    'scheduled_posts.no_posts': 'No scheduled posts found',
+    'scheduled_posts.loading': 'Loading scheduled posts...',
+    'scheduled_posts.confirm_delete': 'Are you sure you want to delete this scheduled post?',
+    'scheduled_posts.delete_success': 'Post has been deleted from the schedule',
+    'scheduled_posts.error_delete': 'Failed to delete scheduled post',
+    'scheduled_posts.error_fetch': 'Failed to fetch scheduled posts',
+    'scheduled_posts.image': 'Image',
+    'scheduled_posts.album': 'Album',
+    'scheduled_posts.text_only': 'Text',
+    'scheduled_posts.publish_now': 'Publish Now',
+    'scheduled_posts.confirm_publish_now': 'Are you sure you want to publish this post now?',
+    'scheduled_posts.publish_success': 'Post has been published successfully',
+    'scheduled_posts.error_publish': 'Failed to publish post',
+    'scheduled_posts.edit_title': 'Edit Scheduled Post',
+    'scheduled_posts.back': 'Back',
+    'scheduled_posts.back_to_list': 'Back to scheduled posts',
+    'scheduled_posts.scheduled_for': 'Scheduled for',
+    'scheduled_posts.error_fetch_single': 'Failed to fetch scheduled post',
+    'publish_panel.update_success': 'Post has been updated successfully',
+    'publish_panel.error_updating': 'Failed to update post'
   },
   ru: {
     // Navbar
@@ -530,6 +562,8 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_channels_short': 'Каналы',
     'dashboard.tab_instructions_short': 'Гид',
     'dashboard.tab_subscription_short': 'Тариф',
+    'dashboard.tab_scheduled': 'Запланированные публикации',
+    'dashboard.tab_scheduled_short': 'Запланированные',
     'dashboard.tab_content_post': 'Пост',
     'dashboard.tab_content_poll': 'Опрос',
 
@@ -820,6 +854,36 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Post Preview
     'post_preview.title': 'Предпросмотр поста',
+
+    // Scheduled Posts
+    'scheduled_posts.title': 'Запланированные публикации',
+    'scheduled_posts.date': 'Дата',
+    'scheduled_posts.channel': 'Канал',
+    'scheduled_posts.content': 'Контент',
+    'scheduled_posts.type': 'Тип',
+    'scheduled_posts.actions': 'Действия',
+    'scheduled_posts.edit': 'Редактировать',
+    'scheduled_posts.delete': 'Удалить',
+    'scheduled_posts.no_posts': 'Запланированных публикаций не найдено',
+    'scheduled_posts.loading': 'Загрузка запланированных публикаций...',
+    'scheduled_posts.confirm_delete': 'Вы уверены, что хотите удалить эту запланированную публикацию?',
+    'scheduled_posts.delete_success': 'Публикация удалена из расписания',
+    'scheduled_posts.error_delete': 'Не удалось удалить запланированную публикацию',
+    'scheduled_posts.error_fetch': 'Не удалось загрузить запланированные публикации',
+    'scheduled_posts.image': 'Изображение',
+    'scheduled_posts.album': 'Альбом',
+    'scheduled_posts.text_only': 'Текст',
+    'scheduled_posts.publish_now': 'Опубликовать сейчас',
+    'scheduled_posts.confirm_publish_now': 'Вы уверены, что хотите опубликовать этот пост сейчас?',
+    'scheduled_posts.publish_success': 'Пост опубликован успешно',
+    'scheduled_posts.error_publish': 'Не удалось опубликовать пост',
+    'scheduled_posts.edit_title': 'Редактирование запланированной публикации',
+    'scheduled_posts.back': 'Назад',
+    'scheduled_posts.back_to_list': 'Вернуться к списку публикаций',
+    'scheduled_posts.scheduled_for': 'Запланировано на',
+    'scheduled_posts.error_fetch_single': 'Не удалось загрузить запланированную публикацию',
+    'publish_panel.update_success': 'Публикация успешно обновлена',
+    'publish_panel.error_updating': 'Не удалось обновить публикацию'
   },
 };
 
