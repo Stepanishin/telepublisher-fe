@@ -469,9 +469,6 @@ const SubscriptionManager: React.FC = () => {
                   <p className="mt-3 text-2xl font-bold text-gray-900">
                     ${pkg.price}
                   </p>
-                  <div className="mt-2 bg-purple-50 p-2 rounded text-purple-700 text-sm">
-                    {formatString('tokens.includes', pkg.tokens)}
-                  </div>
                 </CardContent>
                 <CardFooter className="pb-5">
                   <Button
