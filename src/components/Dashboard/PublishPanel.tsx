@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
-import TextArea from '../ui/TextArea';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import MultiSelect from '../ui/MultiSelect';
 import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
@@ -87,9 +88,37 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     failed: string[];
   }>({ total: 0, current: 0, success: [], failed: [] });
   
+  // Define Quill modules and formats
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'bold', 'italic', 'underline', 'strike', 
+    'list', 'bullet', 'link'
+  ];
+  
+  // Utility function to get HTML content length without tags
+  const getTextContentLength = (html: string): number => {
+    if (!html) return 0;
+    // Create a temporary DOM element
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = html;
+    // Get text content
+    const text = tempElement.textContent || tempElement.innerText || '';
+    return text.length;
+  };
+  
   // Calculate total message length including tags
   const getTotalMessageLength = (): number => {
-    let totalLength = publishText.length;
+    // Strip HTML to get plain text for accurate length calculation
+    const plainText = stripHtml(publishText);
+    let totalLength = plainText.length;
     
     // Add space for tags if they exist
     if (publishTags.length > 0) {
@@ -290,7 +319,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   
   // Reset length warning when text length changes significantly
   useEffect(() => {
-    if (publishText.length <= 3800) {
+    if (getTotalMessageLength() <= 3800) {
       setShowLengthWarning(true); // Reset when back under threshold
     }
   }, [publishText]);
@@ -435,17 +464,19 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     }
   };
   
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setPublishText(newText);
+  const handleTextChange = (content: string) => {
+    setPublishText(content);
+    
+    // Calculate plain text length for validation
+    const plainTextLength = getTextContentLength(content);
     
     // Clear errors when text is okay
-    if (newText.length <= 4096 && formError === t('publish_panel.message_too_long')) {
+    if (plainTextLength <= 4096 && formError === t('publish_panel.message_too_long')) {
       setFormError('');
     }
     
     // Set error when text is too long
-    if (newText.length > 4096 && formError !== t('publish_panel.message_too_long')) {
+    if (plainTextLength > 4096 && formError !== t('publish_panel.message_too_long')) {
       setFormError(t('publish_panel.message_too_long'));
     }
   };
@@ -478,6 +509,141 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     }
   };
   
+  // Utility function to strip HTML and convert to plain text
+  const stripHtml = (html: string): string => {
+    // Create a temporary DOM element
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = html;
+    
+    // Get text content
+    let text = tempElement.textContent || tempElement.innerText || '';
+    
+    // Replace multiple spaces with single space
+    text = text.replace(/\s+/g, ' ');
+    
+    // Trim and remove extra newlines
+    return text.trim();
+  };
+  
+  // Convert HTML to Telegram-compatible format
+  const convertHtmlToTelegramFormat = (html: string): string => {
+    if (!html) return '';
+    
+    // Предварительная очистка HTML от некоторых тегов, которые не поддерживаются Telegram
+    // Заменяем параграфы на перенос строки
+    const cleanHtml = html.replace(/<p[^>]*>/gi, '')
+                        .replace(/<\/p>/gi, '\n\n')
+                        .replace(/<br\s*\/?>/gi, '\n')
+                        .replace(/<div[^>]*>/gi, '')
+                        .replace(/<\/div>/gi, '\n\n');
+    
+    // Создаем временный элемент для работы с HTML
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = cleanHtml;
+    
+    // Обрабатываем различные элементы HTML и преобразуем их в HTML-теги для Telegram
+    
+    // Обработка жирного текста
+    const boldElements = tempElement.querySelectorAll('strong, b');
+    boldElements.forEach(el => {
+      const boldText = el.innerHTML;
+      el.outerHTML = `<b>${boldText}</b>`;
+    });
+    
+    // Обработка курсива
+    const italicElements = tempElement.querySelectorAll('em, i');
+    italicElements.forEach(el => {
+      const italicText = el.innerHTML;
+      el.outerHTML = `<i>${italicText}</i>`;
+    });
+    
+    // Обработка подчеркнутого текста
+    const underlineElements = tempElement.querySelectorAll('u');
+    underlineElements.forEach(el => {
+      const underlineText = el.innerHTML;
+      el.outerHTML = `<u>${underlineText}</u>`;
+    });
+    
+    // Обработка зачеркнутого текста
+    const strikeElements = tempElement.querySelectorAll('s, del, strike');
+    strikeElements.forEach(el => {
+      const strikeText = el.innerHTML;
+      el.outerHTML = `<s>${strikeText}</s>`;
+    });
+    
+    // Обработка кода
+    const codeElements = tempElement.querySelectorAll('code, pre');
+    codeElements.forEach(el => {
+      const codeText = el.innerHTML;
+      el.outerHTML = `<code>${codeText}</code>`;
+    });
+    
+    // Обработка ссылок
+    const linkElements = tempElement.querySelectorAll('a');
+    linkElements.forEach(el => {
+      const href = el.getAttribute('href');
+      // Берем текстовое содержимое вместо innerHTML, чтобы избежать вложенных тегов
+      const linkText = el.textContent || '';
+      
+      if (href && href.trim() !== '') {
+        // Создаем корректную ссылку с экранированием кавычек в URL
+        const safeHref = href.replace(/"/g, '&quot;');
+        el.outerHTML = `<a href="${safeHref}">${linkText}</a>`;
+      } else {
+        // Если ссылка пустая, просто заменяем тег на текст
+        el.outerHTML = linkText;
+      }
+    });
+    
+    // Обработка списков
+    const ulElements = tempElement.querySelectorAll('ul');
+    ulElements.forEach(ul => {
+      const listItems = ul.querySelectorAll('li');
+      let listText = '\n';
+      listItems.forEach(li => {
+        listText += `• ${li.innerHTML.trim()}\n`;
+      });
+      ul.outerHTML = listText;
+    });
+    
+    const olElements = tempElement.querySelectorAll('ol');
+    olElements.forEach(ol => {
+      const listItems = ol.querySelectorAll('li');
+      let listText = '\n';
+      listItems.forEach((li, index) => {
+        listText += `${index + 1}. ${li.innerHTML.trim()}\n`;
+      });
+      ol.outerHTML = listText;
+    });
+    
+    // Получаем итоговый HTML
+    let result = tempElement.innerHTML;
+    
+    // Удаляем лишние переносы строк и пробелы
+    result = result.replace(/(\n\s*\n\s*\n)/g, '\n\n');
+    
+    // Экранируем некоторые специальные символы HTML
+    result = result.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;');
+    
+    // Возвращаем теги форматирования
+    result = result.replace(/&lt;b&gt;/g, '<b>')
+                  .replace(/&lt;\/b&gt;/g, '</b>')
+                  .replace(/&lt;i&gt;/g, '<i>')
+                  .replace(/&lt;\/i&gt;/g, '</i>')
+                  .replace(/&lt;u&gt;/g, '<u>')
+                  .replace(/&lt;\/u&gt;/g, '</u>')
+                  .replace(/&lt;s&gt;/g, '<s>')
+                  .replace(/&lt;\/s&gt;/g, '</s>')
+                  .replace(/&lt;code&gt;/g, '<code>')
+                  .replace(/&lt;\/code&gt;/g, '</code>')
+                  .replace(/&lt;a href="([^"]+)"&gt;/g, '<a href="$1">')
+                  .replace(/&lt;\/a&gt;/g, '</a>');
+    
+    return result;
+  };
+
   const handlePublish = async () => {
     // Validate form
     if (selectedChannelIds.length === 0) {
@@ -485,7 +651,10 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
       return;
     }
     
-    if (!publishText && !publishImageUrl && publishImageUrls.length === 0) {
+    // Convert HTML to Telegram-compatible format
+    const telegramText = convertHtmlToTelegramFormat(publishText);
+    
+    if (!telegramText && !publishImageUrl && publishImageUrls.length === 0) {
       setFormError(t('publish_panel.no_content_error'));
       return;
     }
@@ -509,7 +678,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
       try {
         const result = await updateScheduledPost(scheduledPostId, {
           channelId: selectedChannelIds[0],
-          text: publishText,
+          text: telegramText,
           imageUrl: useMultipleImages ? '' : publishImageUrl,
           imageUrls: useMultipleImages ? publishImageUrls : [],
           tags: publishTags,
@@ -558,7 +727,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         // Publish to this channel
         const result = await publish({
           channelId,
-          text: publishText,
+          text: telegramText,
           imageUrl: useMultipleImages ? '' : publishImageUrl,
           imageUrls: useMultipleImages ? publishImageUrls : [],
           tags: publishTags,
@@ -788,22 +957,31 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           isRequired={true}
         />
         
-        <TextArea
-          label={t('publish_panel.text_label')}
-          placeholder={t('publish_panel.text_placeholder')}
-          value={publishText}
-          onChange={handleTextChange}
-          rows={12}
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('publish_panel.text_label')}
+          </label>
+          <div className="quill-container">
+            <ReactQuill
+              value={publishText}
+              onChange={handleTextChange}
+              modules={quillModules}
+              formats={quillFormats}
+              placeholder={t('publish_panel.text_placeholder')}
+              theme="snow"
+            />
+          </div>
+          <div style={{ height: '40px' }}></div> {/* Spacer to compensate for the Quill toolbar */}
+        </div>
         
         {/* Show warning when approaching character limit */}
-        {publishText.length > 3800 && showLengthWarning && (
+        {getTotalMessageLength() > 3800 && showLengthWarning && (
           <Alert
             variant="warning"
-            message={publishText.length > 4096 
+            message={getTotalMessageLength() > 4096 
               ? t('publish_panel.message_too_long') 
               : formatMessage('publish_panel.approaching_limit', { 
-                  remaining: (4096 - publishText.length).toString() 
+                  remaining: (4096 - getTotalMessageLength()).toString() 
                 })
             }
             onClose={() => setShowLengthWarning(false)}
@@ -811,18 +989,18 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         )}
         
         {/* Show warning when approaching caption limit with image */}
-        {(publishImageUrl || publishImageUrls.length > 0) && publishText.length > 900 && publishText.length <= 1024 && showLengthWarning && (
+        {(publishImageUrl || publishImageUrls.length > 0) && getTotalMessageLength() > 900 && getTotalMessageLength() <= 1024 && showLengthWarning && (
           <Alert
             variant="warning"
             message={formatMessage('publish_panel.approaching_caption_limit', { 
-              remaining: (1024 - publishText.length).toString() 
+              remaining: (1024 - getTotalMessageLength()).toString() 
             })}
             onClose={() => setShowLengthWarning(false)}
           />
         )}
         
         {/* Show error when exceeding caption limit with image */}
-        {(publishImageUrl || publishImageUrls.length > 0) && publishText.length > 1024 && (
+        {(publishImageUrl || publishImageUrls.length > 0) && getTotalMessageLength() > 1024 && (
           <Alert
             variant="error"
             message={t('publish_panel.error_caption_too_long')}
@@ -926,8 +1104,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
             (!publishText && !publishImageUrl && publishImageUrls.length === 0) || 
             selectedChannelIds.length === 0 || 
             (scheduleType === 'later' && !scheduledDate) ||
-            (publishText.length > 4096) ||
-            ((publishImageUrl || publishImageUrls.length > 0) && publishText.length > 1024))}
+            (getTotalMessageLength() > 4096) ||
+            ((publishImageUrl || publishImageUrls.length > 0) && getTotalMessageLength() > 1024))}
           leftIcon={scheduleType === 'now' ? <Send size={16} /> : <Calendar size={16} />}
         >
           {scheduleType === 'now' ? (
