@@ -10,24 +10,24 @@
 
 /* Make the application scale down proportionally on screens smaller than 600px */
 @media screen and (max-width: 600px) {
-  html {
-    /* Scale the root element based on viewport width */
+  body {
+    /* Применяем масштабирование к body */
     transform-origin: top left;
     transform: scale(var(--scale-factor));
-    width: 600px; /* minimum width before scaling */
-    min-height: 100vh;
-    height: auto;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  
-  body {
     width: 600px;
     min-height: 100vh;
     overflow-x: hidden;
     margin: 0;
     padding: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    height: 100%;
   }
   
   /* Create a container for the scaled content */
