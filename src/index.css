@@ -86,6 +86,11 @@
   margin-bottom: 0.5rem;
 }
 
+.ql-editor::before {
+  font-size: 14px !important;
+  font-style: normal !important;
+}
+
 .ql-snow .ql-stroke {
   stroke: #4a5568;
 }
