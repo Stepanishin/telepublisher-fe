@@ -249,7 +249,10 @@ export const generateText = async (prompt: string): Promise<string> => {
     const response = await api.post('/ai/generate-text', { prompt });
     return response.data.data.text;
   } catch (error) {
-    console.error('Error generating text:', error);
+    console.error('Generate tags error:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      throw new Error('Not enough credits to generate tags');
+    }
     throw error;
   }
 };
@@ -292,7 +295,7 @@ export const generateImage = async (prompt: string): Promise<string> => {
   } catch (error) {
     console.error('Generate image error:', error);
     if (axios.isAxiosError(error) && error.response?.status === 403) {
-      throw new Error('Недостаточно кредитов для генерации изображения');
+      throw new Error('Not enough credits to generate image');
     }
     throw error;
   }
@@ -312,7 +315,7 @@ export const generateTags = async (text: string): Promise<string[]> => {
   } catch (error) {
     console.error('Generate tags error:', error);
     if (axios.isAxiosError(error) && error.response?.status === 403) {
-      throw new Error('Недостаточно кредитов для генерации тегов');
+      throw new Error('Not enough credits to generate tags');
     }
     throw error;
   }
