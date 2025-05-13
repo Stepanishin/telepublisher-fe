@@ -515,7 +515,7 @@ const SubscriptionManager: React.FC = () => {
             </p>
             <div className="flex items-center">
               <a 
-                href="https://t.me/telepublisher" 
+                href="https://t.me/telepublisher_chat" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center text-blue-600 hover:text-blue-800 font-medium"

@@ -28,9 +28,9 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     'contact.mission': 'Our mission is to simplify content creation and publishing for Telegram channel owners.',
     'contact.contact_methods': 'Contact Methods',
     'contact.email': 'Email',
-    'contact.email_address': 'support@telepublisher.com',
+    'contact.email_address': 'telepublisher@gmail.com',
     'contact.telegram': 'Telegram',
-    'contact.telegram_handle': '@telepublisher_support',
+    'contact.telegram_handle': '@telepublisher_chat',
     'contact.telegram_btn': 'Contact on Telegram',
     'contact.youtube': 'YouTube',
     'contact.youtube_channel': 'TelePublisher Tutorials',
@@ -51,9 +51,9 @@ const translations: Record<Language, Record<TranslationKeys, string>> = {
     'contact.mission': 'Наша миссия - упростить создание и публикацию контента для владельцев Telegram-каналов.',
     'contact.contact_methods': 'Способы связи',
     'contact.email': 'Электронная почта',
-    'contact.email_address': 'support@telepublisher.com',
+    'contact.email_address': 'telepublisher@gmail.com',
     'contact.telegram': 'Telegram',
-    'contact.telegram_handle': '@telepublisher_support',
+    'contact.telegram_handle': '@telepublisher_chat',
     'contact.telegram_btn': 'Связаться в Telegram',
     'contact.youtube': 'YouTube',
     'contact.youtube_channel': 'TelePublisher Уроки',
@@ -155,7 +155,7 @@ const ContactPage: React.FC = () => {
                         {getTranslation('contact.email')}
                       </h3>
                       <p className="text-blue-600 mt-1 ml-7">
-                        <a href="mailto:support@telepublisher.com" className="hover:underline">
+                        <a href="mailto:telepublisher@gmail.com" className="hover:underline">
                           {getTranslation('contact.email_address')}
                         </a>
                       </p>
@@ -171,7 +171,7 @@ const ContactPage: React.FC = () => {
                         {getTranslation('contact.telegram_handle')}
                       </p>
                       <div className="mt-2 ml-7">
-                        <a href="https://t.me/telepublisher_support" target="_blank" rel="noopener noreferrer">
+                        <a href="https://t.me/telepublisher_chat" target="_blank" rel="noopener noreferrer">
                           <Button variant="outline" size="sm" leftIcon={<Send size={16} />}>
                             {getTranslation('contact.telegram_btn')}
                           </Button>

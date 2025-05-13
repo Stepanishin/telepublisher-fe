@@ -134,7 +134,7 @@ const BotInstructionsPanel: React.FC = () => {
                   {t('instructions.questions')}
                 </h4>
                 <p className="text-blue-700 text-sm">
-                  {t('instructions.support_text')} <a href="https://t.me/telepublisher_support" target="_blank" rel="noopener noreferrer" className="underline">@telepublisher_support</a>
+                  {t('instructions.support_text')} <a href="https://t.me/telepublisher_chat" target="_blank" rel="noopener noreferrer" className="underline">@telepublisher_chat</a>
                 </p>
               </div>
 
