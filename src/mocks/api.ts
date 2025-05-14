@@ -14,7 +14,6 @@ export async function fetchChannels(): Promise<Channel[]> {
     { id: '1', username: '@testchannel', title: 'Test Channel' },
     { id: '2', username: '@newsfeed', title: 'Daily News' },
     { id: '3', username: '@techblog', title: 'Tech Updates' },
-    { id: '4', username: '@crypto_explorer_channel', title: 'Crypto Explorer', botToken: '7825209896:AAEdZUw3Ck01TOgRbaJwjqa_tBJMlgctsJA' },
   ];
 }
 
