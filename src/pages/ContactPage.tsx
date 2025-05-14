@@ -189,7 +189,7 @@ const ContactPage: React.FC = () => {
                         {getTranslation('contact.youtube_channel')}
                       </p>
                       <div className="mt-2 ml-7">
-                        <a href="https://youtube.com/c/telepublisher" target="_blank" rel="noopener noreferrer">
+                        <a href="https://www.youtube.com/@TelePublisher" target="_blank" rel="noopener noreferrer">
                           <Button variant="outline" size="sm" leftIcon={<Youtube size={16} className="text-red-500" />}>
                             {getTranslation('contact.youtube_btn')}
                           </Button>

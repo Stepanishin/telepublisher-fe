@@ -54,6 +54,11 @@ const translations: Record<Language, Record<string, string>> = {
     'features.privacy': 'Privacy',
     'features.privacy_description': 'We do not collect personal information and do not transfer data to third parties.',
 
+    // Video section
+    'video.title': 'See TelePublisher in Action',
+    'video.description': 'Watch our tutorial to learn how to optimize your Telegram channel with our powerful tools',
+    'video.channel_link': 'Visit our YouTube channel for more tutorials',
+
     // Pricing section
     'pricing.title': 'Pricing plans',
     'pricing.free': 'Free',
@@ -173,6 +178,7 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.clear_fields': 'Clear all fields',
     'publish_panel.multiple_selection_hint': 'Click to open dropdown and select multiple channels',
     'publish_panel.publish_to_multiple': 'Publish to {count} channels',
+    'publish_panel.schedule_to_multiple': 'Schedule to {count} channels',
     'publish_panel.publishing_progress': 'Publishing Progress',
     'publish_panel.channels': 'channels',
     'publish_panel.success_publish': 'Successfully published to:',
@@ -514,6 +520,11 @@ const translations: Record<Language, Record<string, string>> = {
     'features.privacy': 'Приватность',
     'features.privacy_description': 'Мы не собираем личную информацию и не передаем данные третьим лицам.',
 
+    // Video section
+    'video.title': 'TelePublisher в действии',
+    'video.description': 'Посмотрите наш обучающий видеоролик, чтобы узнать, как оптимизировать ваш Telegram-канал с помощью наших инструментов',
+    'video.channel_link': 'Посетите наш YouTube канал для просмотра других обучающих видео',
+
     // Pricing section
     'pricing.title': 'Тарифные планы',
     'pricing.free': 'Бесплатный',
@@ -635,6 +646,7 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.clear_fields': 'Очистить все поля',
     'publish_panel.multiple_selection_hint': 'Нажмите, чтобы открыть выпадающий список и выбрать несколько каналов',
     'publish_panel.publish_to_multiple': 'Опубликовать в {count} каналах',
+    'publish_panel.schedule_to_multiple': 'Запланировать в {count} каналах',
     'publish_panel.publishing_progress': 'Прогресс публикации',
     'publish_panel.channels': 'каналов',
     'publish_panel.success_publish': 'Успешно опубликовано в:',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Zap, Globe, Send, Lock, CheckCircle, Sparkles } from 'lucide-react';
+import { Shield, Zap, Globe, Send, Lock, CheckCircle, Sparkles, PlayCircle } from 'lucide-react';
 import Button from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import PublicNavbar from '../components/Layout/PublicNavbar';
@@ -103,6 +103,42 @@ const HomePage: React.FC = () => {
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Video Tutorial Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">
+            {t('video.title') || 'See TelePublisher in Action'}
+          </h2>
+          <p className="text-xl text-center max-w-3xl mx-auto mb-10 text-gray-600">
+            {t('video.description') || 'Watch our tutorial to learn how to optimize your Telegram channel with our powerful tools'}
+          </p>
+          
+          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="relative pb-[56.25%] h-0">
+              <iframe 
+                className="absolute top-0 left-0 w-full h-full"
+                src="https://www.youtube.com/embed/9DK_duUO1hM" 
+                title="TelePublisher Tutorial"
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen>
+              </iframe>
+            </div>
+            <div className="p-6 bg-gray-50 flex justify-center">
+              <a 
+                href="https://www.youtube.com/@TelePublisher" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                <PlayCircle className="h-5 w-5 mr-2" />
+                <span>{t('video.channel_link') || 'Visit our YouTube channel for more tutorials'}</span>
+              </a>
+            </div>
           </div>
         </div>
       </section>
