@@ -484,6 +484,27 @@ const translations: Record<Language, Record<string, string>> = {
     'crypto.description': 'To pay with Bitcoin, Ethereum or other cryptocurrencies, please contact us through our Telegram channel.',
     'crypto.contact_button': 'Contact us on Telegram',
     'crypto.benefits': 'Benefits of crypto payments: lower fees, faster international transactions, and enhanced privacy.',
+
+    // Scheduled Posts - Calendar View
+    'scheduled_posts.calendar_view': 'Calendar View',
+    'scheduled_posts.list_view': 'List View',
+    'scheduled_posts.post_details': 'Post Details',
+    'scheduled_posts.poll_details': 'Poll Details',
+    'scheduled_posts.question': 'Question',
+    'scheduled_posts.options': 'Options',
+    
+    // Calendar translations
+    'calendar.today': 'Today',
+    'calendar.previous': 'Previous',
+    'calendar.next': 'Next',
+    'calendar.month': 'Month',
+    'calendar.week': 'Week',
+    'calendar.day': 'Day',
+    'calendar.agenda': 'Agenda',
+    'calendar.date': 'Date',
+    'calendar.time': 'Time',
+    'calendar.event': 'Event',
+    'calendar.no_events': 'No events in this range',
   },
   ru: {
     // Navbar
@@ -952,6 +973,27 @@ const translations: Record<Language, Record<string, string>> = {
     'crypto.description': 'Для оплаты Bitcoin, Ethereum или другими криптовалютами, пожалуйста, свяжитесь с нами через наш Telegram канал.',
     'crypto.contact_button': 'Связаться в Telegram',
     'crypto.benefits': 'Преимущества оплаты криптовалютой: низкие комиссии, быстрые международные транзакции и повышенная конфиденциальность.',
+
+    // Scheduled Posts - Calendar View
+    'scheduled_posts.calendar_view': 'Календарь',
+    'scheduled_posts.list_view': 'Список',
+    'scheduled_posts.post_details': 'Детали публикации',
+    'scheduled_posts.poll_details': 'Детали опроса',
+    'scheduled_posts.question': 'Вопрос',
+    'scheduled_posts.options': 'Варианты ответов',
+    
+    // Calendar translations
+    'calendar.today': 'Сегодня',
+    'calendar.previous': 'Назад',
+    'calendar.next': 'Вперед',
+    'calendar.month': 'Месяц',
+    'calendar.week': 'Неделя',
+    'calendar.day': 'День',
+    'calendar.agenda': 'Повестка',
+    'calendar.date': 'Дата',
+    'calendar.time': 'Время',
+    'calendar.event': 'Событие',
+    'calendar.no_events': 'Нет событий в выбранном диапазоне',
   },
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Edit, Trash2, Image as ImageIcon, Send, BarChart2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Edit, Trash2, Image as ImageIcon, Send, BarChart2, List, Grid } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -16,6 +16,10 @@ import {
   publishScheduledPoll
 } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { Calendar, dateFnsLocalizer, Event } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS, ru as ruRU } from 'date-fns/locale';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 interface ScheduledPost {
   _id: string;
@@ -46,6 +50,14 @@ const isPoll = (item: ScheduledItem): item is ScheduledPoll => {
   return 'question' in item && 'options' in item;
 };
 
+type ViewMode = 'list' | 'calendar';
+
+// Define a custom event type that extends the base Event from react-big-calendar
+interface CalendarEvent extends Event {
+  id: string;
+  resource?: ScheduledItem;
+}
+
 const ScheduledPosts: React.FC = () => {
   const [items, setItems] = useState<ScheduledItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -58,9 +70,26 @@ const ScheduledPosts: React.FC = () => {
   const [itemToPublish, setItemToPublish] = useState<{id: string, type: 'post' | 'poll'} | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const { t } = useLanguage();
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar'); // Default to calendar view
+  const [selectedEvent, setSelectedEvent] = useState<ScheduledItem | null>(null);
+  const [eventDetailsOpen, setEventDetailsOpen] = useState(false);
+  const { t, language } = useLanguage();
   const { channels } = useChannelsStore();
   const navigate = useNavigate();
+
+  // Calendar localization setup
+  const locales = {
+    'en': enUS,
+    'ru': ruRU
+  };
+  
+  const localizer = dateFnsLocalizer({
+    format,
+    parse,
+    startOfWeek,
+    getDay,
+    locales
+  });
 
   useEffect(() => {
     fetchScheduledItems();
@@ -119,6 +148,16 @@ const ScheduledPosts: React.FC = () => {
   const closePublishDialog = () => {
     setPublishDialogOpen(false);
     setItemToPublish(null);
+  };
+  
+  const openEventDetails = (item: ScheduledItem) => {
+    setSelectedEvent(item);
+    setEventDetailsOpen(true);
+  };
+  
+  const closeEventDetails = () => {
+    setEventDetailsOpen(false);
+    setSelectedEvent(null);
   };
 
   const handleDelete = async () => {
@@ -230,11 +269,299 @@ const ScheduledPosts: React.FC = () => {
       return t('scheduled_posts.text_only');
     }
   };
+  
+  // Convert scheduled items to calendar events
+  const calendarEvents: CalendarEvent[] = items.map(item => {
+    const eventDate = new Date(item.scheduledDate);
+    const title = isPoll(item) 
+      ? `${t('scheduled_posts.poll')}: ${item.question.substring(0, 30)}${item.question.length > 30 ? '...' : ''}`
+      : `${getChannelName(item.channelId)}: ${item.text.substring(0, 30)}${item.text.length > 30 ? '...' : ''}`;
+    
+    return {
+      id: item._id,
+      title,
+      start: eventDate,
+      end: new Date(eventDate.getTime() + 30 * 60000), // End 30 minutes after start
+      resource: item, // Store the full item as a resource for access during event click
+      allDay: false
+    };
+  });
+  
+  // Handle calendar event selection
+  const handleEventSelect = (event: CalendarEvent) => {
+    if (event.resource) {
+      openEventDetails(event.resource);
+    }
+  };
+
+  // Render the list view
+  const renderListView = () => (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('scheduled_posts.date')}
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('scheduled_posts.channel')}
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('scheduled_posts.content')}
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('scheduled_posts.type')}
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t('scheduled_posts.actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {items.map(item => (
+            <tr key={item._id}>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <CalendarIcon size={16} className="mr-2 text-blue-500" />
+                  {formatDate(new Date(item.scheduledDate))}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {getChannelName(item.channelId)}
+              </td>
+              <td className="px-6 py-4">
+                <div className="text-sm text-gray-900 line-clamp-2">
+                  {renderItemContent(item)}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {renderItemType(item)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(item)}
+                    className="p-1"
+                    title={t('scheduled_posts.edit')}
+                    disabled={isPoll(item)} // Disable for polls until edit functionality is implemented
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="p-1 text-blue-500 border-blue-500 hover:bg-blue-50"
+                    onClick={() => openPublishDialog(item._id, isPoll(item) ? 'poll' : 'post')}
+                    title={t('scheduled_posts.publish_now')}
+                  >
+                    <Send size={16} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="p-1 text-red-500 border-red-500 hover:bg-red-50"
+                    onClick={() => openDeleteDialog(item._id, isPoll(item) ? 'poll' : 'post')}
+                    title={t('scheduled_posts.delete')}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+  
+  // Render calendar view
+  const renderCalendarView = () => (
+    <div className="h-[600px] mt-4">
+      <Calendar
+        localizer={localizer}
+        events={calendarEvents}
+        startAccessor="start"
+        endAccessor="end"
+        style={{ height: '100%' }}
+        onSelectEvent={handleEventSelect}
+        views={['month', 'week', 'day']}
+        defaultView="month"
+        messages={{
+          today: t('calendar.today'),
+          previous: t('calendar.previous'),
+          next: t('calendar.next'),
+          month: t('calendar.month'),
+          week: t('calendar.week'),
+          day: t('calendar.day'),
+          agenda: t('calendar.agenda'),
+          date: t('calendar.date'),
+          time: t('calendar.time'),
+          event: t('calendar.event'),
+          noEventsInRange: t('calendar.no_events')
+        }}
+        culture={language === 'ru' ? 'ru' : 'en'}
+        eventPropGetter={(event: CalendarEvent) => {
+          const resource = event.resource as ScheduledItem;
+          if (!resource) return {};
+          
+          let backgroundColor = '#3b82f6'; // Default blue
+          
+          // Different color for different types
+          if (isPoll(resource)) {
+            backgroundColor = '#8b5cf6'; // Purple for polls
+          } else if (resource.imageUrl || (resource.imageUrls && resource.imageUrls.length > 0)) {
+            backgroundColor = '#10b981'; // Green for posts with images
+          }
+          
+          return {
+            style: {
+              backgroundColor,
+              borderRadius: '4px',
+              opacity: 0.9,
+              color: 'white',
+              border: '0px',
+              display: 'block'
+            }
+          };
+        }}
+      />
+    </div>
+  );
+  
+  // Event details modal for calendar view
+  const renderEventDetails = () => {
+    if (!selectedEvent) return null;
+    
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-30 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg max-w-2xl w-full shadow-xl">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium leading-6">
+                {isPoll(selectedEvent) ? t('scheduled_posts.poll_details') : t('scheduled_posts.post_details')}
+              </h3>
+              <button 
+                onClick={closeEventDetails}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">{t('scheduled_posts.date')}</p>
+                <p className="font-medium">{formatDate(new Date(selectedEvent.scheduledDate))}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">{t('scheduled_posts.channel')}</p>
+                <p className="font-medium">{getChannelName(selectedEvent.channelId)}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">{t('scheduled_posts.type')}</p>
+                <p className="font-medium flex items-center">
+                  {renderItemType(selectedEvent)}
+                </p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">
+                  {isPoll(selectedEvent) ? t('scheduled_posts.question') : t('scheduled_posts.content')}
+                </p>
+                <div className="max-h-40 overflow-y-auto mt-2 p-2 bg-gray-50 rounded">
+                  <p>{renderItemContent(selectedEvent)}</p>
+                </div>
+              </div>
+              
+              {isPoll(selectedEvent) && (
+                <div>
+                  <p className="text-sm text-gray-500">{t('scheduled_posts.options')}</p>
+                  <ul className="list-disc pl-5">
+                    {selectedEvent.options.map((option, idx) => (
+                      <li key={idx} className="text-sm">{option}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-6 flex space-x-3 justify-end">
+              {!isPoll(selectedEvent) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    closeEventDetails();
+                    handleEdit(selectedEvent);
+                  }}
+                >
+                  <Edit size={16} className="mr-2" />
+                  {t('scheduled_posts.edit')}
+                </Button>
+              )}
+              
+              <Button
+                variant="outline" 
+                size="sm"
+                className="text-blue-500 border-blue-500 hover:bg-blue-50"
+                onClick={() => {
+                  closeEventDetails();
+                  openPublishDialog(selectedEvent._id, isPoll(selectedEvent) ? 'poll' : 'post');
+                }}
+              >
+                <Send size={16} className="mr-2" />
+                {t('scheduled_posts.publish_now')}
+              </Button>
+              
+              <Button
+                variant="outline" 
+                size="sm"
+                className="text-red-500 border-red-500 hover:bg-red-50"
+                onClick={() => {
+                  closeEventDetails();
+                  openDeleteDialog(selectedEvent._id, isPoll(selectedEvent) ? 'poll' : 'post');
+                }}
+              >
+                <Trash2 size={16} className="mr-2" />
+                {t('scheduled_posts.delete')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('scheduled_posts.title')}</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>{t('scheduled_posts.title')}</CardTitle>
+          <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
+            <Button
+              variant={viewMode === 'calendar' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className={viewMode === 'calendar' ? '' : 'hover:bg-gray-200'}
+            >
+              <Grid size={18} className="mr-1" />
+              {t('scheduled_posts.calendar_view')}
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={viewMode === 'list' ? '' : 'hover:bg-gray-200'}
+            >
+              <List size={18} className="mr-1" />
+              {t('scheduled_posts.list_view')}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent>
@@ -288,86 +615,14 @@ const ScheduledPosts: React.FC = () => {
             <p className="text-gray-500">{t('scheduled_posts.no_posts')}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('scheduled_posts.date')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('scheduled_posts.channel')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('scheduled_posts.content')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('scheduled_posts.type')}
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('scheduled_posts.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {items.map(item => (
-                  <tr key={item._id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Calendar size={16} className="mr-2 text-blue-500" />
-                        {formatDate(new Date(item.scheduledDate))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getChannelName(item.channelId)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 line-clamp-2">
-                        {renderItemContent(item)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {renderItemType(item)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(item)}
-                          className="p-1"
-                          title={t('scheduled_posts.edit')}
-                          disabled={isPoll(item)} // Disable for polls until edit functionality is implemented
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="p-1 text-blue-500 border-blue-500 hover:bg-blue-50"
-                          onClick={() => openPublishDialog(item._id, isPoll(item) ? 'poll' : 'post')}
-                          title={t('scheduled_posts.publish_now')}
-                        >
-                          <Send size={16} />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="p-1 text-red-500 border-red-500 hover:bg-red-50"
-                          onClick={() => openDeleteDialog(item._id, isPoll(item) ? 'poll' : 'post')}
-                          title={t('scheduled_posts.delete')}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {viewMode === 'list' ? renderListView() : renderCalendarView()}
+          </>
         )}
       </CardContent>
+      
+      {/* Event Details Modal */}
+      {eventDetailsOpen && renderEventDetails()}
       
       {/* Confirm Dialogs */}
       <ConfirmDialog
