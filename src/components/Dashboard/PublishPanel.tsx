@@ -532,10 +532,10 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     // Предварительная очистка HTML от некоторых тегов, которые не поддерживаются Telegram
     // Заменяем параграфы на перенос строки
     const cleanHtml = html.replace(/<p[^>]*>/gi, '')
-                        .replace(/<\/p>/gi, '\n\n')
+                        .replace(/<\/p>/gi, '\n')  // Заменяем </p> на один перенос строки вместо двух
                         .replace(/<br\s*\/?>/gi, '\n')
                         .replace(/<div[^>]*>/gi, '')
-                        .replace(/<\/div>/gi, '\n\n');
+                        .replace(/<\/div>/gi, '\n');
     
     // Создаем временный элемент для работы с HTML
     const tempElement = document.createElement('div');
@@ -620,7 +620,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     let result = tempElement.innerHTML;
     
     // Удаляем лишние переносы строк и пробелы
-    result = result.replace(/(\n\s*\n\s*\n)/g, '\n\n');
+    result = result.replace(/(\n\s*\n\s*\n)/g, '\n\n');  // Убираем тройные переносы
+    result = result.replace(/^\n+|\n+$/g, '');  // Убираем переносы в начале и конце
     
     // Экранируем некоторые специальные символы HTML
     result = result.replace(/&/g, '&amp;')
