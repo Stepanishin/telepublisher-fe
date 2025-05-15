@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ImageIcon, Hash, ArrowRight } from 'lucide-react';
+import { Sparkles, ImageIcon, Hash, ArrowRight, Upload, Wand2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -7,17 +7,23 @@ import { useContentStore } from '../../store/contentStore';
 import { useCreditStore } from '../../store/creditStore';
 import Alert from '../ui/Alert';
 import { useLanguage } from '../../contexts/LanguageContext';
+import ImageUploader from '../ui/ImageUploader';
 
 const ContentGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string>('');
+  const [mode, setMode] = useState<'text' | 'image' | 'fromImage'>('text');
+  
   const { 
     generatedContent, 
     isGenerating, 
     generateText, 
     generateImage, 
     generateTags,
+    generateTextFromImage,
+    generateImageFromImage,
     transferGeneratedText,
     transferGeneratedImage,
     transferGeneratedTags
@@ -58,6 +64,42 @@ const ContentGenerator: React.FC = () => {
     }
   };
 
+  const handleGenerateTextFromImage = async () => {
+    if (!referenceImageUrl) {
+      setError('Необходимо загрузить изображение');
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccessMessage(null);
+      await generateTextFromImage(referenceImageUrl, prompt);
+      // Refresh credits after successful generation
+      fetchCreditInfo();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t('content_generator.error_text_from_image');
+      setError(errorMessage);
+    }
+  };
+
+  const handleGenerateImageFromImage = async () => {
+    if (!referenceImageUrl) {
+      setError('Необходимо загрузить изображение');
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccessMessage(null);
+      await generateImageFromImage(referenceImageUrl, prompt);
+      // Refresh credits after successful generation
+      fetchCreditInfo();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t('content_generator.error_image_from_image');
+      setError(errorMessage);
+    }
+  };
+
   const handleGenerateTags = async () => {
     try {
       setError('');
@@ -86,6 +128,11 @@ const ContentGenerator: React.FC = () => {
     }, 3000);
   };
 
+  const handleModeChange = (newMode: 'text' | 'image' | 'fromImage') => {
+    setMode(newMode);
+    setError('');
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -108,10 +155,45 @@ const ContentGenerator: React.FC = () => {
           />
         )}
         
+        {/* Mode selection tabs */}
+        <div className="flex space-x-2 mb-4 border-b border-gray-200">
+          <button 
+            className={`px-4 py-2 ${mode === 'text' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+            onClick={() => handleModeChange('text')}
+          >
+            <Sparkles size={16} className="inline mr-1" />
+            {t('content_generator.standard_mode')}
+          </button>
+          <button 
+            className={`px-4 py-2 ${mode === 'fromImage' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+            onClick={() => handleModeChange('fromImage')}
+          >
+            <Upload size={16} className="inline mr-1" />
+            {t('content_generator.image_based_mode')}
+          </button>
+        </div>
+        
+        {mode === 'fromImage' && (
+          <div className="mb-4">
+            <h4 className="text-sm font-medium mb-2">{t('content_generator.upload_image_prompt')}</h4>
+            <ImageUploader
+              value={referenceImageUrl}
+              onChange={setReferenceImageUrl}
+              onError={setError}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              <span className="font-semibold">{t('content_generator.supported_formats')}</span> JPG, JPEG, PNG. 
+              <span className="font-semibold ml-1">{t('content_generator.max_file_size')}</span> 4MB.
+              <br />
+              {t('content_generator.conversion_note')}
+            </p>
+          </div>
+        )}
+        
         <div className="mt-4">
           <Input
-            label={t('content_generator.prompt_label')}
-            placeholder={t('content_generator.prompt_placeholder')}
+            label={mode === 'fromImage' ? t('content_generator.additional_instructions') : t('content_generator.prompt_label')}
+            placeholder={mode === 'fromImage' ? t('content_generator.describe_based_on_image') : t('content_generator.prompt_placeholder')}
             value={prompt}
             onChange={handlePromptChange}
             fullWidth
@@ -119,33 +201,62 @@ const ContentGenerator: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap gap-2 mt-4">
-          <Button
-            leftIcon={<Sparkles size={16} />}
-            onClick={handleGenerateText}
-            isLoading={isGenerating}
-            disabled={!prompt.trim() || isGenerating}
-          >
-            {t('content_generator.generate_text')}
-            {creditInfo && <span className="ml-1 text-xs opacity-70">(1 {t('content_generator.credits')})</span>}
-          </Button>
+          {mode === 'text' && (
+            <>
+              <Button
+                leftIcon={<Sparkles size={16} />}
+                onClick={handleGenerateText}
+                isLoading={isGenerating}
+                disabled={!prompt.trim() || isGenerating}
+              >
+                {t('content_generator.generate_text')}
+                {creditInfo && <span className="ml-1 text-xs opacity-70">(1 {t('content_generator.credits')})</span>}
+              </Button>
+              
+              <Button
+                variant="secondary"
+                leftIcon={<ImageIcon size={16} />}
+                onClick={handleGenerateImage}
+                isLoading={isGenerating}
+                disabled={!prompt.trim() || isGenerating}
+              >
+                {t('content_generator.generate_image')}
+                {creditInfo && <span className="ml-1 text-xs opacity-70">(2 {t('content_generator.credits_plural')})</span>}
+              </Button>
+            </>
+          )}
           
-          <Button
-            variant="secondary"
-            leftIcon={<ImageIcon size={16} />}
-            onClick={handleGenerateImage}
-            isLoading={isGenerating}
-            disabled={!prompt.trim() || isGenerating}
-          >
-            {t('content_generator.generate_image')}
-            {creditInfo && <span className="ml-1 text-xs opacity-70">(2 {t('content_generator.credits_plural')})</span>}
-          </Button>
+          {mode === 'fromImage' && (
+            <>
+              <Button
+                leftIcon={<Sparkles size={16} />}
+                onClick={handleGenerateTextFromImage}
+                isLoading={isGenerating}
+                disabled={!referenceImageUrl || isGenerating}
+              >
+                {t('content_generator.generate_text_from_image')}
+                <span className="ml-1 text-xs opacity-70">(2 {t('content_generator.credits_visionapi')})</span>
+              </Button>
+              
+              <Button
+                variant="secondary"
+                leftIcon={<Wand2 size={16} />}
+                onClick={handleGenerateImageFromImage}
+                isLoading={isGenerating}
+                disabled={!referenceImageUrl || isGenerating}
+              >
+                {t('content_generator.generate_image_from_image')}
+                <span className="ml-1 text-xs opacity-70">(3 {t('content_generator.credits_imageedit')})</span>
+              </Button>
+            </>
+          )}
           
           <Button
             variant="outline"
             leftIcon={<Hash size={16} />}
             onClick={handleGenerateTags}
             isLoading={isGenerating}
-            disabled={(!prompt.trim() && !generatedContent.text.trim()) || isGenerating}
+            disabled={(!prompt.trim() && !generatedContent.text.trim() && !referenceImageUrl) || isGenerating}
           >
             {t('content_generator.generate_tags')}
             {creditInfo && <span className="ml-1 text-xs opacity-70">(1 {t('content_generator.credits')})</span>}

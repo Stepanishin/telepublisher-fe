@@ -249,11 +249,34 @@ export const generateText = async (prompt: string): Promise<string> => {
     const response = await api.post('/ai/generate-text', { prompt });
     return response.data.data.text;
   } catch (error) {
-    console.error('Generate tags error:', error);
-    if (axios.isAxiosError(error) && error.response?.status === 403) {
-      throw new Error('Not enough credits to generate tags');
-    }
-    throw error;
+    console.error('Error generating text:', error);
+    throw new Error(error instanceof AxiosError ? error.response?.data?.message : 'Failed to generate text');
+  }
+};
+
+export const generateTextFromImage = async (imageUrl: string, additionalPrompt?: string): Promise<string> => {
+  try {
+    const response = await api.post('/ai/generate-text-from-image', { 
+      imageUrl,
+      additionalPrompt
+    });
+    return response.data.data.text;
+  } catch (error) {
+    console.error('Error generating text from image:', error);
+    throw new Error(error instanceof AxiosError ? error.response?.data?.message : 'Failed to generate text from image');
+  }
+};
+
+export const generateImageFromImage = async (imageUrl: string, prompt?: string): Promise<string> => {
+  try {
+    const response = await api.post('/ai/generate-image-from-image', { 
+      imageUrl,
+      prompt 
+    });
+    return response.data.data.imageUrl;
+  } catch (error) {
+    console.error('Error generating image from image:', error);
+    throw new Error(error instanceof AxiosError ? error.response?.data?.message : 'Failed to generate image from reference');
   }
 };
 

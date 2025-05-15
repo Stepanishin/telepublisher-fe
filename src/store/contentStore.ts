@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { GeneratedContent, PublishParams, PublishResult, ScheduledPostUpdate } from '../types';
-import { generateText, generateImage, generateTags, publishContent, updateScheduledPost as apiUpdateScheduledPost } from '../services/api';
+import { 
+  generateText, 
+  generateImage, 
+  generateTags, 
+  generateTextFromImage,
+  generateImageFromImage,
+  publishContent, 
+  updateScheduledPost as apiUpdateScheduledPost 
+} from '../services/api';
 
 interface ContentState {
   content: GeneratedContent;
@@ -15,6 +23,8 @@ interface ContentState {
   generateText: (prompt: string) => Promise<void>;
   generateImage: (prompt: string) => Promise<void>;
   generateTags: (text: string) => Promise<void>;
+  generateTextFromImage: (imageUrl: string, additionalPrompt?: string) => Promise<void>;
+  generateImageFromImage: (imageUrl: string, prompt?: string) => Promise<void>;
   transferGeneratedText: () => void;
   transferGeneratedImage: () => void;
   transferGeneratedTags: () => void;
@@ -66,6 +76,22 @@ export const useContentStore = create<ContentState>((set, get) => ({
     }
   },
   
+  generateTextFromImage: async (imageUrl: string, additionalPrompt?: string) => {
+    set({ isGenerating: true, error: null });
+    try {
+      const text = await generateTextFromImage(imageUrl, additionalPrompt);
+      set({ 
+        generatedContent: { ...get().generatedContent, text }, 
+        isGenerating: false 
+      });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to generate text from image', 
+        isGenerating: false 
+      });
+    }
+  },
+  
   generateImage: async (prompt: string) => {
     set({ isGenerating: true, error: null });
     try {
@@ -77,6 +103,22 @@ export const useContentStore = create<ContentState>((set, get) => ({
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to generate image', 
+        isGenerating: false 
+      });
+    }
+  },
+  
+  generateImageFromImage: async (imageUrl: string, prompt?: string) => {
+    set({ isGenerating: true, error: null });
+    try {
+      const newImageUrl = await generateImageFromImage(imageUrl, prompt);
+      set({ 
+        generatedContent: { ...get().generatedContent, imageUrl: newImageUrl }, 
+        isGenerating: false 
+      });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to generate image from reference', 
         isGenerating: false 
       });
     }
