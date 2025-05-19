@@ -574,12 +574,12 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     if (!html) return '';
     
     // Предварительная очистка HTML от некоторых тегов, которые не поддерживаются Telegram
-    // Заменяем параграфы на перенос строки
+    // Заменяем параграфы на перенос строки, но не добавляем двойной перенос
     const cleanHtml = html.replace(/<p[^>]*>/gi, '')
-                        .replace(/<\/p>/gi, '\n\n')
+                        .replace(/<\/p>/gi, '\n')  // Только один перенос вместо двух
                         .replace(/<br\s*\/?>/gi, '\n')
                         .replace(/<div[^>]*>/gi, '')
-                        .replace(/<\/div>/gi, '\n\n');
+                        .replace(/<\/div>/gi, '\n');
     
     // Создаем временный элемент для работы с HTML
     const tempElement = document.createElement('div');
@@ -663,8 +663,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     // Получаем итоговый HTML
     let result = tempElement.innerHTML;
     
-    // Удаляем лишние переносы строк и пробелы
-    result = result.replace(/(\n\s*\n\s*\n)/g, '\n\n');
+    // Убираем последовательные переносы строк (более 2-х) и заменяем их на двойной перенос
+    result = result.replace(/\n{3,}/g, '\n\n');
     
     // Экранируем некоторые специальные символы HTML
     result = result.replace(/&/g, '&amp;')
@@ -684,6 +684,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
                   .replace(/&lt;\/code&gt;/g, '</code>')
                   .replace(/&lt;a href="([^"]+)"&gt;/g, '<a href="$1">')
                   .replace(/&lt;\/a&gt;/g, '</a>');
+    
+    // Финальная очистка от избыточных переносов строк в начале и конце текста
+    result = result.trim();
     
     return result;
   };
