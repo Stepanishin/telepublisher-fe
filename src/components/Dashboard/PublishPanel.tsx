@@ -573,6 +573,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   const convertHtmlToTelegramFormat = (html: string): string => {
     if (!html) return '';
     
+    // Заменяем &nbsp; на обычный пробел перед обработкой
+    html = html.replace(/&nbsp;/g, ' ');
+    
     // Предварительная очистка HTML от некоторых тегов, которые не поддерживаются Telegram
     // Заменяем параграфы на перенос строки, но не добавляем двойной перенос
     const cleanHtml = html.replace(/<p[^>]*>/gi, '')
@@ -687,6 +690,17 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     
     // Финальная очистка от избыточных переносов строк в начале и конце текста
     result = result.trim();
+    
+    // Еще раз заменяем все оставшиеся HTML-сущности на соответствующие символы
+    result = result.replace(/&nbsp;/g, ' ')
+                   .replace(/&amp;nbsp;/g, ' ')
+                   .replace(/&quot;/g, '"')
+                   .replace(/&apos;/g, "'")
+                   .replace(/&laquo;/g, '«')
+                   .replace(/&raquo;/g, '»')
+                   .replace(/&ndash;/g, '–')
+                   .replace(/&mdash;/g, '—')
+                   .replace(/&hellip;/g, '...');
     
     return result;
   };
