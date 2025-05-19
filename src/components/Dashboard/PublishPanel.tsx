@@ -14,6 +14,7 @@ import { useContentStore } from '../../store/contentStore';
 import { useTabContentStore } from '../../store/tabContentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
 import DateTimePicker from '../ui/DateTimePicker';
+import { deleteImage } from '../../services/api';
 
 // Scheduled post types
 type ScheduleType = 'now' | 'later';
@@ -417,6 +418,27 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   };
   
   const handleClearFields = () => {
+    // Delete uploaded images from server before clearing
+    if (publishImageUrl && publishImageUrl.includes('/uploads/')) {
+      deleteImage(publishImageUrl).then(success => {
+        if (success) {
+          console.log('Successfully deleted single image from server:', publishImageUrl);
+        }
+      });
+    }
+    
+    if (publishImageUrls.length > 0) {
+      publishImageUrls.forEach(imageUrl => {
+        if (imageUrl.includes('/uploads/')) {
+          deleteImage(imageUrl).then(success => {
+            if (success) {
+              console.log('Successfully deleted image from server:', imageUrl);
+            }
+          });
+        }
+      });
+    }
+    
     // Clear text
     setPublishText('');
     
@@ -496,6 +518,28 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   };
   
   const toggleImageMode = () => {
+    // Handle image cleanup when switching modes
+    if (useMultipleImages) {
+      // When switching from multiple to single
+      // We'll keep the first image and delete the rest
+      if (publishImageUrls.length > 1) {
+        // Delete all images except the first one
+        for (let i = 1; i < publishImageUrls.length; i++) {
+          const imageUrl = publishImageUrls[i];
+          if (imageUrl && imageUrl.includes('/uploads/')) {
+            deleteImage(imageUrl).then(success => {
+              if (success) {
+                console.log('Successfully deleted extra image when switching to single mode:', imageUrl);
+              }
+            });
+          }
+        }
+      }
+    } else {
+      // When switching from single to multiple
+      // Nothing to delete, we'll just move the single image to the array
+    }
+    
     setUseMultipleImages(!useMultipleImages);
     
     // When switching to single image mode, use the first image from multiple images if available

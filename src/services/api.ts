@@ -310,6 +310,25 @@ export const uploadImage = async (file: File): Promise<string> => {
   }
 };
 
+// Delete uploaded image from server
+export const deleteImage = async (imageUrl: string): Promise<boolean> => {
+  try {
+    // Extract filename from the URL
+    const filename = imageUrl.split('/').pop();
+    if (!filename) {
+      console.error('Invalid image URL format', imageUrl);
+      return false;
+    }
+    
+    const response = await api.delete(`/upload/image/${filename}`);
+    return response.data.success || false;
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    // Return false instead of throwing to prevent UI disruption
+    return false;
+  }
+};
+
 export const generateImage = async (prompt: string): Promise<string> => {
   try {
     // Use real API instead of mock

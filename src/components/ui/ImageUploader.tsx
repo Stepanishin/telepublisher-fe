@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, ImageIcon, Link, X, Loader, AlertCircle, Plus, Trash2 } from 'lucide-react';
-import { uploadImage } from '../../services/api';
+import { uploadImage, deleteImage } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ImageUploaderProps {
@@ -189,8 +189,28 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   
   const handleClear = () => {
     if (multiple) {
+      // Delete all images from server before clearing
+      if (values.length > 0) {
+        values.forEach(imageUrl => {
+          if (imageUrl.includes('/uploads/')) {
+            deleteImage(imageUrl).then(success => {
+              if (success) {
+                console.log('Successfully deleted image from server:', imageUrl);
+              }
+            });
+          }
+        });
+      }
       onMultipleChange?.([]);
     } else {
+      // Delete single image from server before clearing
+      if (value && value.includes('/uploads/')) {
+        deleteImage(value).then(success => {
+          if (success) {
+            console.log('Successfully deleted image from server:', value);
+          }
+        });
+      }
       onChange('');
     }
     if (fileInputRef.current) {
@@ -201,6 +221,17 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleRemoveImage = (index: number) => {
     if (multiple && values.length > 0) {
       const newValues = [...values];
+      const imageToRemove = newValues[index];
+      
+      // Delete the image from server
+      if (imageToRemove && imageToRemove.includes('/uploads/')) {
+        deleteImage(imageToRemove).then(success => {
+          if (success) {
+            console.log('Successfully deleted image from server:', imageToRemove);
+          }
+        });
+      }
+      
       newValues.splice(index, 1);
       onMultipleChange?.(newValues);
     }
