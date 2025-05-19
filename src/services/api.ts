@@ -764,3 +764,113 @@ export const purchaseTokens = async (
     throw error;
   }
 };
+
+// Draft API functions
+export interface Draft {
+  _id: string;
+  title: string;
+  content: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  tags?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DraftCreateData {
+  title: string;
+  content: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  tags?: string[];
+}
+
+export interface DraftUpdateData {
+  title?: string;
+  content?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  tags?: string[];
+}
+
+// Get all drafts
+export const getDrafts = async (): Promise<Draft[]> => {
+  try {
+    const response = await api.get('/drafts');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching drafts:', error);
+    throw error;
+  }
+};
+
+// Get a specific draft by ID
+export const getDraftById = async (draftId: string): Promise<Draft> => {
+  try {
+    const response = await api.get(`/drafts/${draftId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching draft:', error);
+    throw error;
+  }
+};
+
+// Create a new draft
+export const createDraft = async (draftData: DraftCreateData): Promise<Draft> => {
+  try {
+    const response = await api.post('/drafts', draftData);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating draft:', error);
+    throw error;
+  }
+};
+
+// Update an existing draft
+export const updateDraft = async (draftId: string, draftData: DraftUpdateData): Promise<Draft> => {
+  try {
+    const response = await api.put(`/drafts/${draftId}`, draftData);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating draft:', error);
+    throw error;
+  }
+};
+
+// Delete a draft
+export const deleteDraft = async (draftId: string): Promise<boolean> => {
+  try {
+    await api.delete(`/drafts/${draftId}`);
+    return true;
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    throw error;
+  }
+};
+
+// Upload an image for a draft
+export const uploadDraftImage = async (file: File): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await api.post(
+      '/drafts/upload-image',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    if (response.data && response.data.imageUrl) {
+      return response.data.imageUrl;
+    } else {
+      throw new Error('Failed to upload draft image');
+    }
+  } catch (error) {
+    console.error('Error uploading draft image:', error);
+    throw error;
+  }
+};

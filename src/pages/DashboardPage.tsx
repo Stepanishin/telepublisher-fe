@@ -6,16 +6,17 @@ import BotInstructionsPanel from '../components/Dashboard/BotInstructionsPanel';
 import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
 import PollPublishPanel from '../components/Dashboard/PollPublishPanel';
 import ScheduledPosts from '../components/Dashboard/ScheduledPosts';
+import DraftsPanel from '../components/Dashboard/DraftsPanel';
 import { useChannelsStore } from '../store/channelsStore';
 import { useContentStore } from '../store/contentStore';
-import { Zap, Settings, BookOpen, Crown, FileText, BarChart2, Calendar } from 'lucide-react';
+import { Zap, Settings, BookOpen, Crown, FileText, BarChart2, Calendar, Bookmark } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import TelegramPostPreview from '../components/ui/TelegramPostPreview';
 import TelegramPollPreview from '../components/ui/TelegramPollPreview';
 
 // Tab types for navigation
 type TabType = 'content' | 'channels' | 'instructions' | 'subscription' | 'scheduled';
-type ContentSubTabType = 'post' | 'poll';
+type ContentSubTabType = 'post' | 'poll' | 'drafts';
 
 // Preview content type
 interface PreviewContent {
@@ -108,6 +109,11 @@ const DashboardPage: React.FC = () => {
       id: 'poll',
       label: t('dashboard.tab_content_poll') || 'Poll',
       icon: <BarChart2 className="h-4 w-4" />
+    },
+    {
+      id: 'drafts',
+      label: t('dashboard.tab_content_drafts') || 'Drafts',
+      icon: <Bookmark className="h-4 w-4" />
     }
   ];
   
@@ -250,6 +256,12 @@ const DashboardPage: React.FC = () => {
                     allowsMultipleAnswers={pollPreviewContent.allowsMultipleAnswers}
                   />
                 </div>
+              </div>
+            )}
+
+            {activeContentSubTab === 'drafts' && (
+              <div>
+                <DraftsPanel />
               </div>
             )}
           </>
