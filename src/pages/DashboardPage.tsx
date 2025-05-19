@@ -22,6 +22,7 @@ type ContentSubTabType = 'post' | 'poll' | 'drafts';
 interface PreviewContent {
   text: string;
   imageUrl: string;
+  imageUrls: string[];
   tags: string[];
 }
 
@@ -41,6 +42,7 @@ const DashboardPage: React.FC = () => {
   const [previewContent, setPreviewContent] = useState<PreviewContent>({
     text: '',
     imageUrl: '',
+    imageUrls: [],
     tags: []
   });
   const [pollPreviewContent, setPollPreviewContent] = useState<PollPreviewContent>({
@@ -56,6 +58,7 @@ const DashboardPage: React.FC = () => {
     setPreviewContent({
       text: content.text,
       imageUrl: content.imageUrl,
+      imageUrls: content.imageUrls || [], // Ensure imageUrls is always defined
       tags: content.tags
     });
   }, [content]);
@@ -228,11 +231,12 @@ const DashboardPage: React.FC = () => {
                 </div>
                 <div className="lg:col-span-1">
                   <ContentGenerator />
-                  {(previewContent.text || previewContent.imageUrl || previewContent.tags.length > 0) && (
+                  {(previewContent.text || previewContent.imageUrl || (previewContent.imageUrls && previewContent.imageUrls.length > 0) || (previewContent.tags && previewContent.tags.length > 0)) && (
                     <div className="mt-6">
                       <TelegramPostPreview
                         text={previewContent.text}
                         imageUrl={previewContent.imageUrl}
+                        imageUrls={previewContent.imageUrls}
                         tags={previewContent.tags}
                       />
                     </div>

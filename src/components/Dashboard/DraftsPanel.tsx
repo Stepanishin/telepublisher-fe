@@ -331,7 +331,7 @@ const DraftsPanel = () => {
                 className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
               >
                 {draft.imageUrl && (
-                  <div className="h-40 overflow-hidden">
+                  <div className="h-40 overflow-hidden relative">
                     <img 
                       src={draft.imageUrl} 
                       alt={draft.title} 
@@ -340,7 +340,7 @@ const DraftsPanel = () => {
                   </div>
                 )}
                 {!draft.imageUrl && draft.imageUrls && draft.imageUrls.length > 0 && (
-                  <div className="h-40 overflow-hidden">
+                  <div className="h-40 overflow-hidden relative">
                     <img 
                       src={draft.imageUrls[0]} 
                       alt={draft.title} 
