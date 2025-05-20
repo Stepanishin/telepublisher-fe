@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon, RefreshCw, Smile } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import ReactQuill from 'react-quill';
@@ -16,6 +16,7 @@ import { useTabContentStore } from '../../store/tabContentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
 import DateTimePicker from '../ui/DateTimePicker';
 import { deleteImage } from '../../services/api';
+import { commonEmojis } from '../../utils/commonEmojis';
 
 // Scheduled post types
 type ScheduleType = 'now' | 'later';
@@ -90,13 +91,45 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     failed: string[];
   }>({ total: 0, current: 0, success: [], failed: [] });
   
+  // Add a ref for the Quill editor instance
+  const quillRef = useRef<ReactQuill>(null);
+  
+  // Define common emojis for a simple picker
+ 
+  
+  // State for emoji picker visibility
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Function to insert emoji at cursor position
+  const insertEmoji = (emoji: string) => {
+    if (!quillRef.current) return;
+    
+    const quill = quillRef.current.getEditor();
+    const range = quill.getSelection();
+    
+    if (range) {
+      // Insert emoji at cursor position
+      quill.insertText(range.index, emoji);
+      // Move cursor after the inserted emoji
+      quill.setSelection(range.index + emoji.length, 0);
+    } else {
+      // If no selection, insert at the end
+      const length = quill.getText().length;
+      quill.insertText(length, emoji);
+      quill.setSelection(length + emoji.length, 0);
+    }
+    
+    // Hide emoji picker after selection
+    setShowEmojiPicker(false);
+  };
+  
   // Define Quill modules and formats
   const quillModules = {
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       ['link']
-    ],
+    ]
   };
 
   const quillFormats = [
@@ -573,6 +606,17 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   const convertHtmlToTelegramFormat = (html: string): string => {
     if (!html) return '';
     
+    // Replace emoji spans with their unicode character
+    html = html.replace(/<span class="ql-emoji"[^>]*data-unicode="([^"]+)"[^>]*>.*?<\/span>/g, (match, unicode) => {
+      try {
+        // Convert hex code to actual unicode character
+        return String.fromCodePoint(parseInt(unicode, 16));
+      } catch (err) {
+        console.error('Error converting emoji unicode:', err);
+        return match;
+      }
+    });
+    
     // Заменяем &nbsp; на обычный пробел перед обработкой
     html = html.replace(/&nbsp;/g, ' ');
     
@@ -1024,6 +1068,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           </label>
           <div className="quill-container">
             <ReactQuill
+              ref={quillRef}
               value={publishText}
               onChange={handleTextChange}
               modules={quillModules}
@@ -1032,7 +1077,36 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
               theme="snow"
             />
           </div>
-          <div className="flex justify-end mt-2">
+          <div className="flex justify-between mt-2">
+            {/* Emoji picker button */}
+            <div className="relative">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                leftIcon={<Smile size={16} />}
+                className="flex justify-center items-center"
+              >
+              </Button>
+              
+              {/* Emoji picker panel */}
+              {showEmojiPicker && (
+                <div className="absolute top-10 left-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg p-2 max-w-xs max-h-48 overflow-y-auto w-max">
+                  <div className="grid grid-cols-8 gap-1">
+                    {commonEmojis.map((emoji, index) => (
+                      <button
+                        key={index}
+                        className="w-8 h-8 text-lg hover:bg-gray-100 rounded-md flex items-center justify-center focus:outline-none"
+                        onClick={() => insertEmoji(emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <VoiceRecorder
               onTranscript={(transcript) => {
                 // Append transcribed text to the current content
