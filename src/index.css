@@ -107,3 +107,7 @@
   background-color: white;
   border-color: #e2e8f0;
 }
+
+.ql-tooltip.ql-editing {
+  left: 10px !important;
+}
