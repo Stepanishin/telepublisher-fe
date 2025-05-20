@@ -9,6 +9,7 @@ import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
 import ImageUploader from '../ui/ImageUploader';
 import MultipleImageUploader from '../ui/MultipleImageUploader';
+import VoiceRecorder from '../ui/VoiceRecorder';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
 import { useTabContentStore } from '../../store/tabContentStore';
@@ -1032,7 +1033,53 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
               theme="snow"
             />
           </div>
-          <div style={{ height: '40px' }}></div> {/* Spacer to compensate for the Quill toolbar */}
+          <div className="flex justify-end mt-2">
+            <VoiceRecorder
+              onTranscript={(transcript) => {
+                // Append transcribed text to the current content
+                // Since ReactQuill uses HTML, we need to preserve formatting
+                const quillEditor = document.querySelector('.ql-editor');
+                if (quillEditor) {
+                  // Get current cursor position
+                  const selection = window.getSelection();
+                  if (selection && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    if (quillEditor.contains(range.commonAncestorContainer)) {
+                      // Insert at cursor position
+                      range.deleteContents();
+                      range.insertNode(document.createTextNode(transcript));
+                      // Move cursor to end of inserted text
+                      range.setStartAfter(range.endContainer);
+                      range.setEndAfter(range.endContainer);
+                      selection.removeAllRanges();
+                      selection.addRange(range);
+                      
+                      // Trigger change event
+                      const newContent = quillEditor.innerHTML;
+                      handleTextChange(newContent);
+                      return;
+                    }
+                  }
+                  
+                  // Fallback: append to end (preserve formatting)
+                  const newText = publishText 
+                    ? `${publishText}<p>${transcript}</p>` 
+                    : `<p>${transcript}</p>`;
+                  handleTextChange(newText);
+                } else {
+                  // Simple fallback if can't find the editor
+                  const newText = publishText 
+                    ? `${publishText}\n${transcript}` 
+                    : transcript;
+                  handleTextChange(newText);
+                }
+              }}
+              onError={(errorMsg) => setFormError(errorMsg)}
+              buttonSize="sm"
+              className="ml-auto"
+            />
+          </div>
+          <div style={{ height: '20px' }}></div> {/* Spacer to compensate for the Quill toolbar */}
         </div>
         
         {/* Show warning when approaching character limit */}

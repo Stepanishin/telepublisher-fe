@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, ImageIcon, Hash, ArrowRight, Upload, Wand2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Sparkles, ImageIcon, Hash, ArrowRight, Upload, Wand2, Mic, Square } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -9,12 +9,63 @@ import Alert from '../ui/Alert';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ImageUploader from '../ui/ImageUploader';
 
+// TypeScript declarations for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+  error: string;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionConstructor {
+  new(): SpeechRecognitionInstance;
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+// Add TypeScript declarations for global WebkitSpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
 const ContentGenerator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [referenceImageUrl, setReferenceImageUrl] = useState<string>('');
   const [mode, setMode] = useState<'text' | 'image' | 'fromImage'>('text');
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   
   const { 
     generatedContent, 
@@ -120,6 +171,102 @@ const ContentGenerator: React.FC = () => {
     }
   };
 
+  // Initialize speech recognition
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // Ignore errors when stopping on unmount
+        }
+      }
+    };
+  }, []);
+
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      // Reinitialize the recognition object with current language
+      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognitionAPI) {
+          // Stop previous instance if it exists
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+            } catch {
+              // Ignore errors
+            }
+          }
+          
+          const recognition = new SpeechRecognitionAPI();
+          recognitionRef.current = recognition;
+          recognition.continuous = true;
+          recognition.interimResults = false;
+          
+          // Set language based on current app language
+          const lang = t('content_generator.speech_recognition_lang');
+          recognition.lang = lang;
+                    
+          recognition.onresult = (event: SpeechRecognitionEvent) => {
+            const transcript = event.results[event.results.length - 1][0].transcript;
+            setPrompt(prev => prev + (prev ? ' ' : '') + transcript);
+          };
+          
+          recognition.onerror = (event: SpeechRecognitionEvent) => {
+            console.error('Speech recognition error:', event.error);
+            let errorMessage = t('content_generator.speech_recognition_error');
+            
+            // Provide more specific error messages for common errors
+            if (event.error === 'no-speech') {
+              errorMessage = t('content_generator.no_speech_detected');
+            } else if (event.error === 'audio-capture') {
+              errorMessage = t('content_generator.audio_capture_error');
+            } else if (event.error === 'not-allowed') {
+              errorMessage = t('content_generator.microphone_permission_denied');
+            } else if (event.error === 'language-not-supported') {
+              errorMessage = t('content_generator.language_not_supported');
+              // Try falling back to English if Russian is not supported
+              if (recognition.lang === 'ru-RU') {
+                recognition.lang = 'en-US';
+                console.log('Falling back to English for speech recognition');
+                // Don't set error, just try with English
+                return;
+              }
+            }
+            
+            setError(errorMessage);
+            setIsRecording(false);
+          };
+          
+          recognition.onend = () => {
+            setIsRecording(false);
+            setSuccessMessage(null);
+          };
+        }
+      }
+      
+      if (!recognitionRef.current) {
+        throw new Error(t('content_generator.speech_not_supported'));
+      }
+      
+      recognitionRef.current.start();
+      setIsRecording(true);
+      // setSuccessMessage(t('content_generator.recording'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t('content_generator.microphone_access_error');
+      setError(errorMessage);
+    }
+  };
+  
+  const stopRecording = () => {
+    if (recognitionRef.current && isRecording) {
+      recognitionRef.current.stop();
+      // setSuccessMessage(t('content_generator.recording_stopped'));
+    }
+  };
+
   // Function to display success message temporarily
   const showSuccessMessage = (message: string) => {
     setSuccessMessage(message);
@@ -191,13 +338,31 @@ const ContentGenerator: React.FC = () => {
         )}
         
         <div className="mt-4">
-          <Input
-            label={mode === 'fromImage' ? t('content_generator.additional_instructions') : t('content_generator.prompt_label')}
-            placeholder={mode === 'fromImage' ? t('content_generator.describe_based_on_image') : t('content_generator.prompt_placeholder')}
-            value={prompt}
-            onChange={handlePromptChange}
-            fullWidth
-          />
+          <div className="flex items-end gap-2">
+            <div className="flex-grow">
+              <Input
+                label={mode === 'fromImage' ? t('content_generator.additional_instructions') : t('content_generator.prompt_label')}
+                placeholder={mode === 'fromImage' ? t('content_generator.describe_based_on_image') : t('content_generator.prompt_placeholder')}
+                value={prompt}
+                onChange={handlePromptChange}
+                fullWidth
+              />
+            </div>
+            <Button
+              size="sm"
+              variant={isRecording ? "danger" : "outline"}
+              className="mb-4 h-[38px]"
+              onClick={isRecording ? stopRecording : startRecording}
+              title={isRecording ? t('content_generator.stop_recording') : t('content_generator.start_recording')}
+            >
+              {isRecording ? <Square size={16} /> : <Mic size={16} />}
+            </Button>
+          </div>
+          {isRecording && (
+            <p className="text-xs text-red-500 mt-1 animate-pulse">
+              {t('content_generator.recording_in_progress')}
+            </p>
+          )}
         </div>
         
         <div className="flex flex-wrap gap-2 mt-4">
