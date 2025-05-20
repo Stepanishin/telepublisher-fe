@@ -95,8 +95,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     toolbar: [
       ['bold', 'italic', 'underline', 'strike'],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['link'],
-      ['clean']
+      ['link']
     ],
   };
 
