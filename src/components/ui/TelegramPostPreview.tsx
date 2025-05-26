@@ -202,7 +202,7 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
   // Render buttons
   const renderButtons = () => {
     // Не показывать кнопки, если их нет или позиция изображения не снизу
-    if (!buttons || buttons.length === 0 || imagePosition !== 'bottom') return null;
+    // if (!buttons || buttons.length === 0 || imagePosition !== 'bottom') return null;
     
     return (
       <div className="mt-2 border-t border-gray-200 pt-2">

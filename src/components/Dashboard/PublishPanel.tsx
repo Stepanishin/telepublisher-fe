@@ -1278,9 +1278,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
                 type="radio"
                 className="form-radio h-4 w-4 text-blue-600"
                 checked={imagePosition === 'top'}
-                onChange={() => {
-                  setImagePosition('top');
-                }}
+                onChange={() => setImagePosition('top')}
               />
               <span className="ml-2 text-sm text-gray-700">
                 {t('publish_panel.image_position_top')}
@@ -1364,16 +1362,13 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         />
 
         {/* Telegram Buttons */}
-        <div className="mb-4">
+        {
+          imagePosition === 'bottom' || imagePosition === 'top' && (
+            <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t('publish_panel.buttons')}
           </label>
           
-          {imagePosition === 'top' && (publishImageUrl || publishImageUrls.length > 0) ? (
-            <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200 mb-3">
-              {t('publish_panel.buttons_not_available_top')}
-            </div>
-          ) : (
             <>
               {buttons.map((button, index) => (
                 <div key={index} className="flex items-start mb-3 space-x-2 bg-gray-50 p-3 rounded-md border border-gray-200">
@@ -1455,8 +1450,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
                 {t('publish_panel.buttons_note')}
               </p>
             </>
-          )}
+
         </div>
+        )}
 
         {/* Scheduling options */}
         <div className="mb-4">
