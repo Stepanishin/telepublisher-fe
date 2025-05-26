@@ -38,6 +38,8 @@ const initialContent: GeneratedContent = {
   imageUrl: '',
   imageUrls: [],
   tags: [],
+  imagePosition: 'top',
+  buttons: []
 };
 
 export const useContentStore = create<ContentState>((set, get) => ({

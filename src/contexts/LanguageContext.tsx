@@ -290,6 +290,10 @@ const translations: Record<Language, Record<string, string>> = {
     'image_uploader.remove_image': 'Remove image',
     'image_uploader.max_images_reached': 'Maximum of 10 images allowed',
     'image_uploader.multiple_url_not_supported': 'URL mode with multiple images is not supported. Please use upload mode for multiple images.',
+    'image_uploader.error_empty_url': 'Please enter an image URL',
+    'image_uploader.error_invalid_url': 'Please enter a valid URL (e.g., https://example.com/image.jpg)',
+    'image_uploader.add_url': 'Add',
+    'image_uploader.url_hint': "Enter the URL of an image and click 'Add' or press Enter",
 
     // Alert component
     'alert.success_title': 'Success!',
@@ -575,6 +579,35 @@ const translations: Record<Language, Record<string, string>> = {
     'drafts.add_tags': 'Add Tags',
     'drafts.preview': 'Preview',
     'drafts.editor': 'Editor',
+
+    // Image position translations
+    'publish_panel.image_position': 'Image Position',
+    'publish_panel.image_position_top': 'Top',
+    'publish_panel.image_position_bottom': 'Bottom',
+    'publish_panel.image_position_top_description': 'Image will be shown at the top of the post',
+    'publish_panel.image_position_bottom_description': 'Image will be shown at the bottom of the post',
+    'publish_panel.image_position_help': 'Position determines where the image appears in the post',
+    'publish_panel.bottom_position_single_image': 'Bottom position supports only single image',
+    'publish_panel.multiple_images_note': '[Multiple images]',
+    
+    // Inline buttons translations
+    'publish_panel.inline_buttons': 'Inline Buttons',
+    'publish_panel.add_button': 'Add Button',
+    'publish_panel.button_text': 'Button Text',
+    'publish_panel.button_url': 'Button URL',
+    'publish_panel.button_text_placeholder': 'Click here',
+    'publish_panel.button_url_placeholder': 'https://example.com',
+    'publish_panel.remove_button': 'Remove',
+    'publish_panel.max_buttons': 'Maximum 5 buttons allowed',
+    'publish_panel.button_text_required': 'Button text is required',
+    'publish_panel.button_url_required': 'Button URL is required',
+    'publish_panel.button_url_invalid': 'Please enter a valid URL',
+    'publish_panel.buttons': 'Telegram Buttons',
+    'publish_panel.buttons_note': 'Buttons will be displayed one below another at the bottom of your Telegram post.',
+    'publish_panel.invalid_url': 'Please enter a valid URL (e.g., https://example.com)',
+    'publish_panel.buttons_not_available_top': 'Buttons are not available when image position is set to Top. Change the image position to Bottom to use buttons.',
+    'publish_panel.buttons_cleared': 'Buttons cleared',
+    'publish_panel.buttons_cleared_description': 'Buttons were removed because they are not compatible with top image position.',
   },
   ru: {
     // Navbar
@@ -849,6 +882,10 @@ const translations: Record<Language, Record<string, string>> = {
     'image_uploader.remove_image': 'Удалить изображение',
     'image_uploader.max_images_reached': 'Максимум 10 изображений разрешено',
     'image_uploader.multiple_url_not_supported': 'Режим URL с несколькими изображениями не поддерживается. Пожалуйста, используйте режим загрузки для нескольких изображений.',
+    'image_uploader.error_empty_url': 'Пожалуйста, введите URL изображения',
+    'image_uploader.error_invalid_url': 'Пожалуйста, введите корректный URL (например, https://example.com/image.jpg)',
+    'image_uploader.add_url': 'Добавить',
+    'image_uploader.url_hint': 'Введите URL изображения и нажмите "Добавить" или Enter',
 
     // Alert component
     'alert.success_title': 'Успех!',
@@ -1134,6 +1171,35 @@ const translations: Record<Language, Record<string, string>> = {
     'drafts.add_tags': 'Добавить теги',
     'drafts.preview': 'Предпросмотр',
     'drafts.editor': 'Редактор',
+
+    // Image position translations
+    'publish_panel.image_position': 'Позиция изображения',
+    'publish_panel.image_position_top': 'Сверху',
+    'publish_panel.image_position_bottom': 'Снизу',
+    'publish_panel.image_position_top_description': 'Изображение будет показано вверху поста',
+    'publish_panel.image_position_bottom_description': 'Изображение будет показано внизу поста',
+    'publish_panel.image_position_help': 'Позиция определяет, где изображение появится в посте',
+    'publish_panel.bottom_position_single_image': 'Позиция снизу поддерживает только одно изображение',
+    'publish_panel.multiple_images_note': '[Несколько изображений]',
+    
+    // Inline buttons translations
+    'publish_panel.inline_buttons': 'Встроенные кнопки',
+    'publish_panel.add_button': 'Добавить кнопку',
+    'publish_panel.button_text': 'Текст кнопки',
+    'publish_panel.button_url': 'URL кнопки',
+    'publish_panel.button_text_placeholder': 'Нажмите здесь',
+    'publish_panel.button_url_placeholder': 'https://example.com',
+    'publish_panel.remove_button': 'Удалить',
+    'publish_panel.max_buttons': 'Максимум 5 кнопок',
+    'publish_panel.button_text_required': 'Текст кнопки обязателен',
+    'publish_panel.button_url_required': 'URL кнопки обязателен',
+    'publish_panel.button_url_invalid': 'Пожалуйста, введите корректный URL',
+    'publish_panel.buttons': 'Кнопки Telegram',
+    'publish_panel.buttons_note': 'Кнопки будут отображаться одна под другой внизу вашего поста в Telegram.',
+    'publish_panel.invalid_url': 'Пожалуйста, введите корректный URL (например, https://example.com)',
+    'publish_panel.buttons_not_available_top': 'Кнопки недоступны, когда позиция изображения установлена сверху. Измените позицию изображения на нижнюю, чтобы использовать кнопки.',
+    'publish_panel.buttons_cleared': 'Кнопки удалены',
+    'publish_panel.buttons_cleared_description': 'Кнопки были удалены, так как они несовместимы с верхним положением изображения.',
   },
 };
 

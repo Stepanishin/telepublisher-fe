@@ -24,6 +24,8 @@ interface PreviewContent {
   imageUrl: string;
   imageUrls: string[];
   tags: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: { text: string; url: string }[];
 }
 
 // Poll preview content type
@@ -43,7 +45,9 @@ const DashboardPage: React.FC = () => {
     text: '',
     imageUrl: '',
     imageUrls: [],
-    tags: []
+    tags: [],
+    imagePosition: 'top',
+    buttons: []
   });
   const [pollPreviewContent, setPollPreviewContent] = useState<PollPreviewContent>({
     question: '',
@@ -59,7 +63,9 @@ const DashboardPage: React.FC = () => {
       text: content.text,
       imageUrl: content.imageUrl,
       imageUrls: content.imageUrls || [], // Ensure imageUrls is always defined
-      tags: content.tags
+      tags: content.tags,
+      imagePosition: content.imagePosition || 'top',
+      buttons: content.buttons || []
     });
   }, [content]);
   
@@ -238,6 +244,8 @@ const DashboardPage: React.FC = () => {
                         imageUrl={previewContent.imageUrl}
                         imageUrls={previewContent.imageUrls}
                         tags={previewContent.tags}
+                        imagePosition={previewContent.imagePosition}
+                        buttons={previewContent.buttons}
                       />
                     </div>
                   )}

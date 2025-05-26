@@ -41,6 +41,11 @@ export interface Channel {
   botToken?: string;
 }
 
+export interface TelegramButton {
+  text: string;
+  url: string;
+}
+
 export interface PublishParams {
   channelId: string;
   text: string;
@@ -48,6 +53,8 @@ export interface PublishParams {
   imageUrls?: string[];
   tags: string[];
   scheduledDate?: Date | null;
+  imagePosition?: 'top' | 'bottom';
+  buttons?: TelegramButton[];
 }
 
 export interface PollOption {
@@ -75,6 +82,8 @@ export interface ScheduledPostUpdate {
   imageUrls?: string[];
   tags: string[];
   scheduledDate: Date | null;
+  imagePosition?: 'top' | 'bottom';
+  buttons?: TelegramButton[];
 }
 
 export interface GeneratedContent {
@@ -82,6 +91,8 @@ export interface GeneratedContent {
   imageUrl: string;
   imageUrls: string[];
   tags: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: TelegramButton[];
 }
 
 export interface PostimagesResponse {

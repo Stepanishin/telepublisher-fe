@@ -1,19 +1,24 @@
 import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { TelegramButton } from '../../types';
 
 interface TelegramPostPreviewProps {
   text: string;
   imageUrl?: string;
   imageUrls?: string[];
   tags?: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: TelegramButton[];
 }
 
 const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
   text,
   imageUrl,
   imageUrls = [],
-  tags = []
+  tags = [],
+  imagePosition = 'top',
+  buttons = []
 }) => {
   const { t } = useLanguage();
   
@@ -98,6 +103,124 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
     // Если только одно изображение, не показываем галерею
   };
 
+  // Helper function to render image gallery
+  const renderImageGallery = () => {
+    if (!hasImageToDisplay || allImages.length === 0) return null;
+    
+    return (
+      <div className="mb-2 self-center w-full">
+        {/* Показываем текущее изображение */}
+        <div className="relative">
+          <img 
+            src={displayImage} 
+            alt="Preview" 
+            className="max-w-full rounded-lg mx-auto object-cover max-h-64"
+          />
+          
+          {/* Показываем индикатор галереи, если есть несколько изображений */}
+          {allImages.length > 1 && !showGallery && (
+            <div 
+              className="absolute bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md cursor-pointer"
+              onClick={toggleGalleryMode}
+            >
+              {`+ ${allImages.length} ${t('post_preview.images') || 'images'}`}
+            </div>
+          )}
+          
+          {/* Показываем режим галереи и индикатор текущего изображения */}
+          {showGallery && allImages.length > 1 && (
+            <div className="absolute top-0 left-0 w-full bg-black bg-opacity-70 px-3 py-1 flex justify-between items-center">
+              <span className="text-white text-xs">
+                {`${currentImageIndex + 1}/${allImages.length}`}
+              </span>
+            </div>
+          )}
+          
+          {/* Показываем кнопки навигации в режиме галереи */}
+          {showGallery && allImages.length > 1 && (
+            <>
+              <button
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70"
+                onClick={prevImage}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70"
+                onClick={nextImage}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </>
+          )}
+          
+          {/* Миниатюры для галереи (опционально) */}
+          {showGallery && allImages.length > 1 && (
+            <div className="flex mt-2 overflow-x-auto space-x-2 pb-2">
+              {allImages.map((img, idx) => (
+                <div 
+                  key={idx}
+                  className={`w-12 h-12 flex-shrink-0 cursor-pointer rounded-md overflow-hidden border-2 
+                    ${idx === currentImageIndex ? 'border-blue-500' : 'border-transparent'}`}
+                  onClick={() => setCurrentImageIndex(idx)}
+                >
+                  <img 
+                    src={img} 
+                    alt={`Thumbnail ${idx + 1}`} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Функция для отображения изображения внизу сообщения (режим предпросмотра ссылки)
+  const renderBottomImagePreview = () => {
+    if (!hasImageToDisplay || allImages.length === 0) return null;
+    
+    // Показываем только первое изображение в режиме предпросмотра ссылки
+    const previewImage = allImages[0];
+    
+    return (
+      <div className="mt-4 border-t border-gray-100 pt-2">
+        <div className="flex items-center justify-center">
+          <img 
+            src={previewImage} 
+            alt="Link preview" 
+            className="rounded-md object-cover max-h-64"
+          />
+        </div>
+        {/* Скрытая ссылка не показывается в превью */}
+      </div>
+    );
+  };
+
+  // Render buttons
+  const renderButtons = () => {
+    // Не показывать кнопки, если их нет или позиция изображения не снизу
+    if (!buttons || buttons.length === 0 || imagePosition !== 'bottom') return null;
+    
+    return (
+      <div className="mt-2 border-t border-gray-200 pt-2">
+        <div className="flex flex-col gap-2 w-full">
+          {buttons.map((button, index) => (
+            <div 
+              key={index} 
+              className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md text-sm flex items-center justify-center cursor-pointer hover:bg-blue-200 transition-colors w-full"
+            >
+              <ExternalLink size={14} className="mr-1" />
+              {button.text}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
       <div className="bg-blue-50 p-4 border-b border-gray-200">
@@ -106,10 +229,10 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
           {t('post_preview.title') || 'Telegram Post Preview'}
         </h3>
       </div>
-    <div className="p-4 mb-4">
-      <div className="border border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
-        {/* Header - styled like Telegram */}
-        <div className="bg-[#F0F2F5] p-3 flex items-start">
+      <div className="p-4 mb-4">
+        <div className="border border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
+          {/* Header - styled like Telegram */}
+          <div className="bg-[#F0F2F5] p-3 flex items-start">
             <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
               <span className="text-sm font-medium">T</span>
             </div>
@@ -119,100 +242,37 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
             </div>
           </div>
         
-        {/* Message content container */}
-        <div className="p-4 bg-white">
-          {/* Message bubble */}
-          <div className="bg-white rounded-lg max-w-full flex flex-col">
-            {/* Показываем изображения */}
-            {hasImageToDisplay && allImages.length > 0 && (
-              <div className="mb-2 self-center w-full">
-                {/* Показываем текущее изображение */}
-                <div className="relative">
-                  <img 
-                    src={displayImage} 
-                    alt="Preview" 
-                    className="max-w-full rounded-lg mx-auto object-cover max-h-64"
-                  />
-                  
-                  {/* Показываем индикатор галереи, если есть несколько изображений */}
-                  {allImages.length > 1 && !showGallery && (
-                    <div 
-                      className="absolute bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-md cursor-pointer"
-                      onClick={toggleGalleryMode}
-                    >
-                      {`+ ${allImages.length} ${t('post_preview.images') || 'images'}`}
-                    </div>
-                  )}
-                  
-                  {/* Показываем режим галереи и индикатор текущего изображения */}
-                  {showGallery && allImages.length > 1 && (
-                    <div className="absolute top-0 left-0 w-full bg-black bg-opacity-70 px-3 py-1 flex justify-between items-center">
-
-                      <span className="text-white text-xs">
-                        {`${currentImageIndex + 1}/${allImages.length}`}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Показываем кнопки навигации в режиме галереи */}
-                  {showGallery && allImages.length > 1 && (
-                    <>
-                      <button
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70"
-                        onClick={prevImage}
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <button
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-70"
-                        onClick={nextImage}
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </>
-                  )}
-                  
-                  {/* Миниатюры для галереи (опционально) */}
-                  {showGallery && allImages.length > 1 && (
-                    <div className="flex mt-2 overflow-x-auto space-x-2 pb-2">
-                      {allImages.map((img, idx) => (
-                        <div 
-                          key={idx}
-                          className={`w-12 h-12 flex-shrink-0 cursor-pointer rounded-md overflow-hidden border-2 
-                            ${idx === currentImageIndex ? 'border-blue-500' : 'border-transparent'}`}
-                          onClick={() => setCurrentImageIndex(idx)}
-                        >
-                          <img 
-                            src={img} 
-                            alt={`Thumbnail ${idx + 1}`} 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+          {/* Message content container */}
+          <div className="p-4 bg-white">
+            {/* Message bubble */}
+            <div className="bg-white rounded-lg max-w-full flex flex-col">
+              {/* Show image at the top if configured that way */}
+              {imagePosition === 'top' && renderImageGallery()}
+              
+              {/* Message text */}
+              {text && (
+                <div 
+                  className="text-gray-900 whitespace-pre-line text-sm mb-2"
+                  dangerouslySetInnerHTML={formatText(text)}
+                />
+              )}
+              
+              {/* Show image at the bottom if configured that way - используем специальный рендер для режима превью */}
+              {imagePosition === 'bottom' && renderBottomImagePreview()}
+              
+              {/* Tags */}
+              {formattedTags && (
+                <div className="text-blue-600 text-sm">
+                  {formattedTags}
                 </div>
-              </div>
-            )}
-            
-            {/* Message text */}
-            {text && (
-              <div 
-                className="text-gray-900 whitespace-pre-line text-sm mb-2"
-                dangerouslySetInnerHTML={formatText(text)}
-              />
-            )}
-            
-            {/* Tags */}
-            {formattedTags && (
-              <div className="text-blue-600 text-sm">
-                {formattedTags}
-              </div>
-            )}
+              )}
+              
+              {/* Buttons */}
+              {renderButtons()}
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

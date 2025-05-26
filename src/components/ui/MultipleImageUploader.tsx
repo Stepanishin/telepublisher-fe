@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ImageIcon, Loader, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { ImageIcon, Loader, AlertCircle, Plus, Trash2, Upload, Link as LinkIcon } from 'lucide-react';
 import { uploadImage, deleteImage } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -22,12 +22,17 @@ const MultipleImageUploader: React.FC<MultipleImageUploaderProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<'url' | 'upload'>('upload');
+  const [imageUrl, setImageUrl] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Handle clipboard paste event
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
+      // Только обрабатываем вставку для режима загрузки
+      if (inputMode !== 'upload') return;
+      
       const items = e.clipboardData?.items;
       if (!items) return;
       
@@ -50,7 +55,7 @@ const MultipleImageUploader: React.FC<MultipleImageUploaderProps> = ({
     return () => {
       window.removeEventListener('paste', handlePaste);
     };
-  }, []);
+  }, [inputMode]);
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -205,12 +210,97 @@ const MultipleImageUploader: React.FC<MultipleImageUploaderProps> = ({
       fileInputRef.current.click();
     }
   };
+  
+  // Функция для проверки URL изображения
+  const validateImageUrl = (url: string): boolean => {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch (e) {
+      return false;
+    }
+  };
+  
+  // Обработчик добавления изображения по URL
+  const handleAddImageByUrl = () => {
+    // Сбросить ошибку
+    setError(null);
+    
+    // Проверить, что URL не пустой
+    if (!imageUrl.trim()) {
+      const message = t('image_uploader.error_empty_url') || 'Please enter an image URL';
+      setError(message);
+      onError?.(message);
+      return;
+    }
+    
+    // Проверить, что URL валидный
+    if (!validateImageUrl(imageUrl)) {
+      const message = t('image_uploader.error_invalid_url') || 'Please enter a valid URL (e.g., https://example.com/image.jpg)';
+      setError(message);
+      onError?.(message);
+      return;
+    }
+    
+    // Проверить количество изображений
+    if (values.length >= maxImages) {
+      const message = t('image_uploader.max_images_reached') || `Maximum of ${maxImages} images allowed`;
+      setError(message);
+      onError?.(message);
+      return;
+    }
+    
+    // Добавить URL в список изображений
+    const newValues = [...values, imageUrl];
+    onChange(newValues);
+    
+    // Очистить поле ввода
+    setImageUrl('');
+  };
+  
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageUrl(e.target.value);
+  };
 
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {t('image_uploader.label_multiple') || 'Upload Images (max 10)'}
       </label>
+      
+      {/* Переключатель режимов ввода */}
+      <div className="flex mb-2">
+        <button
+          type="button"
+          onClick={() => {
+            setInputMode('url');
+            setError(null);
+          }}
+          className={`px-3 py-1 text-xs rounded-l-md ${
+            inputMode === 'url' 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 text-gray-700'
+          }`}
+        >
+          <LinkIcon size={14} className="inline mr-1" />
+          {t('image_uploader.url_mode') || 'URL'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setInputMode('upload');
+            setError(null);
+          }}
+          className={`px-3 py-1 text-xs rounded-r-md ${
+            inputMode === 'upload' 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-200 text-gray-700'
+          }`}
+        >
+          <Upload size={14} className="inline mr-1" />
+          {t('image_uploader.upload_mode') || 'Upload'}
+        </button>
+      </div>
       
       {/* Display error message if present */}
       {error && (
@@ -220,62 +310,96 @@ const MultipleImageUploader: React.FC<MultipleImageUploaderProps> = ({
         </div>
       )}
       
-      {/* Upload area */}
-      <div
-        className={`border-2 border-dashed rounded-md p-4 text-center ${
-          dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-        }`}
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept="image/*"
-          multiple={true}
-          className="hidden"
-        />
-        
-        {isUploading ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-center">
-              <Loader className="animate-spin h-6 w-6 text-blue-500 mr-2" />
-              <span className="text-sm text-gray-600">
-                {t('image_uploader.uploading') || 'Uploading'} {currentFile && `${currentFile}...`}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
+      {/* URL input mode */}
+      {inputMode === 'url' && (
+        <div className="mb-3">
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={imageUrl}
+              onChange={handleUrlChange}
+              placeholder={t('image_uploader.url_placeholder') || "Enter image URL (https://...)"}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm flex-grow
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddImageByUrl();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleAddImageByUrl}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors"
+            >
+              {t('image_uploader.add_url') || 'Add'}
+            </button>
           </div>
-        ) : (
-          <div
-            onClick={triggerFileInput}
-            className="cursor-pointer"
-          >
-            <div className="flex flex-col items-center justify-center space-y-2">
-              <div className="p-2 rounded-full bg-blue-100">
-                <ImageIcon className="h-6 w-6 text-blue-500" />
+          <p className="mt-1 text-xs text-gray-500">
+            {t('image_uploader.url_hint') || "Enter the URL of an image and click 'Add' or press Enter"}
+          </p>
+        </div>
+      )}
+      
+      {/* Upload mode */}
+      {inputMode === 'upload' && (
+        <div
+          className={`border-2 border-dashed rounded-md p-4 text-center ${
+            dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+          }`}
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            multiple={true}
+            className="hidden"
+          />
+          
+          {isUploading ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-center">
+                <Loader className="animate-spin h-6 w-6 text-blue-500 mr-2" />
+                <span className="text-sm text-gray-600">
+                  {t('image_uploader.uploading') || 'Uploading'} {currentFile && `${currentFile}...`}
+                </span>
               </div>
-              <div className="text-sm text-gray-600">
-                {t('image_uploader.drag_multiple') || 'Drag & drop images here or click to select'}
-              </div>
-              <div className="text-xs text-gray-500">
-                {t('image_uploader.supported_formats') || 'JPEG, PNG, GIF, WebP'}
-              </div>
-              <div className="text-xs text-gray-500">
-                {t('image_uploader.max_count_message') || `You can upload up to ${maxImages} images`}
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div
+              onClick={triggerFileInput}
+              className="cursor-pointer"
+            >
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="p-2 rounded-full bg-blue-100">
+                  <ImageIcon className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="text-sm text-gray-600">
+                  {t('image_uploader.drag_multiple') || 'Drag & drop images here or click to select'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {t('image_uploader.supported_formats') || 'JPEG, PNG, GIF, WebP'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {t('image_uploader.max_count_message') || `You can upload up to ${maxImages} images`}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Image thumbnails grid */}
       {values.length > 0 && (
@@ -302,7 +426,7 @@ const MultipleImageUploader: React.FC<MultipleImageUploaderProps> = ({
           {values.length < maxImages && (
             <div 
               className="border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center p-4 aspect-square cursor-pointer hover:border-blue-500 hover:bg-blue-50"
-              onClick={triggerFileInput}
+              onClick={inputMode === 'upload' ? triggerFileInput : () => setInputMode('url')}
             >
               <Plus size={24} className="text-gray-400" />
             </div>

@@ -368,8 +368,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
   try {
     // Fetch channel info to get botToken
     const channels = await fetchChannels();
-    console.log('channels', channels);
-    console.log('params', params);
+    console.log('[CLIENT] Publishing content with params:', params);
     
     // Find channel by checking both id and _id
     const channel = channels.find((ch: Channel) => 
@@ -384,6 +383,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     // Check if this is a scheduled post
     if (params.scheduledDate) {
       try {
+        console.log('[CLIENT] Scheduling post for future publication:', params.scheduledDate);
         // Store scheduled post in the database
         await api.post('/scheduled-posts', {
           channelId: params.channelId,
@@ -391,7 +391,9 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
           imageUrl: params.imageUrl,
           imageUrls: params.imageUrls || [],
           tags: params.tags,
-          scheduledDate: params.scheduledDate.toISOString()
+          scheduledDate: params.scheduledDate.toISOString(),
+          imagePosition: params.imagePosition || 'top',
+          buttons: params.buttons || []
         });
         
         return {
@@ -399,7 +401,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
           message: `scheduled_success:${channel.title}:${params.scheduledDate.toLocaleString()}`
         };
       } catch (error) {
-        console.error('Error scheduling post:', error);
+        console.error('[CLIENT] Error scheduling post:', error);
         return {
           success: false,
           message: error instanceof Error 
@@ -418,7 +420,7 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     
     let result;
 
-    console.log('channel123', channel);
+    console.log('[CLIENT] Publishing to channel:', channel.title || channel.username);
     
     // Prepare chat_id - if it looks like a username without @, add it
     let chatId = channel.chatId || channel.id;  // First try to use chatId if exists
@@ -430,50 +432,109 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
       }
     }
     
+    // Prepare inline keyboard if buttons are provided
+    const replyMarkup = params.buttons && params.buttons.length > 0 
+      ? {
+          inline_keyboard: params.buttons.map(button => [{
+            text: button.text,
+            url: button.url
+          }])
+        }
+      : undefined;
+    
     // Check for multiple images
     if (params.imageUrls && params.imageUrls.length > 0) {
-      // Use Telegram's Media Group API for multiple images
-      const media = params.imageUrls.map((url, index) => {
-        // The first media item will contain the caption (message text)
-        return {
-          type: 'photo',
-          media: url,
-          caption: index === 0 ? messageText : undefined,
-          parse_mode: 'HTML'
-        };
-      });
+      console.log('[CLIENT] Sending multiple images:', params.imageUrls.length);
       
-      // If there are no images in the imageUrls array, check the single imageUrl
-      if (media.length === 0 && params.imageUrl) {
-        media.push({
-          type: 'photo',
-          media: params.imageUrl,
-          caption: messageText,
-          parse_mode: 'HTML'
-        });
-      }
-      
-      // Send media group if we have media items
-      if (media.length > 0) {
-        result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMediaGroup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            media: media
-          })
-        });
-      } else {
-        // Fallback to sending a text message if no images
+      // Для позиции 'bottom', отправляем текстовое сообщение с предпросмотром первого изображения
+      if (params.imagePosition === 'bottom' && messageText.trim()) {
+        console.log('[CLIENT] Using bottom position with message preview for multiple images');
+        // Берем первое изображение для предпросмотра
+        const previewImageUrl = params.imageUrls[0];
+        
+        // Отправляем текстовое сообщение с предпросмотром изображения внизу
         result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
-            text: messageText,
-            parse_mode: 'HTML'
+            text: `${messageText}`,
+            parse_mode: 'HTML',
+            link_preview_options: {
+              is_disabled: false,
+              url: previewImageUrl,
+              prefer_large_media: true,
+              show_above_text: false
+            },
+            reply_markup: replyMarkup
           })
         });
+      } else {
+        console.log('[CLIENT] Using standard media group sending for multiple images');
+        // Стандартное поведение - с подписью на первом изображении
+        const media = params.imageUrls.map((url, index) => {
+          // The first media item will contain the caption (message text)
+          return {
+            type: 'photo',
+            media: url,
+            caption: index === 0 ? messageText : undefined,
+            parse_mode: 'HTML'
+          };
+        });
+        
+        // If there are no images in the imageUrls array, check the single imageUrl
+        if (media.length === 0 && params.imageUrl) {
+          media.push({
+            type: 'photo',
+            media: params.imageUrl,
+            caption: messageText,
+            parse_mode: 'HTML'
+          });
+        }
+        
+        // Send media group if we have media items
+        if (media.length > 0) {
+          // For media groups, we can't add inline keyboard directly
+          // So if we have buttons, we'll need to send a separate message after the media group
+          result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMediaGroup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              media: media
+            })
+          });
+          
+          // If we have buttons, send an additional message with the inline keyboard
+          if (replyMarkup && result.ok) {
+            console.log('[CLIENT] Sending buttons separately for media group');
+            const mediaGroupResult = await result.json();
+            
+            // Send a follow-up message with the buttons
+            await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: '🔗 Links:',
+                reply_to_message_id: mediaGroupResult.result[0].message_id,
+                reply_markup: replyMarkup
+              })
+            });
+          }
+        } else {
+          // Fallback to sending a text message if no images
+          result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: messageText,
+              parse_mode: 'HTML',
+              reply_markup: replyMarkup
+            })
+          });
+        }
       }
     }
     // If a single image is provided
@@ -487,41 +548,91 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
         photoUrl = `${baseUrl}${photoUrl}`;
       }
       
+      // Validate URL - Telegram requires valid https or http URLs
+      let isValidUrl = false;
+      try {
+        const url = new URL(photoUrl);
+        isValidUrl = url.protocol === 'http:' || url.protocol === 'https:';
+        
+        // Check if URL has valid host and pathname
+        if (!url.host || url.host === '' || url.pathname === '/') {
+          isValidUrl = false;
+        }
+      } catch (e) {
+        console.error('[CLIENT] Invalid URL format:', photoUrl, e);
+        isValidUrl = false;
+      }
+      
+      if (!isValidUrl) {
+        throw new Error('Invalid image URL format. Please upload the image again.');
+      }
+      
       // Check for URLs from our own API as well
       if (photoUrl.includes('/api/upload/image') || photoUrl.includes('/uploads/')) {
         try {
           // For Telegram, we need to make sure the image is directly accessible
-          console.log('Image is from our own server:', photoUrl);
+          console.log('[CLIENT] Image is from our own server:', photoUrl);
+          
+          // For local development URLs, replace localhost with a public URL if available
+          if (photoUrl.includes('localhost') || photoUrl.includes('127.0.0.1')) {
+            console.warn('[CLIENT] Local URL detected, this might not be accessible by Telegram:', photoUrl);
+          }
         } catch (error) {
-          console.error('Error preparing image for Telegram:', error);
+          console.error('[CLIENT] Error preparing image for Telegram:', error);
         }
       }
       
-      // Log the details for debugging
-      console.log('Sending photo to Telegram with:', {
-        chat_id: chatId,
-        photo: photoUrl
-      });
+      console.log('[CLIENT] Sending photo to Telegram with position:', params.imagePosition);
       
-      result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendPhoto`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          photo: photoUrl,
-          caption: messageText,
-          parse_mode: 'HTML'
-        })
-      });
+      // For bottom image position, send a message with image preview at bottom
+      if (params.imagePosition === 'bottom' && messageText.trim()) {
+        console.log('[CLIENT] Using bottom position with message preview for single image');
+        // Create message with image link preview
+        const imageUrlForPreview = photoUrl;
+        
+        // Отправляем текстовое сообщение с предпросмотром изображения внизу
+        result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `${messageText}`,
+            parse_mode: 'HTML',
+            link_preview_options: {
+              is_disabled: false,
+              url: imageUrlForPreview,
+              prefer_large_media: true,
+              show_above_text: false
+            },
+            reply_markup: replyMarkup
+          })
+        });
+      } else {
+        console.log('[CLIENT] Using standard photo with caption');
+        // Regular behavior - image with caption
+        result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendPhoto`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: photoUrl,
+            caption: messageText,
+            parse_mode: 'HTML',
+            reply_markup: replyMarkup
+          })
+        });
+      }
     } else {
       // Otherwise just send a text message
+      console.log('[CLIENT] Sending text-only message');
       result = await fetch(`https://api.telegram.org/bot${channel.botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
           text: messageText,
-          parse_mode: 'HTML'
+          parse_mode: 'HTML',
+          reply_markup: replyMarkup
         })
       });
     }
@@ -529,16 +640,17 @@ export const publishContent = async (params: PublishParams): Promise<PublishResu
     const data = await result.json();
     
     if (!result.ok) {
-      console.error('Telegram API error:', data);
+      console.error('[CLIENT] Telegram API error:', data);
       throw new Error(data.description || 'error_publishing');
     }
     
+    console.log('[CLIENT] Successfully published to Telegram channel:', chatId);
     return {
       success: true,
       message: `publish_success:${channel.title}`
     };
   } catch (error) {
-    console.error('Publish error:', error);
+    console.error('[CLIENT] Publish error:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'error_publishing'
@@ -675,10 +787,12 @@ export const deleteScheduledPost = async (postId: string) => {
 
 export const publishScheduledPost = async (postId: string) => {
   try {
+    console.log(`[CLIENT] Publishing scheduled post with ID: ${postId}`);
     const response = await api.post(`/scheduled-posts/${postId}/publish`);
+    console.log(`[CLIENT] Published scheduled post result:`, response.data);
     return response.data;
   } catch (error) {
-    console.error('Error publishing scheduled post:', error);
+    console.error('[CLIENT] Error publishing scheduled post:', error);
     throw error;
   }
 };
@@ -792,6 +906,8 @@ export interface Draft {
   imageUrl?: string;
   imageUrls?: string[];
   tags?: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: { text: string; url: string }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -802,6 +918,8 @@ export interface DraftCreateData {
   imageUrl?: string;
   imageUrls?: string[];
   tags?: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: { text: string; url: string }[];
 }
 
 export interface DraftUpdateData {
@@ -810,6 +928,8 @@ export interface DraftUpdateData {
   imageUrl?: string;
   imageUrls?: string[];
   tags?: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: { text: string; url: string }[];
 }
 
 // Get all drafts

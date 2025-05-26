@@ -17,13 +17,21 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import DateTimePicker from '../ui/DateTimePicker';
 import { deleteImage } from '../../services/api';
 import { commonEmojis } from '../../utils/commonEmojis';
+import { TelegramButton } from '../../types';
 
 // Scheduled post types
 type ScheduleType = 'now' | 'later';
 
 // Define the props for the component
 interface PublishPanelProps {
-  onContentChange?: (content: { text: string; imageUrl: string; imageUrls: string[]; tags: string[] }) => void;
+  onContentChange?: (content: { 
+    text: string; 
+    imageUrl: string; 
+    imageUrls: string[]; 
+    tags: string[];
+    imagePosition?: 'top' | 'bottom';
+    buttons?: { text: string; url: string }[];
+  }) => void;
   editMode?: boolean;
   scheduledPostId?: string;
   initialChannelId?: string;
@@ -94,11 +102,16 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   // Add a ref for the Quill editor instance
   const quillRef = useRef<ReactQuill>(null);
   
-  // Define common emojis for a simple picker
- 
-  
   // State for emoji picker visibility
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  
+  // Add this after line 44
+  const [imagePosition, setImagePosition] = useState<'top' | 'bottom'>(
+    postState.imagePosition || 'top'
+  );
+  const [buttons, setButtons] = useState<TelegramButton[]>(
+    postState.buttons || []
+  );
   
   // Function to insert emoji at cursor position
   const insertEmoji = (emoji: string) => {
@@ -174,7 +187,19 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   
   // Get message length limits
   const getMessageLengthLimits = () => {
-    if (publishImageUrl || publishImageUrls.length > 0) {
+    // Для позиции изображения внизу (bottom) лимит значительно выше
+    if (imagePosition === 'bottom' && (publishImageUrl || publishImageUrls.length > 0)) {
+      return {
+        warningThreshold: 3800,
+        errorThreshold: 4096,
+        maxLimit: 4096,
+        warningMessage: 'publish_panel.approaching_limit',
+        errorMessage: 'publish_panel.message_too_long',
+        limitLabel: 'publish_panel.extended_caption_limit'
+      };
+    }
+    // Стандартный случай для изображений (подпись к фото ограничена 1024 символами)
+    else if (publishImageUrl || publishImageUrls.length > 0) {
       return {
         warningThreshold: 900,
         errorThreshold: 1024,
@@ -183,7 +208,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         errorMessage: 'publish_panel.error_caption_too_long',
         limitLabel: 'publish_panel.caption_limit'
       };
-    } else {
+    } 
+    // Обычное текстовое сообщение без изображений
+    else {
       return {
         warningThreshold: 3800,
         errorThreshold: 4096,
@@ -192,6 +219,16 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         errorMessage: 'publish_panel.message_too_long',
         limitLabel: 'publish_panel.message_limit'
       };
+    }
+  };
+  
+  // Helper function to validate URL
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
     }
   };
   
@@ -328,17 +365,19 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     }
   }, [editMode, initialChannelId, initialScheduledDate]);
   
-  // Notify parent component when content changes
+  // Call onContentChange whenever content changes
   useEffect(() => {
     if (onContentChange) {
       onContentChange({
         text: publishText,
         imageUrl: publishImageUrl,
         imageUrls: publishImageUrls,
-        tags: publishTags
+        tags: publishTags,
+        imagePosition,
+        buttons
       });
     }
-  }, [publishText, publishImageUrl, publishImageUrls, publishTags, onContentChange]);
+  }, [publishText, publishImageUrl, publishImageUrls, publishTags, imagePosition, buttons, onContentChange]);
   
   // Reset alert after 5 seconds
   useEffect(() => {
@@ -353,10 +392,11 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   
   // Reset length warning when text length changes significantly
   useEffect(() => {
-    if (getTotalMessageLength() <= 3800) {
+    const { warningThreshold } = getMessageLengthLimits();
+    if (getTotalMessageLength() <= warningThreshold) {
       setShowLengthWarning(true); // Reset when back under threshold
     }
-  }, [publishText]);
+  }, [publishText, imagePosition]);
   
   // Sync local values to content store
   useEffect(() => {
@@ -373,10 +413,12 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         text: publishText,
         imageUrl: publishImageUrl,
         imageUrls: publishImageUrls,
-        tags: publishTags
+        tags: publishTags,
+        imagePosition,
+        buttons
       });
     }
-  }, [publishText, publishImageUrl, publishImageUrls, publishTags, editMode]);
+  }, [publishText, publishImageUrl, publishImageUrls, publishTags, editMode, imagePosition, buttons]);
   
   // Use a separate effect to handle saving to persistent storage 
   // to avoid creating a cyclical dependency
@@ -391,7 +433,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
       selectedChannelIds,
       scheduleType,
       scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
-      useMultipleImages
+      useMultipleImages,
+      imagePosition,
+      buttons
     });
   });
   
@@ -408,7 +452,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         selectedChannelIds,
         scheduleType,
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
-        useMultipleImages
+        useMultipleImages,
+        imagePosition,
+        buttons
       });
     };
   }, [
@@ -421,7 +467,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     scheduledDate,
     useMultipleImages,
     editMode,
-    savePostState
+    savePostState,
+    imagePosition,
+    buttons
   ]);
   
   // Use debounce to avoid saving on every keystroke
@@ -504,6 +552,12 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     // Reset publishing progress
     setPublishingProgress({ total: 0, current: 0, success: [], failed: [] });
     
+    // Reset image position
+    setImagePosition('top');
+    
+    // Reset buttons
+    setButtons([]);
+    
     // Also clear stored state in tabContentStore (only if not in edit mode)
     if (!editMode) {
       savePostState({
@@ -514,7 +568,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         selectedChannelIds: [],
         scheduleType: 'now',
         scheduledDate: null,
-        useMultipleImages: false
+        useMultipleImages: false,
+        imagePosition: 'top',
+        buttons: []
       });
     }
   };
@@ -524,14 +580,15 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
     
     // Calculate plain text length for validation
     const plainTextLength = getTextContentLength(content);
+    const { errorThreshold } = getMessageLengthLimits();
     
     // Clear errors when text is okay
-    if (plainTextLength <= 4096 && formError === t('publish_panel.message_too_long')) {
+    if (plainTextLength <= errorThreshold && formError === t('publish_panel.message_too_long')) {
       setFormError('');
     }
     
     // Set error when text is too long
-    if (plainTextLength > 4096 && formError !== t('publish_panel.message_too_long')) {
+    if (plainTextLength > errorThreshold && formError !== t('publish_panel.message_too_long')) {
       setFormError(t('publish_panel.message_too_long'));
     }
   };
@@ -551,6 +608,13 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   };
   
   const toggleImageMode = () => {
+    // Prevent toggling to multiple images if bottom position is selected
+    if (!useMultipleImages && imagePosition === 'bottom') {
+      // Notify user this is not allowed
+      setUploadError(t('publish_panel.bottom_position_single_image'));
+      return;
+    }
+    
     // Handle image cleanup when switching modes
     if (useMultipleImages) {
       // When switching from multiple to single
@@ -787,7 +851,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           imageUrl: useMultipleImages ? '' : publishImageUrl,
           imageUrls: useMultipleImages ? publishImageUrls : [],
           tags: publishTags,
-          scheduledDate: scheduledDate
+          scheduledDate: scheduledDate,
+          imagePosition: imagePosition,
+          buttons: buttons
         });
 
         if (result.success) {
@@ -836,7 +902,9 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           imageUrl: useMultipleImages ? '' : publishImageUrl,
           imageUrls: useMultipleImages ? publishImageUrls : [],
           tags: publishTags,
-          scheduledDate: scheduleType === 'later' ? scheduledDate : null
+          scheduledDate: scheduleType === 'later' ? scheduledDate : null,
+          imagePosition: imagePosition,
+          buttons: buttons
         });
 
         // Update success/fail lists based on result
@@ -1156,13 +1224,13 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         </div>
         
         {/* Show warning when approaching character limit */}
-        {getTotalMessageLength() > 3800 && showLengthWarning && (
+        {getTotalMessageLength() > getMessageLengthLimits().warningThreshold && showLengthWarning && (
           <Alert
             variant="warning"
-            message={getTotalMessageLength() > 4096 
+            message={getTotalMessageLength() > getMessageLengthLimits().errorThreshold 
               ? t('publish_panel.message_too_long') 
               : formatMessage('publish_panel.approaching_limit', { 
-                  remaining: (4096 - getTotalMessageLength()).toString() 
+                  remaining: (getMessageLengthLimits().maxLimit - getTotalMessageLength()).toString() 
                 })
             }
             onClose={() => setShowLengthWarning(false)}
@@ -1170,7 +1238,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         )}
         
         {/* Show warning when approaching caption limit with image */}
-        {(publishImageUrl || publishImageUrls.length > 0) && getTotalMessageLength() > 900 && getTotalMessageLength() <= 1024 && showLengthWarning && (
+        {(publishImageUrl || publishImageUrls.length > 0) && imagePosition === 'top' && 
+         getTotalMessageLength() > 900 && getTotalMessageLength() <= 1024 && showLengthWarning && (
           <Alert
             variant="warning"
             message={formatMessage('publish_panel.approaching_caption_limit', { 
@@ -1181,7 +1250,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         )}
         
         {/* Show error when exceeding caption limit with image */}
-        {(publishImageUrl || publishImageUrls.length > 0) && getTotalMessageLength() > 1024 && (
+        {(publishImageUrl || publishImageUrls.length > 0) && imagePosition === 'top' && 
+         getTotalMessageLength() > 1024 && (
           <Alert
             variant="error"
             message={t('publish_panel.error_caption_too_long')}
@@ -1197,18 +1267,71 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           />
         )}
         
+        {/* Image position selector - moved above image upload */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('publish_panel.image_position')}
+          </label>
+          <div className="flex items-center space-x-4">
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                className="form-radio h-4 w-4 text-blue-600"
+                checked={imagePosition === 'top'}
+                onChange={() => {
+                  setImagePosition('top');
+                }}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                {t('publish_panel.image_position_top')}
+              </span>
+            </label>
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                className="form-radio h-4 w-4 text-blue-600"
+                checked={imagePosition === 'bottom'}
+                onChange={() => {
+                  setImagePosition('bottom');
+                  // If switching to bottom position, force single image mode
+                  if (useMultipleImages) {
+                    toggleImageMode();
+                  }
+                }}
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                {t('publish_panel.image_position_bottom')}
+              </span>
+            </label>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {imagePosition === 'bottom' 
+              ? (t('publish_panel.image_position_bottom_description')) 
+              : (t('publish_panel.image_position_top_description'))}
+          </p>
+          {imagePosition === 'bottom' && (
+            <p className="text-xs text-amber-600 mt-1">
+              {t('publish_panel.bottom_position_single_image')}
+            </p>
+          )}
+        </div>
+        
         {/* Toggle between single and multiple image modes */}
         <div className="mb-4">
           <div className="flex items-center justify-end mb-2">
             <label className="text-sm text-gray-600 mr-2 flex items-center">
               <ImageIcon size={16} className="mr-1" />
-              {t('publish_panel.multiple_images') || 'Multiple Images'}
+              {t('publish_panel.multiple_images')}
             </label>
             <div 
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer ${
                 useMultipleImages ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-              onClick={toggleImageMode}
+              } ${imagePosition === 'bottom' ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => {
+                if (imagePosition !== 'bottom') {
+                  toggleImageMode();
+                }
+              }}
             >
               <div 
                 className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
@@ -1239,7 +1362,102 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           tags={publishTags}
           onChange={setPublishTags}
         />
-        
+
+        {/* Telegram Buttons */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('publish_panel.buttons')}
+          </label>
+          
+          {imagePosition === 'top' && (publishImageUrl || publishImageUrls.length > 0) ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200 mb-3">
+              {t('publish_panel.buttons_not_available_top')}
+            </div>
+          ) : (
+            <>
+              {buttons.map((button, index) => (
+                <div key={index} className="flex items-start mb-3 space-x-2 bg-gray-50 p-3 rounded-md border border-gray-200">
+                  <div className="flex-grow">
+                    <label className="block text-xs text-gray-600 mb-1">{t('publish_panel.button_text')}</label>
+                    <input
+                      type="text"
+                      placeholder={t('publish_panel.button_text_placeholder')}
+                      value={button.text}
+                      onChange={(e) => {
+                        const newButtons = [...buttons];
+                        newButtons[index].text = e.target.value;
+                        setButtons(newButtons);
+                      }}
+                      className="w-full p-2 border border-gray-300 rounded-md text-sm mb-2"
+                    />
+                    <label className="block text-xs text-gray-600 mb-1">{t('publish_panel.button_url')}</label>
+                    <input
+                      type="text"
+                      placeholder={t('publish_panel.button_url_placeholder')}
+                      value={button.url}
+                      onChange={(e) => {
+                        const newButtons = [...buttons];
+                        newButtons[index].url = e.target.value;
+                        setButtons(newButtons);
+                      }}
+                      className={`w-full p-2 border rounded-md text-sm ${
+                        button.url && !isValidUrl(button.url) 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                      }`}
+                    />
+                    {button.url && !isValidUrl(button.url) && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {t('publish_panel.invalid_url')}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newButtons = [...buttons];
+                      newButtons.splice(index, 1);
+                      setButtons(newButtons);
+                    }}
+                    className="mt-1 p-2 text-red-500 hover:bg-red-50 rounded-md"
+                    type="button"
+                    title={t('publish_panel.remove_button')}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              
+              {/* Add button button */}
+              {buttons.length < 5 && (
+                <button
+                  onClick={() => {
+                    setButtons([...buttons, { text: '', url: '' }]);
+                  }}
+                  className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors flex items-center"
+                  type="button"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  {t('publish_panel.add_button')}
+                </button>
+              )}
+              
+              {buttons.length >= 5 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('publish_panel.max_buttons')}
+                </p>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2">
+                {t('publish_panel.buttons_note')}
+              </p>
+            </>
+          )}
+        </div>
+
         {/* Scheduling options */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1268,6 +1486,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           </div>
         </div>
       </CardContent>
+
       <CardFooter className="flex justify-between gap-4">
         <Button 
           variant="outline"
@@ -1285,8 +1504,8 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
             (!publishText && !publishImageUrl && publishImageUrls.length === 0) || 
             selectedChannelIds.length === 0 || 
             (scheduleType === 'later' && !scheduledDate) ||
-            (getTotalMessageLength() > 4096) ||
-            ((publishImageUrl || publishImageUrls.length > 0) && getTotalMessageLength() > 1024))}
+            (getTotalMessageLength() > getMessageLengthLimits().errorThreshold) ||
+            ((publishImageUrl || publishImageUrls.length > 0) && imagePosition === 'top' && getTotalMessageLength() > 1024))}
           leftIcon={scheduleType === 'now' ? <Send size={16} /> : <Calendar size={16} />}
         >
           {scheduleType === 'now' ? (

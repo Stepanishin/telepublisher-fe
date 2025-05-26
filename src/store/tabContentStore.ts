@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { TelegramButton } from '../types';
 
 // Define the types for the saved state
-interface SavedPostState {
+export interface SavedPostState {
   text: string;
   imageUrl: string;
   imageUrls: string[];
@@ -11,9 +12,11 @@ interface SavedPostState {
   scheduleType: 'now' | 'later';
   scheduledDate: string | null; // ISO string format
   useMultipleImages: boolean;
+  imagePosition: 'top' | 'bottom';
+  buttons: TelegramButton[];
 }
 
-interface SavedPollState {
+export interface SavedPollState {
   question: string;
   options: { text: string }[];
   isAnonymous: boolean;
@@ -42,7 +45,9 @@ const initialPostState: SavedPostState = {
   selectedChannelIds: [],
   scheduleType: 'now',
   scheduledDate: null,
-  useMultipleImages: false
+  useMultipleImages: false,
+  imagePosition: 'top',
+  buttons: []
 };
 
 const initialPollState: SavedPollState = {
