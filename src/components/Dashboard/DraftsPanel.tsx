@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { Search, Filter, PlusCircle, ImageIcon, FileText, Trash2, Edit, Copy, SortAsc, SortDesc } from 'lucide-react';
+import { Search, Filter, PlusCircle, ImageIcon, FileText, Trash2, Edit, Copy, SortAsc, SortDesc, ExternalLink } from 'lucide-react';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Draft, getDrafts, deleteDraft } from '../../services/api';
 import { useContentStore } from '../../store/contentStore';
+import { useTabContentStore } from '../../store/tabContentStore';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
@@ -39,6 +40,7 @@ const DraftsPanel = () => {
   } | null>(null);
   const { setContent } = useContentStore();
   const { t, language } = useLanguage();
+  const { savePostState } = useTabContentStore();
 
   // Load drafts on component mount
   useEffect(() => {
@@ -147,11 +149,35 @@ const DraftsPanel = () => {
   };
 
   const handleCopyToPost = (draft: Draft) => {
+    // Сначала обновляем contentStore
     setContent({
       text: draft.content,
       imageUrl: draft.imageUrl || '',
       imageUrls: draft.imageUrls || [],
-      tags: draft.tags || []
+      tags: draft.tags || [],
+      imagePosition: draft.imagePosition || 'top',
+      buttons: draft.buttons || []
+    });
+    
+    // Затем обновляем tabContentStore для сохранения в localStorage
+    savePostState({
+      text: draft.content,
+      imageUrl: draft.imageUrl || '',
+      imageUrls: draft.imageUrls || [],
+      tags: draft.tags || [],
+      selectedChannelIds: [], // Сбрасываем выбранные каналы при копировании
+      scheduleType: 'now',    // Сбрасываем тип расписания
+      scheduledDate: null,    // Сбрасываем дату расписания
+      useMultipleImages: draft.imageUrls && draft.imageUrls.length > 0, // Устанавливаем режим в зависимости от наличия изображений
+      imagePosition: draft.imagePosition || 'top',
+      buttons: draft.buttons || []
+    });
+    
+    // Отладка для проверки
+    console.log('Копируем в пост с позицией изображения:', draft.imagePosition);
+    console.log('Сохраняем в localStorage:', {
+      imagePosition: draft.imagePosition || 'top',
+      buttons: draft.buttons || []
     });
     
     setNotification({
@@ -330,7 +356,7 @@ const DraftsPanel = () => {
                 key={draft._id}
                 className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
               >
-                {draft.imageUrl && (
+                {draft.imageUrl && draft.imagePosition !== 'bottom' && (
                   <div className="h-40 overflow-hidden relative">
                     <img 
                       src={draft.imageUrl} 
@@ -339,7 +365,7 @@ const DraftsPanel = () => {
                     />
                   </div>
                 )}
-                {!draft.imageUrl && draft.imageUrls && draft.imageUrls.length > 0 && (
+                {!draft.imageUrl && draft.imageUrls && draft.imageUrls.length > 0 && draft.imagePosition !== 'bottom' && (
                   <div className="h-40 overflow-hidden relative">
                     <img 
                       src={draft.imageUrls[0]} 
@@ -356,6 +382,63 @@ const DraftsPanel = () => {
                 <div className="p-4">
                   <h3 className="font-medium text-lg mb-1 line-clamp-1">{draft.title}</h3>
                   <p className="text-gray-600 text-sm mb-3 line-clamp-2">{stripHtml(draft.content)}</p>
+                  
+                  {/* Показываем изображение снизу, если указана позиция bottom */}
+                  {draft.imagePosition === 'bottom' && draft.imageUrl && (
+                    <div className="mb-3 border-t border-gray-100 pt-2">
+                      <div className="h-24 overflow-hidden relative rounded-md">
+                        <img 
+                          src={draft.imageUrl} 
+                          alt={draft.title} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {t('drafts.image_bottom')}
+                      </div>
+                    </div>
+                  )}
+                  {draft.imagePosition === 'bottom' && !draft.imageUrl && draft.imageUrls && draft.imageUrls.length > 0 && (
+                    <div className="mb-3 border-t border-gray-100 pt-2">
+                      <div className="h-24 overflow-hidden relative rounded-md">
+                        <img 
+                          src={draft.imageUrls[0]} 
+                          alt={draft.title} 
+                          className="w-full h-full object-cover"
+                        />
+                        {draft.imageUrls.length > 1 && (
+                          <div className="bg-black bg-opacity-70 text-white absolute top-2 right-2 text-xs px-2 py-1 rounded-md">
+                            +{draft.imageUrls.length - 1}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {t('drafts.image_bottom')}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Показываем кнопки, если они есть */}
+                  {draft.buttons && draft.buttons.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-1">
+                        {draft.buttons.slice(0, 1).map((button, idx) => (
+                          <span 
+                            key={idx} 
+                            className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded border border-blue-100 flex items-center"
+                          >
+                            <ExternalLink size={10} className="mr-1" />
+                            {button.text}
+                          </span>
+                        ))}
+                        {draft.buttons.length > 1 && (
+                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                            +{draft.buttons.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   {draft.tags && draft.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-3">
