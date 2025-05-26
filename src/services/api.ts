@@ -1013,3 +1013,95 @@ export const uploadDraftImage = async (file: File): Promise<string> => {
     throw error;
   }
 };
+
+// AutoPosting API functions
+export type Frequency = 'daily' | 'weekly' | 'custom';
+export type TimeUnit = 'minutes' | 'hours' | 'days';
+
+export interface AutoPostingRule {
+  _id?: string;
+  id?: string;
+  name: string;
+  topic: string;
+  status: 'active' | 'inactive';
+  frequency: Frequency;
+  customInterval?: number;
+  customTimeUnit?: TimeUnit;
+  preferredTime?: string;
+  preferredDays?: string[];
+  channelId: string;
+  imageGeneration: boolean;
+  keywords?: string[];
+  nextScheduled?: Date | null;
+  lastPublished?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Get all autoposting rules
+export const getAutoPostingRules = async () => {
+  try {
+    const response = await api.get('/autoposting/rules');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching autoposting rules:', error);
+    throw error;
+  }
+};
+
+// Get a specific autoposting rule
+export const getAutoPostingRule = async (ruleId: string) => {
+  try {
+    const response = await api.get(`/autoposting/rules/${ruleId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching autoposting rule:', error);
+    throw error;
+  }
+};
+
+// Create a new autoposting rule
+export const createAutoPostingRule = async (ruleData: AutoPostingRule) => {
+  try {
+    const response = await api.post('/autoposting/rules', ruleData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating autoposting rule:', error);
+    throw error;
+  }
+};
+
+// Update an existing autoposting rule
+export const updateAutoPostingRule = async (ruleId: string, ruleData: Partial<AutoPostingRule>) => {
+  try {
+    const response = await api.put(`/autoposting/rules/${ruleId}`, ruleData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating autoposting rule:', error);
+    throw error;
+  }
+};
+
+// Delete an autoposting rule
+export const deleteAutoPostingRule = async (ruleId: string) => {
+  try {
+    await api.delete(`/autoposting/rules/${ruleId}`);
+    return true;
+  } catch (error) {
+    console.error('Error deleting autoposting rule:', error);
+    throw error;
+  }
+};
+
+// Get autoposting history
+export const getAutoPostingHistory = async (limit: number = 20, page: number = 1) => {
+  try {
+    const response = await api.get('/autoposting/history', {
+      params: { limit, page }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching autoposting history:', error);
+    throw error;
+  }
+};

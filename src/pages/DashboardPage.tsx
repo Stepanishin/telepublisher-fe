@@ -7,16 +7,18 @@ import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
 import PollPublishPanel from '../components/Dashboard/PollPublishPanel';
 import ScheduledPosts from '../components/Dashboard/ScheduledPosts';
 import DraftsPanel from '../components/Dashboard/DraftsPanel';
+// @ts-expect-error - Import AutoPostingPanel module has missing type declarations
+import AutoPostingPanel from '../components/Dashboard/AutoPostingPanel';
 import { useChannelsStore } from '../store/channelsStore';
 import { useContentStore } from '../store/contentStore';
-import { Zap, Settings, BookOpen, Crown, FileText, BarChart2, Calendar, Bookmark } from 'lucide-react';
+import { Zap, Settings, BookOpen, Crown, FileText, BarChart2, Calendar, Bookmark, Clock } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import TelegramPostPreview from '../components/ui/TelegramPostPreview';
 import TelegramPollPreview from '../components/ui/TelegramPollPreview';
 
 // Tab types for navigation
 type TabType = 'content' | 'channels' | 'instructions' | 'subscription' | 'scheduled';
-type ContentSubTabType = 'post' | 'poll' | 'drafts';
+type ContentSubTabType = 'post' | 'poll' | 'autoposting' | 'drafts';
 
 // Preview content type
 interface PreviewContent {
@@ -119,6 +121,11 @@ const DashboardPage: React.FC = () => {
       label: t('dashboard.tab_content_poll') || 'Poll',
       icon: <BarChart2 className="h-4 w-4" />
     },
+    // {
+    //   id: 'autoposting',
+    //   label: t('dashboard.tab_content_autoposting') || 'AutoPosting',
+    //   icon: <Clock className="h-4 w-4" />
+    // },
     {
       id: 'drafts',
       label: t('dashboard.tab_content_drafts') || 'Drafts',
@@ -268,6 +275,12 @@ const DashboardPage: React.FC = () => {
                     allowsMultipleAnswers={pollPreviewContent.allowsMultipleAnswers}
                   />
                 </div>
+              </div>
+            )}
+
+            {activeContentSubTab === 'autoposting' && (
+              <div>
+                <AutoPostingPanel />
               </div>
             )}
 
