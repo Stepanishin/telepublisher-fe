@@ -1281,7 +1281,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
                 onChange={() => setImagePosition('top')}
               />
               <span className="ml-2 text-sm text-gray-700">
-                {t('publish_panel.image_position_top')}
+                {t('publish_panel.image_position_top')} (1024 {t('publish_panel.characters')})
               </span>
             </label>
             <label className="inline-flex items-center">
@@ -1298,7 +1298,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
                 }}
               />
               <span className="ml-2 text-sm text-gray-700">
-                {t('publish_panel.image_position_bottom')}
+                {t('publish_panel.image_position_bottom')} (4096 {t('publish_panel.characters')})
               </span>
             </label>
           </div>
