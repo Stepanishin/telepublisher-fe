@@ -38,6 +38,8 @@ export interface AutoPostingRule {
   imageGeneration: boolean;
   keywords?: string[];
   sourceUrls?: string[]; // URLs to scrape content from
+  avoidDuplication?: boolean; // Check for content duplication
+  duplicateCheckDays?: number; // Number of days to check back for duplicates
   nextScheduled?: Date | null;
   lastPublished?: Date | null;
   buttons?: { text: string; url: string }[];
@@ -97,6 +99,8 @@ const AutoPostingPanel: React.FC = () => {
   const [buttons, setButtons] = useState<{ text: string; url: string }[]>([]);
   const [buttonText, setButtonText] = useState<string>('');
   const [buttonUrl, setButtonUrl] = useState<string>('');
+  const [avoidDuplication, setAvoidDuplication] = useState<boolean>(false);
+  const [duplicateCheckDays, setDuplicateCheckDays] = useState<number>(7);
   
   // Тексты по умолчанию для новой функциональности
   const defaultTexts = {
@@ -119,7 +123,12 @@ const AutoPostingPanel: React.FC = () => {
       'auto_posting.history_load_error': 'Ошибка загрузки истории автопостинга',
       'auto_posting.has_image': 'С изображением',
       'auto_posting.post_id': 'ID поста',
-      'common.search': 'Поиск'
+      'common.search': 'Поиск',
+      'auto_posting.source_urls_description': 'URL-адреса для сбора информации и создания постов',
+      'auto_posting.avoid_duplication': 'Избегать повторений',
+      'auto_posting.avoid_duplication_description': 'Проверять контент на схожесть с предыдущими постами',
+      'auto_posting.duplicate_check_days': 'Дней для проверки',
+      'auto_posting.duplicate_check_days_description': 'Количество дней для проверки на дубликаты'
     },
     // Английский
     'en': {
@@ -140,7 +149,12 @@ const AutoPostingPanel: React.FC = () => {
       'auto_posting.history_load_error': 'Failed to load auto-posting history',
       'auto_posting.has_image': 'With image',
       'auto_posting.post_id': 'Post ID',
-      'common.search': 'Search'
+      'common.search': 'Search',
+      'auto_posting.source_urls_description': 'URLs to scrape content from',
+      'auto_posting.avoid_duplication': 'Avoid Duplication',
+      'auto_posting.avoid_duplication_description': 'Check content for similarity with previous posts',
+      'auto_posting.duplicate_check_days': 'Days to Check',
+      'auto_posting.duplicate_check_days_description': 'Number of days to check for duplicates'
     }
   };
   
@@ -291,6 +305,8 @@ const AutoPostingPanel: React.FC = () => {
     setButtons(rule.buttons || []);
     setButtonText('');
     setButtonUrl('');
+    setAvoidDuplication(rule.avoidDuplication || false);
+    setDuplicateCheckDays(rule.duplicateCheckDays || 7);
     
     setActiveSubTab('editor');
   };
@@ -313,6 +329,8 @@ const AutoPostingPanel: React.FC = () => {
     setButtons([]);
     setButtonText('');
     setButtonUrl('');
+    setAvoidDuplication(false);
+    setDuplicateCheckDays(7);
   };
   
   // Handle save rule
@@ -365,7 +383,9 @@ const AutoPostingPanel: React.FC = () => {
       imageGeneration: generateImages,
       keywords: keywords,
       sourceUrls: sourceUrls,
-      buttons: buttons.length > 0 ? buttons : undefined
+      buttons: buttons.length > 0 ? buttons : undefined,
+      avoidDuplication: avoidDuplication,
+      duplicateCheckDays: duplicateCheckDays
     };
     
     // Add frequency-specific fields
@@ -1179,6 +1199,48 @@ const AutoPostingPanel: React.FC = () => {
                         </p>
                       </div>
                     </div>
+                  </div>
+                </div>
+                
+                {/* Content Duplication Settings */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-md font-medium mb-3 flex items-center">
+                    <Settings size={18} className="mr-2" />
+                    {tWithDefault('auto_posting.avoid_duplication')}
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="avoidDuplication"
+                        checked={avoidDuplication}
+                        onChange={(e) => setAvoidDuplication(e.target.checked)}
+                        className="mr-2"
+                      />
+                      <label htmlFor="avoidDuplication" className="text-sm">
+                        {tWithDefault('auto_posting.avoid_duplication_description')}
+                      </label>
+                    </div>
+                    
+                    {avoidDuplication && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {tWithDefault('auto_posting.duplicate_check_days')}
+                        </label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={30}
+                          value={duplicateCheckDays}
+                          onChange={(e) => setDuplicateCheckDays(Math.max(1, Math.min(30, parseInt(e.target.value) || 7)))}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {tWithDefault('auto_posting.duplicate_check_days_description')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
