@@ -37,6 +37,7 @@ export interface AutoPostingRule {
   channelId: string;
   imageGeneration: boolean;
   keywords?: string[];
+  sourceUrls?: string[]; // URLs to scrape content from
   nextScheduled?: Date | null;
   lastPublished?: Date | null;
   buttons?: { text: string; url: string }[];
@@ -91,6 +92,8 @@ const AutoPostingPanel: React.FC = () => {
   const [preferredDays, setPreferredDays] = useState<string[]>(['monday', 'wednesday', 'friday']);
   const [generateImages, setGenerateImages] = useState<boolean>(true);
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [sourceUrls, setSourceUrls] = useState<string[]>([]);
+  const [newSourceUrl, setNewSourceUrl] = useState<string>('');
   const [buttons, setButtons] = useState<{ text: string; url: string }[]>([]);
   const [buttonText, setButtonText] = useState<string>('');
   const [buttonUrl, setButtonUrl] = useState<string>('');
@@ -283,6 +286,8 @@ const AutoPostingPanel: React.FC = () => {
     setPreferredDays(rule.preferredDays || ['monday', 'wednesday', 'friday']);
     setGenerateImages(rule.imageGeneration);
     setKeywords(rule.keywords || []);
+    setSourceUrls(rule.sourceUrls || []);
+    setNewSourceUrl('');
     setButtons(rule.buttons || []);
     setButtonText('');
     setButtonUrl('');
@@ -303,6 +308,8 @@ const AutoPostingPanel: React.FC = () => {
     setPreferredDays(['monday', 'wednesday', 'friday']);
     setGenerateImages(true);
     setKeywords([]);
+    setSourceUrls([]);
+    setNewSourceUrl('');
     setButtons([]);
     setButtonText('');
     setButtonUrl('');
@@ -357,6 +364,7 @@ const AutoPostingPanel: React.FC = () => {
       channelId: channelMongoId,
       imageGeneration: generateImages,
       keywords: keywords,
+      sourceUrls: sourceUrls,
       buttons: buttons.length > 0 ? buttons : undefined
     };
     
@@ -1006,6 +1014,94 @@ const AutoPostingPanel: React.FC = () => {
                       </p>
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('auto_posting.source_urls') || "Source URLs"} (optional)
+                      </label>
+                      
+                      {/* Existing source URLs list */}
+                      {sourceUrls.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-sm font-medium mb-1">{t('auto_posting.existing_source_urls') || "Existing Source URLs"}</div>
+                          <div className="space-y-2">
+                            {sourceUrls.map((url, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-gray-200">
+                                <div className="flex-1">
+                                  <div className="font-medium">{url}</div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newSourceUrls = [...sourceUrls];
+                                    newSourceUrls.splice(index, 1);
+                                    setSourceUrls(newSourceUrls);
+                                  }}
+                                  className="text-red-500 hover:text-red-700 text-sm"
+                                >
+                                  {t('common.delete') || "Delete"}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Add new source URL form */}
+                      <div className="mt-2">
+                        <div className="text-sm font-medium mb-1">{t('auto_posting.add_source_url') || "Add Source URL"}</div>
+                        
+                        <div className="space-y-2">
+                          <Input
+                            value={newSourceUrl}
+                            onChange={(e) => setNewSourceUrl(e.target.value)}
+                            placeholder={t('auto_posting.source_url_placeholder') || "https://example.com"}
+                            className="w-full"
+                          />
+                          
+                          <Button
+                            onClick={() => {
+                              if (newSourceUrl.trim()) {
+                                // Validate URL format
+                                try {
+                                  new URL(newSourceUrl.trim());
+                                  setSourceUrls([...sourceUrls, newSourceUrl.trim()]);
+                                  setNewSourceUrl('');
+                                } catch {
+                                  setNotification({
+                                    type: 'error',
+                                    message: t('auto_posting.source_url_validation') || 'Please enter a valid URL (e.g., https://example.com)'
+                                  });
+                                }
+                              } else {
+                                setNotification({
+                                  type: 'error',
+                                  message: t('auto_posting.source_url_validation') || 'Source URL is required'
+                                });
+                              }
+                            }}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            {t('auto_posting.add') || "Add"}
+                          </Button>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 mt-1">
+                          {t('auto_posting.source_urls_description') || "Source URLs to scrape content from"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Buttons Settings */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-md font-medium mb-3 flex items-center">
+                    <Tag size={18} className="mr-2" />
+                    {t('auto_posting.buttons')}
+                  </h4>
+                  
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {t('auto_posting.buttons') || "Buttons"} (optional)

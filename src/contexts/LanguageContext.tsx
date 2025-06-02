@@ -681,6 +681,12 @@ const translations: Record<Language, Record<string, string>> = {
     'auto_posting.history_load_error': 'Failed to load auto-posting history',
     'auto_posting.has_image': 'With image',
     'auto_posting.post_id': 'Post ID',
+    'auto_posting.source_urls': 'Source URLs',
+    'auto_posting.existing_source_urls': 'Existing Source URLs',
+    'auto_posting.add_source_url': 'Add Source URL',
+    'auto_posting.source_url_placeholder': 'https://example.com',
+    'auto_posting.source_url_validation': 'Source URL is required',
+    'auto_posting.source_urls_description': 'URLs to scrape content from for generating posts',
   },
   ru: {
     // Navbar
@@ -1346,6 +1352,12 @@ const translations: Record<Language, Record<string, string>> = {
     'auto_posting.history_load_error': 'Ошибка загрузки истории автопостинга',
     'auto_posting.has_image': 'С изображением',
     'auto_posting.post_id': 'ID поста',
+    'auto_posting.source_urls': 'Источники контента',
+    'auto_posting.existing_source_urls': 'Существующие источники',
+    'auto_posting.add_source_url': 'Добавить источник',
+    'auto_posting.source_url_placeholder': 'https://example.com',
+    'auto_posting.source_url_validation': 'Ссылка на источник обязательна',
+    'auto_posting.source_urls_description': 'URL-адреса для сбора информации и создания постов',
   },
 };
 
