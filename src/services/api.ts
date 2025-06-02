@@ -903,6 +903,7 @@ export interface Draft {
   _id: string;
   title: string;
   content: string;
+  type?: 'text' | 'image' | 'video' | 'media-group';
   imageUrl?: string;
   imageUrls?: string[];
   tags?: string[];
@@ -915,6 +916,7 @@ export interface Draft {
 export interface DraftCreateData {
   title: string;
   content: string;
+  type?: 'text' | 'image' | 'video' | 'media-group';
   imageUrl?: string;
   imageUrls?: string[];
   tags?: string[];

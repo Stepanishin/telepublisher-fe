@@ -38,7 +38,7 @@ interface PublishPanelProps {
   initialScheduledDate?: Date;
 }
 
-const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, scheduledPostId, initialChannelId, initialScheduledDate }) => {
+const PublishPanelMediaGroup: React.FC<PublishPanelProps> = ({ onContentChange, editMode, scheduledPostId, initialChannelId, initialScheduledDate }) => {
   const { channels } = useChannelsStore();
   const { 
     content, 
@@ -106,7 +106,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
   
   // Add this after line 44
   const [imagePosition, setImagePosition] = useState<'top' | 'bottom'>(
-    postState.imagePosition || 'top'
+    'top'
   );
   const [buttons, setButtons] = useState<TelegramButton[]>(
     postState.buttons || []
@@ -218,16 +218,6 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
         errorMessage: 'publish_panel.message_too_long',
         limitLabel: 'publish_panel.message_limit'
       };
-    }
-  };
-  
-  // Helper function to validate URL
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
     }
   };
   
@@ -1202,53 +1192,6 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           />
         )}
         
-        {/* Image position selector - moved above image upload */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('publish_panel.image_position')}
-          </label>
-          <div className="flex items-center space-x-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio h-4 w-4 text-blue-600"
-                checked={imagePosition === 'top'}
-                onChange={() => setImagePosition('top')}
-              />
-              <span className="ml-2 text-sm text-gray-700">
-                {t('publish_panel.image_position_top')} (1024 {t('publish_panel.characters')})
-              </span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio h-4 w-4 text-blue-600"
-                checked={imagePosition === 'bottom'}
-                onChange={() => {
-                  setImagePosition('bottom');
-                  // If switching to bottom position, force single image mode
-                  if (useMultipleImages) {
-                    toggleImageMode();
-                  }
-                }}
-              />
-              <span className="ml-2 text-sm text-gray-700">
-                {t('publish_panel.image_position_bottom')} (4096 {t('publish_panel.characters')})
-              </span>
-            </label>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            {imagePosition === 'bottom' 
-              ? (t('publish_panel.image_position_bottom_description')) 
-              : (t('publish_panel.image_position_top_description'))}
-          </p>
-          {imagePosition === 'bottom' && (
-            <p className="text-xs text-amber-600 mt-1">
-              {t('publish_panel.bottom_position_single_image')}
-            </p>
-          )}
-        </div>
-        
         {/* Toggle between single and multiple image modes */}
         <div className="mb-4">
           <div className="flex items-center justify-end mb-2">
@@ -1295,99 +1238,6 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           tags={publishTags}
           onChange={setPublishTags}
         />
-
-        {/* Telegram Buttons */}
-        {
-          (imagePosition === 'bottom' || imagePosition === 'top') && (
-            <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('publish_panel.buttons')}
-          </label>
-          
-            <>
-              {buttons.map((button, index) => (
-                <div key={index} className="flex items-start mb-3 space-x-2 bg-gray-50 p-3 rounded-md border border-gray-200">
-                  <div className="flex-grow">
-                    <label className="block text-xs text-gray-600 mb-1">{t('publish_panel.button_text')}</label>
-                    <input
-                      type="text"
-                      placeholder={t('publish_panel.button_text_placeholder')}
-                      value={button.text}
-                      onChange={(e) => {
-                        const newButtons = [...buttons];
-                        newButtons[index].text = e.target.value;
-                        setButtons(newButtons);
-                      }}
-                      className="w-full p-2 border border-gray-300 rounded-md text-sm mb-2"
-                    />
-                    <label className="block text-xs text-gray-600 mb-1">{t('publish_panel.button_url')}</label>
-                    <input
-                      type="text"
-                      placeholder={t('publish_panel.button_url_placeholder')}
-                      value={button.url}
-                      onChange={(e) => {
-                        const newButtons = [...buttons];
-                        newButtons[index].url = e.target.value;
-                        setButtons(newButtons);
-                      }}
-                      className={`w-full p-2 border rounded-md text-sm ${
-                        button.url && !isValidUrl(button.url) 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                      }`}
-                    />
-                    {button.url && !isValidUrl(button.url) && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {t('publish_panel.invalid_url')}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      const newButtons = [...buttons];
-                      newButtons.splice(index, 1);
-                      setButtons(newButtons);
-                    }}
-                    className="mt-1 p-2 text-red-500 hover:bg-red-50 rounded-md"
-                    type="button"
-                    title={t('publish_panel.remove_button')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-              
-              {/* Add button button */}
-              {buttons.length < 5 && (
-                <button
-                  onClick={() => {
-                    setButtons([...buttons, { text: '', url: '' }]);
-                  }}
-                  className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors flex items-center"
-                  type="button"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  {t('publish_panel.add_button')}
-                </button>
-              )}
-              
-              {buttons.length >= 5 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {t('publish_panel.max_buttons')}
-                </p>
-              )}
-              
-              <p className="text-xs text-gray-500 mt-2">
-                {t('publish_panel.buttons_note')}
-              </p>
-            </>
-
-        </div>
-        )}
 
         {/* Scheduling options */}
         <div className="mb-4">
@@ -1455,7 +1305,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
 };
 
 // Set default props
-PublishPanel.defaultProps = {
+PublishPanelMediaGroup.defaultProps = {
   onContentChange: undefined,
   editMode: false,
   scheduledPostId: undefined,
@@ -1463,4 +1313,4 @@ PublishPanel.defaultProps = {
   initialScheduledDate: undefined
 };
 
-export default PublishPanel;
+export default PublishPanelMediaGroup;

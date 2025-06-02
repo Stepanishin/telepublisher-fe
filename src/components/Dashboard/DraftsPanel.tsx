@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { Search, Filter, PlusCircle, ImageIcon, FileText, Trash2, Edit, Copy, SortAsc, SortDesc, ExternalLink } from 'lucide-react';
+import { Search, Filter, PlusCircle, ImageIcon, FileText, Trash2, Edit, SortAsc, SortDesc, Calendar, Copy } from 'lucide-react';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -11,6 +11,7 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
 import DraftEditor from './DraftEditor';
+import Input from '../ui/Input';
 
 type Filter = 'all' | 'with-images' | 'text-only';
 type SortOption = 'newest' | 'oldest' | 'alphabetical';
@@ -57,7 +58,13 @@ const DraftsPanel = () => {
     setError(null);
     try {
       const draftsList = await getDrafts();
-      setDrafts(draftsList);
+      // Convert string dates to Date objects
+      const draftsWithDates = draftsList.map(draft => ({
+        ...draft,
+        createdAt: new Date(draft.createdAt),
+        updatedAt: new Date(draft.updatedAt)
+      }));
+      setDrafts(draftsWithDates);
     } catch (err) {
       console.error('Error fetching drafts:', err);
       setError(t('drafts.error_loading'));
@@ -210,6 +217,32 @@ const DraftsPanel = () => {
     return formatDistanceToNow(new Date(date), { addSuffix: true, locale });
   };
 
+  const getTypeIcon = (type?: string) => {
+    switch (type) {
+      case 'image':
+        return '🖼️';
+      case 'video':
+        return '🎥';
+      case 'media-group':
+        return '📸';
+      default:
+        return '📝';
+    }
+  };
+
+  const getTypeName = (type?: string) => {
+    switch (type) {
+      case 'image':
+        return 'Изображение';
+      case 'video':
+        return 'Видео';
+      case 'media-group':
+        return 'Медиа-группа';
+      default:
+        return 'Текст';
+    }
+  };
+
   if (showDraftEditor) {
     return (
       <DraftEditor 
@@ -224,15 +257,15 @@ const DraftsPanel = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div>
-          <CardTitle>{t('drafts.title')}</CardTitle>
-          <p className="text-sm text-gray-500 mt-1">{t('drafts.subtitle')}</p>
+          <CardTitle>{t('drafts.title') || 'Черновики'}</CardTitle>
+          <p className="text-sm text-gray-500 mt-1">{t('drafts.subtitle') || 'Управляйте сохраненными черновиками ваших постов'}</p>
         </div>
         <Button 
           onClick={handleCreateDraft}
           className="shrink-0"
           leftIcon={<PlusCircle size={16} />}
         >
-          {t('drafts.create_new')}
+          {t('drafts.create_new') || 'Создать черновик'}
         </Button>
       </CardHeader>
       <CardContent>
@@ -248,9 +281,9 @@ const DraftsPanel = () => {
         <div className="mb-6 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
+            <Input
               type="text"
-              placeholder={t('drafts.search')}
+              placeholder={t('drafts.search') || 'Поиск черновиков...'}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -341,153 +374,100 @@ const DraftsPanel = () => {
         ) : filteredDrafts.length === 0 ? (
           <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg">
             <FileText className="h-12 w-12 mx-auto text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">{t('drafts.no_drafts')}</h3>
-            <p className="mt-1 text-sm text-gray-500">{t('drafts.create_new')}</p>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">{t('drafts.no_drafts') || 'Нет черновиков'}</h3>
+            <p className="mt-1 text-sm text-gray-500">{t('drafts.create_new') || 'Создайте первый черновик для быстрого доступа к часто используемому контенту'}</p>
             <div className="mt-6">
               <Button onClick={handleCreateDraft} leftIcon={<PlusCircle size={16} />}>
-                {t('drafts.create_new')}
+                {t('drafts.create_new') || 'Создать черновик'}
               </Button>
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-4">
             {filteredDrafts.map((draft) => (
               <div 
                 key={draft._id}
-                className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                className="border rounded-lg p-4 hover:shadow-sm transition-shadow bg-white"
               >
-                {draft.imageUrl && draft.imagePosition !== 'bottom' && (
-                  <div className="h-40 overflow-hidden relative">
-                    <img 
-                      src={draft.imageUrl} 
-                      alt={draft.title} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                {!draft.imageUrl && draft.imageUrls && draft.imageUrls.length > 0 && draft.imagePosition !== 'bottom' && (
-                  <div className="h-40 overflow-hidden relative">
-                    <img 
-                      src={draft.imageUrls[0]} 
-                      alt={draft.title} 
-                      className="w-full h-full object-cover"
-                    />
-                    {draft.imageUrls.length > 1 && (
-                      <div className="bg-black bg-opacity-70 text-white absolute top-2 right-2 text-xs px-2 py-1 rounded-md">
-                        +{draft.imageUrls.length - 1}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="p-4">
-                  <h3 className="font-medium text-lg mb-1 line-clamp-1">{draft.title}</h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{stripHtml(draft.content)}</p>
-                  
-                  {/* Показываем изображение снизу, если указана позиция bottom */}
-                  {draft.imagePosition === 'bottom' && draft.imageUrl && (
-                    <div className="mb-3 border-t border-gray-100 pt-2">
-                      <div className="h-24 overflow-hidden relative rounded-md">
-                        <img 
-                          src={draft.imageUrl} 
-                          alt={draft.title} 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {t('drafts.image_bottom')}
-                      </div>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-lg">{getTypeIcon(draft.type)}</span>
+                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                        {draft.title}
+                      </h3>
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        {getTypeName(draft.type)}
+                      </span>
                     </div>
-                  )}
-                  {draft.imagePosition === 'bottom' && !draft.imageUrl && draft.imageUrls && draft.imageUrls.length > 0 && (
-                    <div className="mb-3 border-t border-gray-100 pt-2">
-                      <div className="h-24 overflow-hidden relative rounded-md">
-                        <img 
-                          src={draft.imageUrls[0]} 
-                          alt={draft.title} 
-                          className="w-full h-full object-cover"
-                        />
-                        {draft.imageUrls.length > 1 && (
-                          <div className="bg-black bg-opacity-70 text-white absolute top-2 right-2 text-xs px-2 py-1 rounded-md">
-                            +{draft.imageUrls.length - 1}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {t('drafts.image_bottom')}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Показываем кнопки, если они есть */}
-                  {draft.buttons && draft.buttons.length > 0 && (
-                    <div className="mb-3">
-                      <div className="flex flex-wrap gap-1">
-                        {draft.buttons.slice(0, 1).map((button, idx) => (
+                    
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                      {stripHtml(draft.content)}
+                    </p>
+                    
+                    {draft.tags && draft.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {draft.tags.map((tag, index) => (
                           <span 
-                            key={idx} 
-                            className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded border border-blue-100 flex items-center"
+                            key={index}
+                            className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded"
                           >
-                            <ExternalLink size={10} className="mr-1" />
-                            {button.text}
+                            #{tag}
                           </span>
                         ))}
-                        {draft.buttons.length > 1 && (
-                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                            +{draft.buttons.length - 1}
-                          </span>
-                        )}
                       </div>
-                    </div>
-                  )}
-                  
-                  {draft.tags && draft.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {draft.tags.slice(0, 3).map((tag, idx) => (
-                        <span 
-                          key={idx} 
-                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {draft.tags.length > 3 && (
-                        <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                          +{draft.tags.length - 3}
+                    )}
+                    
+                    <div className="flex items-center text-xs text-gray-500 space-x-4">
+                      <span className="flex items-center">
+                        <Calendar size={12} className="mr-1" />
+                        Создан: {formatDate(draft.createdAt)}
+                      </span>
+                      {draft.updatedAt.getTime() !== draft.createdAt.getTime() && (
+                        <span>
+                          Изменен: {formatDate(draft.updatedAt)}
                         </span>
                       )}
                     </div>
-                  )}
-                  
-                  <div className="text-xs text-gray-500 mb-3">
-                    <div>{t('drafts.created_on').replace('{date}', formatDate(draft.createdAt))}</div>
-                    <div>{t('drafts.updated_on').replace('{date}', formatDate(draft.updatedAt))}</div>
                   </div>
                   
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleEditDraft(draft)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
-                        title={t('drafts.edit')}
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteClick(draft)}
-                        className="text-red-600 hover:text-red-800 p-1"
-                        title={t('drafts.delete')}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                  {draft.imageUrl && (
+                    <div className="flex-shrink-0 ml-4">
+                      <img 
+                        src={draft.imageUrl} 
+                        alt="Preview" 
+                        className="w-16 h-16 object-cover rounded border border-gray-200" 
+                      />
                     </div>
-                    <button 
-                      onClick={() => handleCopyToPost(draft)}
-                      className="text-gray-600 hover:text-gray-800 flex items-center gap-1 text-xs px-2 py-1 border border-gray-200 rounded-md hover:bg-gray-50"
-                    >
-                      <Copy size={12} />
-                      {t('drafts.copy_to_post')}
-                    </button>
-                  </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-end space-x-2 mt-4 pt-4 border-t border-gray-100">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    leftIcon={<Copy size={14} />}
+                    onClick={() => handleCopyToPost(draft)}
+                  >
+                    Копировать в редактор
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    leftIcon={<Edit size={14} />}
+                    onClick={() => handleEditDraft(draft)}
+                  >
+                    Редактировать
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    leftIcon={<Trash2 size={14} />}
+                    className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                    onClick={() => handleDeleteClick(draft)}
+                  >
+                    Удалить
+                  </Button>
                 </div>
               </div>
             ))}

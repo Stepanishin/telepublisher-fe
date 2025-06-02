@@ -1,482 +1,232 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Calendar, Plus, Trash2, RefreshCw } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { PlusCircle, Trash2, AlertCircle } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import TextArea from '../ui/TextArea';
-import MultiSelect from '../ui/MultiSelect';
-import Alert from '../ui/Alert';
-import { useChannelsStore } from '../../store/channelsStore';
-import { usePollStore } from '../../store/pollStore';
-import { useTabContentStore } from '../../store/tabContentStore';
 import { useLanguage } from '../../contexts/LanguageContext';
-import DateTimePicker from '../ui/DateTimePicker';
+import { useChannelsStore } from '../../store/channelsStore';
+import { useNotification } from '../../contexts/NotificationContext';
+import { publishPoll } from '../../services/api';
 
-// Scheduled poll types
-type ScheduleType = 'now' | 'later';
+interface PollOption {
+  text: string;
+}
+
+interface PollData {
+  question: string;
+  options: PollOption[];
+  isAnonymous: boolean;
+  allowsMultipleAnswers: boolean;
+}
 
 interface PollPublishPanelProps {
-  onPollChange?: (poll: { question: string; options: { text: string }[]; isAnonymous: boolean; allowsMultipleAnswers: boolean }) => void;
+  onPollChange?: (pollData: PollData) => void;
 }
 
 const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => {
-  const { channels } = useChannelsStore();
-  const { 
-    poll,
-    isPublishing, 
-    publishResult, 
-    error: pollError,
-    setQuestion,
-    setIsAnonymous,
-    setAllowsMultipleAnswers,
-    publishPoll: publishPollAction,
-    resetPublishResult,
-    setOptions
-  } = usePollStore();
   const { t } = useLanguage();
-  const { pollState, savePollState } = useTabContentStore();
+  const { channels } = useChannelsStore();
+  const { setNotification } = useNotification();
   
-  // Local state for question and options to handle user input
-  const [localQuestion, setLocalQuestion] = useState(poll.question);
-  const [localOptions, setLocalOptions] = useState<Array<{ text: string }>>(poll.options);
-  
-  // Map of common Telegram error messages to translation keys
-  const telegramErrorTranslations: Record<string, string> = {
-    'chat not found': 'publish_panel.error_chat_not_found',
-    'bot was kicked': 'publish_panel.error_bot_kicked',
-    'not enough rights': 'publish_panel.error_not_enough_rights',
-    'bot is not a member': 'publish_panel.error_bot_not_member',
-    'bot can\'t': 'publish_panel.error_bot_cant',
-    'forbidden': 'publish_panel.error_forbidden',
-    'permission denied': 'publish_panel.error_permission_denied',
-  };
-  
-  // Use stored values from tabContentStore as initial state
-  const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>(pollState.selectedChannelIds || []);
-  const [formError, setFormError] = useState('');
-  
-  // Schedule related states - restore from stored state
-  const [scheduleType, setScheduleType] = useState<ScheduleType>(pollState.scheduleType || 'now');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(
-    pollState.scheduledDate ? new Date(pollState.scheduledDate) : null
-  );
-  
-  const [publishingProgress, setPublishingProgress] = useState<{
-    total: number;
-    current: number;
-    success: string[];
-    failed: string[];
-  }>({ total: 0, current: 0, success: [], failed: [] });
-  
-  // Sync local question with store
-  useEffect(() => {
-    if (localQuestion !== poll.question) {
-      setQuestion(localQuestion);
-    }
-  }, [localQuestion, setQuestion]);
-  
-  // Sync local options with store
-  useEffect(() => {
-    // Only update if there's been a real change
-    if (JSON.stringify(localOptions) !== JSON.stringify(poll.options)) {
-      setOptions(localOptions);
-    }
-  }, [localOptions, setOptions]);
-  
-  // Keep local state in sync with store (for external changes)
-  useEffect(() => {
-    setLocalQuestion(poll.question);
-    setLocalOptions(poll.options);
-  }, [poll.question, poll.options]);
-  
-  // Helper function to format messages with parameters
-  const formatMessage = (key: string, params: Record<string, string>): string => {
-    let message = t(key);
-    
-    // Replace each parameter in the message
-    Object.entries(params).forEach(([paramKey, paramValue]) => {
-      message = message.replace(`{${paramKey}}`, paramValue);
-    });
-    
-    return message;
-  };
-  
-  // Notify parent component when poll changes
+  const [question, setQuestion] = useState('');
+  const [options, setOptions] = useState<PollOption[]>([
+    { text: '' },
+    { text: '' }
+  ]);
+  const [isAnonymous, setIsAnonymous] = useState(true);
+  const [allowsMultipleAnswers, setAllowsMultipleAnswers] = useState(false);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  // Notify parent about poll changes
   useEffect(() => {
     if (onPollChange) {
-      onPollChange(poll);
-    }
-  }, [poll, onPollChange]);
-  
-  // Reset alert after 5 seconds
-  useEffect(() => {
-    if (publishResult) {
-      const timer = setTimeout(() => {
-        resetPublishResult();
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [publishResult, resetPublishResult]);
-  
-  // Initialize poll with stored values
-  useEffect(() => {
-    if (!pollState.question && !pollState.options.length) {
-      // No stored data, use defaults
-      return;
-    }
-    
-    // Set the question
-    if (pollState.question) {
-      setQuestion(pollState.question);
-    }
-    
-    // Set options directly instead of removing/adding one by one
-    if (pollState.options && pollState.options.length >= 2) {
-      setOptions(pollState.options);
-    } else {
-      setOptions([{ text: '' }, { text: '' }]);
-    }
-    
-    setIsAnonymous(pollState.isAnonymous !== undefined ? pollState.isAnonymous : true);
-    setAllowsMultipleAnswers(pollState.allowsMultipleAnswers || false);
-  }, []);
-  
-  // Save poll state whenever it changes
-  useEffect(() => {
-    savePollState({
-      question: poll.question,
-      options: poll.options,
-      isAnonymous: poll.isAnonymous,
-      allowsMultipleAnswers: poll.allowsMultipleAnswers,
-      selectedChannelIds,
-      scheduleType,
-      scheduledDate: scheduledDate ? scheduledDate.toISOString() : null
-    });
-  }, [
-    poll.question,
-    poll.options,
-    poll.isAnonymous,
-    poll.allowsMultipleAnswers,
-    selectedChannelIds,
-    scheduleType,
-    scheduledDate,
-    savePollState
-  ]);
-  
-  const handleChannelChange = (selectedValues: string[]) => {
-    setSelectedChannelIds(selectedValues);
-    setFormError('');
-  };
-  
-  const handleScheduleTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setScheduleType(event.target.value as ScheduleType);
-    
-    // If switching back to "now", clear the scheduled date
-    if (event.target.value === 'now') {
-      setScheduledDate(null);
-    } else if (!scheduledDate) {
-      // Set default scheduled time to 1 hour from now
-      const defaultDate = new Date();
-      defaultDate.setHours(defaultDate.getHours() + 1);
-      setScheduledDate(defaultDate);
-    }
-  };
-  
-  const handlePublish = async () => {
-    // Validate form
-    if (selectedChannelIds.length === 0) {
-      setFormError(t('publish_panel.no_channel_error'));
-      return;
-    }
-    
-    if (!poll.question.trim()) {
-      setFormError(t('poll_publish.question_required'));
-      return;
-    }
-    
-    // Check if there are at least 2 options with text
-    const validOptions = poll.options.filter(option => option.text.trim());
-    if (validOptions.length < 2) {
-      setFormError(t('poll_publish.min_two_options'));
-      return;
-    }
-    
-    // Validate scheduled date if scheduling
-    if (scheduleType === 'later') {
-      if (!scheduledDate) {
-        setFormError(t('publish_panel.no_schedule_date_error'));
-        return;
-      }
-      
-      const now = new Date();
-      if (scheduledDate <= now) {
-        setFormError(t('publish_panel.past_date_error'));
-        return;
-      }
-    }
-    
-    try {
-      // Start publishing to all selected channels
-      setPublishingProgress({
-        total: selectedChannelIds.length,
-        current: 0,
-        success: [],
-        failed: []
+      onPollChange({
+        question,
+        options,
+        isAnonymous,
+        allowsMultipleAnswers
       });
-      
-      // Process each channel sequentially
-      for (let i = 0; i < selectedChannelIds.length; i++) {
-        const channelId = selectedChannelIds[i];
-        const channel = channels.find(ch => (ch._id === channelId || ch.id === channelId));
-        
-        if (!channel) continue;
-        
-        try {
-          const result = await publishPollAction(
-            channelId, 
-            scheduleType === 'later' ? scheduledDate : null
-          );
-          
-          if (result.success) {
-            setPublishingProgress(prev => ({
-              ...prev,
-              current: prev.current + 1,
-              success: [...prev.success, channel.title]
-            }));
-          } else {
-            setPublishingProgress(prev => ({
-              ...prev,
-              current: prev.current + 1,
-              failed: [...prev.failed, channel.title]
-            }));
-          }
-        } catch {
-          setPublishingProgress(prev => ({
-            ...prev,
-            current: prev.current + 1,
-            failed: [...prev.failed, channel.title]
-          }));
-        }
-      }
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Error publishing poll');
     }
-  };
-  
-  const handleOptionChange = (index: number, text: string) => {
-    const updatedOptions = [...localOptions];
-    if (index >= 0 && index < updatedOptions.length) {
-      updatedOptions[index] = { text };
-      setLocalOptions(updatedOptions);
-    }
-  };
-  
-  const handleAddOption = () => {
-    if (localOptions.length < 10) { // Telegram limits polls to 10 options
-      setLocalOptions([...localOptions, { text: '' }]);
+  }, [question, options, isAnonymous, allowsMultipleAnswers, onPollChange]);
+
+  const addOption = () => {
+    if (options.length < 10) {
+      setOptions([...options, { text: '' }]);
     }
   };
 
-  const handleRemoveOption = (index: number) => {
-    if (localOptions.length <= 2) return; // Keep at least 2 options
-    setLocalOptions(localOptions.filter((_, i) => i !== index));
+  const removeOption = (index: number) => {
+    if (options.length > 2) {
+      const newOptions = options.filter((_, i) => i !== index);
+      setOptions(newOptions);
+    }
   };
-  
-  const handleClearFields = () => {
-    // Clear poll question
-    setLocalQuestion('');
-    
-    // Reset options directly
-    setLocalOptions([{ text: '' }, { text: '' }]);
-    
-    // Reset poll settings
-    setIsAnonymous(true); // Default to anonymous
-    setAllowsMultipleAnswers(false); // Default to single answer
-    
-    // Reset channel selection
-    setSelectedChannelIds([]);
-    
-    // Reset scheduling
-    setScheduleType('now');
-    setScheduledDate(null);
-    
-    // Clear errors
-    setFormError('');
-    
-    // Reset publishing progress
-    setPublishingProgress({ total: 0, current: 0, success: [], failed: [] });
-    
-    // Also clear stored state
-    savePollState({
-      question: '',
-      options: [{ text: '' }, { text: '' }],
-      isAnonymous: true,
-      allowsMultipleAnswers: false,
-      selectedChannelIds: [],
-      scheduleType: 'now',
-      scheduledDate: null
-    });
+
+  const updateOption = (index: number, text: string) => {
+    const newOptions = [...options];
+    newOptions[index].text = text;
+    setOptions(newOptions);
   };
-  
-  const renderPublishingSummary = () => {
-    const { total, current, success, failed } = publishingProgress;
-    
-    if (current === 0 || total === 0) return null;
-    
-    return (
-      <div className="mt-4">
-        <h3 className="text-sm font-medium mb-2">{t('publish_panel.publishing_progress')}</h3>
-        <div className="text-xs text-gray-600 space-y-1">
-          {success.length > 0 && (
-            <div>
-              <span className="font-medium text-green-600">{t('publish_panel.published_success')}:</span> {success.join(', ')}
-            </div>
-          )}
-          {failed.length > 0 && (
-            <div>
-              <span className="font-medium text-red-600">{t('publish_panel.published_failed')}:</span> {failed.join(', ')}
-            </div>
-          )}
-        </div>
-      </div>
+
+  const handleChannelChange = (channelId: string) => {
+    setSelectedChannels(prev => 
+      prev.includes(channelId) 
+        ? prev.filter(id => id !== channelId)
+        : [...prev, channelId]
     );
   };
-  
-  // Convert error message using translation map
-  const getTranslatedErrorMessage = (message: string): string => {
-    for (const [key, value] of Object.entries(telegramErrorTranslations)) {
-      if (message.toLowerCase().includes(key.toLowerCase())) {
-        return t(value);
-      }
+
+  const validatePoll = (): string | null => {
+    if (!question.trim()) {
+      return t('poll_publish.question_required') || 'Вопрос опроса обязателен';
     }
-    return message;
+
+    const validOptions = options.filter(option => option.text.trim());
+    if (validOptions.length < 2) {
+      return t('poll_publish.min_two_options') || 'Опрос должен содержать минимум 2 варианта ответа';
+    }
+
+    if (selectedChannels.length === 0) {
+      return 'Выберите хотя бы один канал для публикации';
+    }
+
+    return null;
   };
-  
-  // Get publish result message
-  const getPublishResultMessage = (): string => {
-    if (!publishResult) return '';
+
+  const handlePublish = async () => {
+    const error = validatePoll();
+    if (error) {
+      setNotification({
+        type: 'error',
+        message: error
+      });
+      return;
+    }
+
+    setIsPublishing(true);
     
-    const message = publishResult.message;
-    
-    // Check if it's a scheduled success message (format: scheduled_success:channelName:date)
-    if (message.startsWith('scheduled_success:')) {
-      const parts = message.split(':');
-      if (parts.length >= 3) {
-        const channelName = parts[1];
-        const dateStr = parts.slice(2).join(':'); // In case the date itself contains colons
-        return formatMessage('publish_panel.success_scheduled', { 
-          channel: channelName,
-          date: dateStr
+    try {
+      const validOptions = options.filter(option => option.text.trim());
+      
+      for (const channelId of selectedChannels) {
+        const channel = channels.find(c => c._id === channelId);
+        if (!channel) continue;
+
+        await publishPoll({
+          channelId,
+          question: question.trim(),
+          options: validOptions,
+          isAnonymous,
+          allowsMultipleAnswers
         });
       }
+
+      setNotification({
+        type: 'success',
+        message: selectedChannels.length === 1 
+          ? 'Опрос успешно опубликован!'
+          : `Опрос успешно опубликован в ${selectedChannels.length} каналах!`
+      });
+
+      // Clear form
+      setQuestion('');
+      setOptions([{ text: '' }, { text: '' }]);
+      setSelectedChannels([]);
+      
+    } catch (error) {
+      console.error('Failed to publish poll:', error);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка при публикации опроса'
+      });
+    } finally {
+      setIsPublishing(false);
     }
-    
-    // Check if it's a publish success message (format: publish_success:channelName)
-    if (message.startsWith('publish_success:')) {
-      const channelName = message.substring('publish_success:'.length);
-      return formatMessage('publish_panel.publish_success', { channel: channelName });
-    }
-    
-    // Otherwise try to translate known error messages
-    return getTranslatedErrorMessage(message);
   };
-  
+
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <CardTitle>{t('poll_publish.title') || 'Create Poll'}</CardTitle>
+        <CardTitle>{t('poll_publish.title') || 'Создание опроса'}</CardTitle>
       </CardHeader>
+      
       <CardContent className="space-y-6">
-        {/* Channel Selection */}
-        <div>
-          <MultiSelect
-            options={channels.map(channel => ({
-              label: channel.title,
-              value: channel._id || channel.id,
-            }))}
-            label={t('publish_panel.select_channels')}
-            value={selectedChannelIds}
-            onChange={handleChannelChange}
-            placeholder={t('publish_panel.select_channels')}
-            isRequired={true}
-          />
-        </div>
-        
-        {/* Poll Question */}
+        {/* Question */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('poll_publish.question_label') || 'Poll Question'}
+            {t('poll_publish.question_label') || 'Вопрос опроса'} *
           </label>
-          <TextArea
-            value={localQuestion}
-            onChange={e => setLocalQuestion(e.target.value)}
-            placeholder={t('poll_publish.question_placeholder') || 'Enter your poll question'}
-            rows={2}
+          <Input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder={t('poll_publish.question_placeholder') || 'Введите вопрос опроса'}
+            className="w-full"
           />
         </div>
-        
-        {/* Poll Options */}
+
+        {/* Options */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('poll_publish.options_label') || 'Poll Options'}
+            {t('poll_publish.options_label') || 'Варианты ответов'} *
           </label>
           <div className="space-y-2">
-            {localOptions.map((option, index) => (
-              <div key={`poll-option-${index}`} className="flex space-x-2">
+            {options.map((option, index) => (
+              <div key={index} className="flex items-center space-x-2">
                 <Input
                   value={option.text}
-                  onChange={e => handleOptionChange(index, e.target.value)}
-                  placeholder={`${t('poll_publish.option_placeholder') || 'Option'} ${index + 1}`}
+                  onChange={(e) => updateOption(index, e.target.value)}
+                  placeholder={`${t('poll_publish.option_placeholder') || 'Вариант'} ${index + 1}`}
                   className="flex-1"
                 />
-                {localOptions.length > 2 && (
+                {options.length > 2 && (
                   <Button
-                    onClick={() => handleRemoveOption(index)}
+                    variant="outline"
                     size="sm"
-                    variant="ghost"
-                    className="text-red-500"
+                    onClick={() => removeOption(index)}
+                    className="text-red-600 hover:text-red-700"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 size={16} />
                   </Button>
                 )}
               </div>
             ))}
           </div>
           
-          {localOptions.length < 10 && (
+          {options.length < 10 && (
             <Button
-              onClick={handleAddOption}
               variant="outline"
               size="sm"
+              onClick={addOption}
+              leftIcon={<PlusCircle size={16} />}
               className="mt-2"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {t('poll_publish.add_option') || 'Add Option'}
+              {t('poll_publish.add_option') || 'Добавить вариант'}
             </Button>
           )}
           
           <p className="text-xs text-gray-500 mt-1">
-            {t('poll_publish.options_help') || 'Minimum 2, maximum 10 options'}
+            {t('poll_publish.options_help') || 'Минимум 2, максимум 10 вариантов'}
           </p>
         </div>
-        
-        {/* Poll Settings */}
+
+        {/* Settings */}
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">
-            {t('poll_publish.settings_label') || 'Poll Settings'}
-          </h3>
-          <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            {t('poll_publish.settings_label') || 'Настройки опроса'}
+          </label>
+          
+          <div className="space-y-3">
             <div className="flex items-center">
               <input
                 type="checkbox"
                 id="anonymous"
-                checked={poll.isAnonymous}
-                onChange={e => setIsAnonymous(e.target.checked)}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                checked={isAnonymous}
+                onChange={(e) => setIsAnonymous(e.target.checked)}
+                className="mr-2"
               />
-              <label htmlFor="anonymous" className="ml-2 block text-sm text-gray-700">
-                {t('poll_publish.anonymous_label') || 'Anonymous voting'}
+              <label htmlFor="anonymous" className="text-sm">
+                {t('poll_publish.anonymous_label') || 'Анонимное голосование'}
               </label>
             </div>
             
@@ -484,97 +234,62 @@ const PollPublishPanel: React.FC<PollPublishPanelProps> = ({ onPollChange }) => 
               <input
                 type="checkbox"
                 id="multiple"
-                checked={poll.allowsMultipleAnswers}
-                onChange={e => setAllowsMultipleAnswers(e.target.checked)}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                checked={allowsMultipleAnswers}
+                onChange={(e) => setAllowsMultipleAnswers(e.target.checked)}
+                className="mr-2"
               />
-              <label htmlFor="multiple" className="ml-2 block text-sm text-gray-700">
-                {t('poll_publish.multiple_label') || 'Allow multiple answers'}
+              <label htmlFor="multiple" className="text-sm">
+                {t('poll_publish.multiple_label') || 'Разрешить несколько ответов'}
               </label>
             </div>
           </div>
         </div>
-        
-        {/* Scheduling Options */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('publish_panel.schedule_label')}
+
+        {/* Channel Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('poll_publish.channels_label') || 'Выберите каналы для публикации'} *
           </label>
-          <div className="flex flex-col sm:flex-col sm:items-start gap-4">
-            <select
-              value={scheduleType}
-              onChange={handleScheduleTypeChange}
-              className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="now">{t('publish_panel.publish_now')}</option>
-              <option value="later">{t('publish_panel.schedule_for_later')}</option>
-            </select>
-            
-            {scheduleType === 'later' && (
-              <div className="flex-grow w-full">
-                <DateTimePicker
-                  value={scheduledDate}
-                  onChange={setScheduledDate}
-                  minDate={new Date()}
-                  placeholder={t('publish_panel.select_date_time')}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Error and result alerts */}
-        {formError && (
-          <Alert 
-            variant="error"
-            message={formError}
-          />
-        )}
-        
-        {pollError && !formError && (
-          <Alert 
-            variant="error"
-            message={getTranslatedErrorMessage(pollError)}
-          />
-        )}
-        
-        {publishResult && (
-          <Alert 
-            variant={publishResult.success ? "success" : "error"}
-            message={getPublishResultMessage()}
-          />
-        )}
-        
-        {renderPublishingSummary()}
-      </CardContent>
-      
-      <CardFooter className="flex justify-between gap-4">
-        <Button 
-          variant="outline"
-          onClick={handleClearFields}
-          leftIcon={<RefreshCw size={16} />}
-          className="flex-none"
-        >
-          {t('publish_panel.clear_fields')}
-        </Button>
-        <Button 
-          className="flex-grow"
-          onClick={handlePublish}
-          isLoading={isPublishing}
-          leftIcon={scheduleType === 'later' ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-          disabled={isPublishing || selectedChannelIds.length === 0 || !poll.question.trim() || poll.options.length < 2}
-        >
-          {scheduleType === 'now' ? (
-            selectedChannelIds.length > 1 
-              ? formatMessage('publish_panel.publish_to_multiple', { count: selectedChannelIds.length.toString() }) 
-              : t('publish_panel.publish_button')
+          
+          {channels.length === 0 ? (
+            <div className="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+              <span className="text-sm text-yellow-800">
+                {t('poll_publish.no_channels_message') || 'Нет подключенных каналов. Добавьте каналы в разделе "Управление каналами".'}
+              </span>
+            </div>
           ) : (
-            selectedChannelIds.length > 1
-              ? formatMessage('publish_panel.schedule_to_multiple', { count: selectedChannelIds.length.toString() })
-              : t('publish_panel.schedule_button')
+            <div className="space-y-2">
+              {channels.map(channel => (
+                <div key={channel._id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={`channel-${channel._id}`}
+                    checked={selectedChannels.includes(channel._id!)}
+                    onChange={() => handleChannelChange(channel._id!)}
+                    className="mr-2"
+                  />
+                  <label htmlFor={`channel-${channel._id}`} className="text-sm">
+                    {channel.username}
+                  </label>
+                </div>
+              ))}
+            </div>
           )}
-        </Button>
-      </CardFooter>
+        </div>
+
+        {/* Publish Button */}
+        <div className="pt-4 border-t border-gray-200">
+          <Button
+            onClick={handlePublish}
+            isLoading={isPublishing}
+            disabled={channels.length === 0}
+            className="w-full"
+          >
+            {isPublishing ? t('poll.publicing') || 'Публикация...' : t('poll.publish') || 'Опубликовать опрос'}
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 };

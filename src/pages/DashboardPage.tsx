@@ -1,75 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import ContentGenerator from '../components/Dashboard/ContentGenerator';
+import { useNavigate } from 'react-router-dom';
 import ChannelsManager from '../components/Dashboard/ChannelsManager';
-import PublishPanel from '../components/Dashboard/PublishPanel';
 import BotInstructionsPanel from '../components/Dashboard/BotInstructionsPanel';
 import SubscriptionManager from '../components/Dashboard/SubscriptionManager';
-import PollPublishPanel from '../components/Dashboard/PollPublishPanel';
 import ScheduledPosts from '../components/Dashboard/ScheduledPosts';
-import DraftsPanel from '../components/Dashboard/DraftsPanel';
-// @ts-expect-error - Import AutoPostingPanel module has missing type declarations
-import AutoPostingPanel from '../components/Dashboard/AutoPostingPanel';
 import { useChannelsStore } from '../store/channelsStore';
-import { useContentStore } from '../store/contentStore';
 import { Zap, Settings, BookOpen, Crown, FileText, BarChart2, Calendar, Bookmark, Clock } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import TelegramPostPreview from '../components/ui/TelegramPostPreview';
-import TelegramPollPreview from '../components/ui/TelegramPollPreview';
 
 // Tab types for navigation
 type TabType = 'content' | 'channels' | 'instructions' | 'subscription' | 'scheduled';
-type ContentSubTabType = 'post' | 'poll' | 'autoposting' | 'drafts';
-
-// Preview content type
-interface PreviewContent {
-  text: string;
-  imageUrl: string;
-  imageUrls: string[];
-  tags: string[];
-  imagePosition?: 'top' | 'bottom';
-  buttons?: { text: string; url: string }[];
-}
-
-// Poll preview content type
-interface PollPreviewContent {
-  question: string;
-  options: { text: string }[];
-  isAnonymous: boolean;
-  allowsMultipleAnswers: boolean;
-}
 
 const DashboardPage: React.FC = () => {
   const { fetchChannels } = useChannelsStore();
-  const { content } = useContentStore();
   const [activeTab, setActiveTab] = useState<TabType>('content');
-  const [activeContentSubTab, setActiveContentSubTab] = useState<ContentSubTabType>('post');
-  const [previewContent, setPreviewContent] = useState<PreviewContent>({
-    text: '',
-    imageUrl: '',
-    imageUrls: [],
-    tags: [],
-    imagePosition: 'top',
-    buttons: []
-  });
-  const [pollPreviewContent, setPollPreviewContent] = useState<PollPreviewContent>({
-    question: '',
-    options: [{ text: '' }, { text: '' }],
-    isAnonymous: true,
-    allowsMultipleAnswers: false
-  });
   const { t } = useLanguage();
-  
-  // Update preview when content from store changes
-  useEffect(() => {
-    setPreviewContent({
-      text: content.text,
-      imageUrl: content.imageUrl,
-      imageUrls: content.imageUrls || [], // Ensure imageUrls is always defined
-      tags: content.tags,
-      imagePosition: content.imagePosition || 'top',
-      buttons: content.buttons || []
-    });
-  }, [content]);
+  const navigate = useNavigate();
   
   useEffect(() => {
     fetchChannels();
@@ -109,27 +55,35 @@ const DashboardPage: React.FC = () => {
     },
   ];
 
-  // Content subtabs
-  const contentSubTabs = [
+  // Content options for navigation
+  const contentOptions = [
     {
       id: 'post',
-      label: t('dashboard.tab_content_post') || 'Post',
-      icon: <FileText className="h-4 w-4" />
+      title: t('dashboard.tab_content_post') || 'Создать пост',
+      description: t('dashboard.content_post_description') || 'Создайте и опубликуйте пост в Telegram',
+      icon: <FileText className="h-8 w-8" />,
+      path: '/dashboard/content/post'
     },
     {
       id: 'poll',
-      label: t('dashboard.tab_content_poll') || 'Poll',
-      icon: <BarChart2 className="h-4 w-4" />
+      title: t('dashboard.tab_content_poll') || 'Создать опрос',
+      description: t('dashboard.content_poll_description') || 'Создайте интерактивный опрос для аудитории',
+      icon: <BarChart2 className="h-8 w-8" />,
+      path: '/dashboard/content/poll'
     },
     {
       id: 'autoposting',
-      label: t('dashboard.tab_content_autoposting') || 'AutoPosting',
-      icon: <Clock className="h-4 w-4" />
+      title: t('dashboard.tab_content_autoposting') || 'Автопостинг',
+      description: t('dashboard.content_autoposting_description') || 'Настройте автоматическую публикацию контента',
+      icon: <Clock className="h-8 w-8" />,
+      path: '/dashboard/content/autoposting'
     },
     {
       id: 'drafts',
-      label: t('dashboard.tab_content_drafts') || 'Drafts',
-      icon: <Bookmark className="h-4 w-4" />
+      title: t('dashboard.tab_content_drafts') || 'Черновики',
+      description: t('dashboard.content_drafts_description') || 'Управляйте сохраненными черновиками',
+      icon: <Bookmark className="h-8 w-8" />,
+      path: '/dashboard/content/drafts'
     }
   ];
   
@@ -213,83 +167,46 @@ const DashboardPage: React.FC = () => {
       {/* Tab content */}
       <div className="mt-8">
         {activeTab === 'content' && (
-          <>
-            {/* Content subtabs */}
-            <div className="border-b border-gray-200 mb-6">
-              <nav className="-mb-px flex space-x-6" aria-label="Content Tabs">
-                {contentSubTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveContentSubTab(tab.id as ContentSubTabType)}
-                    className={`
-                      whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
-                      ${activeContentSubTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-                      flex items-center
-                    `}
-                  >
-                    <span className="mr-2">{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                {t('dashboard.content_title') || 'Создание контента'}
+              </h2>
+              <p className="text-gray-600">
+                {t('dashboard.content_subtitle') || 'Выберите тип контента, который хотите создать'}
+              </p>
             </div>
 
-            {/* Content subtab content */}
-            {activeContentSubTab === 'post' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <PublishPanel onContentChange={setPreviewContent} />
-                </div>
-                <div className="lg:col-span-1">
-                  <ContentGenerator />
-                  {(previewContent.text || previewContent.imageUrl || (previewContent.imageUrls && previewContent.imageUrls.length > 0) || (previewContent.tags && previewContent.tags.length > 0)) && (
-                    <div className="mt-6">
-                      <TelegramPostPreview
-                        text={previewContent.text}
-                        imageUrl={previewContent.imageUrl}
-                        imageUrls={previewContent.imageUrls}
-                        tags={previewContent.tags}
-                        imagePosition={previewContent.imagePosition}
-                        buttons={previewContent.buttons}
-                      />
+            {/* Content options grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {contentOptions.map((option) => (
+                <div
+                  key={option.id}
+                  className="group relative bg-white border border-gray-200 rounded-lg p-6 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  onClick={() => navigate(option.path)}
+                >
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
+                      {option.icon}
                     </div>
-                  )}
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {option.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {option.description}
+                      </p>
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {activeContentSubTab === 'poll' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <PollPublishPanel 
-                    onPollChange={(pollData) => setPollPreviewContent(pollData)}
-                  />
-                </div>
-                <div className="lg:col-span-1">
-                  <TelegramPollPreview
-                    question={pollPreviewContent.question}
-                    options={pollPreviewContent.options}
-                    isAnonymous={pollPreviewContent.isAnonymous}
-                    allowsMultipleAnswers={pollPreviewContent.allowsMultipleAnswers}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeContentSubTab === 'autoposting' && (
-              <div>
-                <AutoPostingPanel />
-              </div>
-            )}
-
-            {activeContentSubTab === 'drafts' && (
-              <div>
-                <DraftsPanel />
-              </div>
-            )}
-          </>
+              ))}
+            </div>
+          </div>
         )}
         
         {activeTab === 'channels' && (

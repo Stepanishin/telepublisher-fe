@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, ImageIcon, Hash, ArrowRight, Upload, Wand2, Mic, Square } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
-import Input from '../ui/Input';
+import TextArea from '../ui/TextArea';
 import { useContentStore } from '../../store/contentStore';
 import { useCreditStore } from '../../store/creditStore';
 import Alert from '../ui/Alert';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ImageUploader from '../ui/ImageUploader';
+import { useNotification } from '../../contexts/NotificationContext';
 
 // TypeScript declarations for Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -81,8 +82,9 @@ const ContentGenerator: React.FC = () => {
   } = useContentStore();
   const { creditInfo, fetchCreditInfo } = useCreditStore();
   const { t } = useLanguage();
+  const { setNotification } = useNotification();
 
-  const handlePromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(e.target.value);
     if (error) setError('');
   };
@@ -95,9 +97,17 @@ const ContentGenerator: React.FC = () => {
       await generateText(prompt);
       // Refresh credits after successful generation
       fetchCreditInfo();
+      setNotification({
+        type: 'success',
+        message: 'Контент успешно сгенерирован!'
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.error_text');
       setError(errorMessage);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка при генерации контента'
+      });
     }
   };
 
@@ -109,9 +119,17 @@ const ContentGenerator: React.FC = () => {
       await generateImage(prompt);
       // Refresh credits after successful generation
       fetchCreditInfo();
+      setNotification({
+        type: 'success',
+        message: 'Изображение успешно сгенерировано!'
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.error_image');
       setError(errorMessage);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка при генерации изображения'
+      });
     }
   };
 
@@ -127,9 +145,17 @@ const ContentGenerator: React.FC = () => {
       await generateTextFromImage(referenceImageUrl, prompt);
       // Refresh credits after successful generation
       fetchCreditInfo();
+      setNotification({
+        type: 'success',
+        message: 'Текст успешно сгенерирован!'
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.error_text_from_image');
       setError(errorMessage);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка при генерации текста из изображения'
+      });
     }
   };
 
@@ -145,9 +171,17 @@ const ContentGenerator: React.FC = () => {
       await generateImageFromImage(referenceImageUrl, prompt);
       // Refresh credits after successful generation
       fetchCreditInfo();
+      setNotification({
+        type: 'success',
+        message: 'Изображение успешно сгенерировано!'
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.error_image_from_image');
       setError(errorMessage);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка при генерации изображения из изображения'
+      });
     }
   };
 
@@ -165,9 +199,17 @@ const ContentGenerator: React.FC = () => {
       }
       // Refresh credits after successful generation
       fetchCreditInfo();
+      setNotification({
+        type: 'success',
+        message: 'Теги успешно сгенерированы!'
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.error_tags');
       setError(errorMessage);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка при генерации тегов'
+      });
     }
   };
 
@@ -257,6 +299,10 @@ const ContentGenerator: React.FC = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('content_generator.microphone_access_error');
       setError(errorMessage);
+      setNotification({
+        type: 'error',
+        message: 'Ошибка доступа к микрофону'
+      });
     }
   };
   
@@ -283,7 +329,10 @@ const ContentGenerator: React.FC = () => {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>{t('content_generator.title')}</CardTitle>
+        <CardTitle className="flex items-center">
+          <Sparkles className="h-5 w-5 mr-2 text-purple-600" />
+          {t('content_generator.title') || 'AI Генератор контента'}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {error && (
@@ -340,12 +389,13 @@ const ContentGenerator: React.FC = () => {
         <div className="mt-4">
           <div className="flex items-end gap-2">
             <div className="flex-grow">
-              <Input
+              <TextArea
                 label={mode === 'fromImage' ? t('content_generator.additional_instructions') : t('content_generator.prompt_label')}
                 placeholder={mode === 'fromImage' ? t('content_generator.describe_based_on_image') : t('content_generator.prompt_placeholder')}
                 value={prompt}
                 onChange={handlePromptChange}
-                fullWidth
+                rows={3}
+                className="w-full"
               />
             </div>
             <Button

@@ -257,15 +257,15 @@ const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({
                 />
               )}
               
-              {/* Show image at the bottom if configured that way - используем специальный рендер для режима превью */}
-              {imagePosition === 'bottom' && renderBottomImagePreview()}
-              
               {/* Tags */}
               {formattedTags && (
                 <div className="text-blue-600 text-sm">
                   {formattedTags}
                 </div>
               )}
+
+              {/* Show image at the bottom if configured that way - используем специальный рендер для режима превью */}
+              {imagePosition === 'bottom' && renderBottomImagePreview()}
               
               {/* Buttons */}
               {renderButtons()}

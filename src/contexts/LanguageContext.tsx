@@ -140,6 +140,14 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_content_drafts': 'Drafts',
     'dashboard.tab_content_autoposting': 'AutoPosting',
 
+    // Dashboard content section
+    'dashboard.content_title': 'Content Creation',
+    'dashboard.content_subtitle': 'Choose the type of content you want to create',
+    'dashboard.content_post_description': 'Create and publish posts to Telegram',
+    'dashboard.content_poll_description': 'Create interactive polls for your audience',
+    'dashboard.content_autoposting_description': 'Set up automatic content publishing',
+    'dashboard.content_drafts_description': 'Manage your saved drafts and templates',
+
     // Content Generator
     'content_generator.title': 'Content Generator',
     'content_generator.prompt_label': 'Enter prompt',
@@ -457,7 +465,14 @@ const translations: Record<Language, Record<string, string>> = {
     'poll_publish.settings_label': 'Poll Settings',
     'poll_publish.anonymous_label': 'Anonymous voting',
     'poll_publish.multiple_label': 'Allow multiple answers',
-    
+    'poll.title': 'Create Poll',
+    'poll.subtitle': 'Create a poll with multiple options',
+    'poll.publicing': 'Publishing...',
+    'poll.publish': 'Publish poll',
+    'poll_publish.channels_label': 'Select channels for publication',
+    'poll_publish.no_channels_message': 'No connected channels. Add channels in the "Channel Management" section.', 
+
+
     // Poll Preview
     'poll_preview.title': 'Telegram Poll Preview',
     'poll_preview.question_placeholder': 'Your poll question will appear here',
@@ -613,7 +628,8 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.buttons_not_available_top': 'Buttons are not available when image position is set to Top. Change the image position to Bottom to use buttons.',
     'publish_panel.buttons_cleared': 'Buttons cleared',
     'publish_panel.buttons_cleared_description': 'Buttons were removed because they are not compatible with top image position.',
-
+    'publish_panel.extended_caption_limit': 'Limit',
+    
     // Auto Posting
     'auto_posting.title': 'AutoPosting',
     'auto_posting.subtitle': 'Set up automated content publishing on specific topics',
@@ -687,6 +703,38 @@ const translations: Record<Language, Record<string, string>> = {
     'auto_posting.source_url_placeholder': 'https://example.com',
     'auto_posting.source_url_validation': 'Source URL is required',
     'auto_posting.source_urls_description': 'URLs to scrape content from for generating posts',
+    'auto_posting.avoid_duplication': 'Avoid Duplication',
+    'auto_posting.avoid_duplication_description': 'Check content for similarity with previous posts',
+    'auto_posting.duplicate_check_days': 'Days to Check',
+    'auto_posting.duplicate_check_days_description': 'Number of days to check for duplicates',
+    
+    
+    // Post types
+    'post_type.title': 'Choose Post Type',
+    'post_type.subtitle': 'Choose the format of the post that best suits your content',
+    'post_type.types_title': 'Post Types',
+    'post_type.preview_title': 'Preview',
+    'post_type.text_title': 'Text Post',
+    'post_type.text_description': 'Create a text message with formatting and tags. Maximum 4096 characters.',
+    'post_type.image_title': 'Image Post', 
+    'post_type.image_description': 'Create a post with text and a single image. Maximum 4096 characters.',
+    'post_type.video_title': 'Video Post',
+    'post_type.video_description': 'Create a post with video content. Maximum 4096 characters.',
+    'post_type.media_group_title': 'Media Group',
+    'post_type.media_group_description': 'Create a post with multiple images. Maximum 1024 characters.',
+    'post_type.text_example': '🚀 We are launching a new product!\n\nWe are happy to introduce you to an innovative solution for content management.\n\n✅ Fast publication\n✅ Channel management\n✅ AI-generation\n\n',
+    'post_type.text_example_tags': '#new #content #telegram',
+    'post_type.image_example': '🎨 Creative design for your brand\n\nWe create unique visual solutions that attract attention and are memorable.\n\n',
+    'post_type.image_example_tags': '#design #creative #branding',
+    'post_type.media_group_example': '📸 Photo report from the event\n\nWe share bright moments from our last event. It was great!\n\n👥 200+ participants\n🎯 10 reports\n⭐ Excellent reviews\n\n',
+    'post_type.media_group_example_tags': '#event #photo #team',
+    'post_type.continue': 'Continue',
+    
+    // Create post
+    'create_post.title': 'Create Post',
+
+    // Back button
+    'common.back': 'Back',
   },
   ru: {
     // Navbar
@@ -811,13 +859,21 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_content_drafts': 'Черновики',
     'dashboard.tab_content_autoposting': 'Автопостинг',
 
+    // Dashboard content section
+    'dashboard.content_title': 'Создание контента',
+    'dashboard.content_subtitle': 'Выберите тип контента, который вы хотите создать',
+    'dashboard.content_post_description': 'Создайте и опубликуйте посты в Telegram',
+    'dashboard.content_poll_description': 'Создайте интерактивные опросы для вашей аудитории',
+    'dashboard.content_autoposting_description': 'Настройте автоматическое создание контента',
+    'dashboard.content_drafts_description': 'Управляйте своими сохраненными черновиками и шаблонами',
+
     // Content Generator
     'content_generator.title': 'Генератор контента',
-    'content_generator.prompt_label': 'Введите промпт',
-    'content_generator.prompt_placeholder': 'О чем сгенерировать контент?',
-    'content_generator.generate_text': 'Сгенерировать текст',
-    'content_generator.generate_image': 'Сгенерировать изображение',
-    'content_generator.generate_tags': 'Сгенерировать теги',
+    'content_generator.prompt_label': 'Введите запрос',
+    'content_generator.prompt_placeholder': 'Какой контент должен быть сгенерирован?',
+    'content_generator.generate_text': 'Генерировать текст',
+    'content_generator.generate_image': 'Генерировать изображение',
+    'content_generator.generate_tags': 'Генерировать теги',
     'content_generator.credits': 'кредит',
     'content_generator.credits_plural': 'кредита',
     'content_generator.generation_results': 'Результат генерации:',
@@ -1128,6 +1184,13 @@ const translations: Record<Language, Record<string, string>> = {
     'poll_publish.settings_label': 'Настройки опроса',
     'poll_publish.anonymous_label': 'Анонимное голосование',
     'poll_publish.multiple_label': 'Разрешить выбор нескольких вариантов',
+    'poll.title': 'Создать опрос',
+    'poll.subtitle': 'Создать опрос с несколькими вариантами ответа и анонимно',
+    'poll.publicing': 'Публикация...',
+    'poll.publish': 'Опубликовать опрос',
+    'poll_publish.channels_label': 'Выберите каналы для публикации',
+    'poll_publish.no_channels_message': 'Нет подключенных каналов. Добавьте каналы в разделе "Управление каналами".',
+
     
     // Poll Preview
     'poll_preview.title': 'Предпросмотр опроса',
@@ -1218,7 +1281,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Drafts
     'drafts.title': 'Мои черновики',
-    'drafts.subtitle': 'Сохраняйте и организуйте черновики, шаблоны и идеи для контента',
+    'drafts.subtitle': 'Сохраняйте и организуйте черновики контента, шаблоны и идеи',
     'drafts.no_drafts': 'Черновиков не найдено',
     'drafts.create_new': 'Создать новый черновик',
     'drafts.search': 'Поиск черновиков...',
@@ -1284,7 +1347,7 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.buttons_not_available_top': 'Кнопки недоступны, когда позиция изображения установлена сверху. Измените позицию изображения на нижнюю, чтобы использовать кнопки.',
     'publish_panel.buttons_cleared': 'Кнопки удалены',
     'publish_panel.buttons_cleared_description': 'Кнопки были удалены, так как они несовместимы с верхним положением изображения.',
-
+    'publish_panel.extended_caption_limit': 'Лимит',    
     // Auto Posting
     'auto_posting.title': 'Автопостинг',
     'auto_posting.subtitle': 'Настройка автоматической публикации контента по конкретным темам',
@@ -1358,6 +1421,37 @@ const translations: Record<Language, Record<string, string>> = {
     'auto_posting.source_url_placeholder': 'https://example.com',
     'auto_posting.source_url_validation': 'Ссылка на источник обязательна',
     'auto_posting.source_urls_description': 'URL-адреса для сбора информации и создания постов',
+    'auto_posting.avoid_duplication': 'Избегать повторений',
+    'auto_posting.avoid_duplication_description': 'Проверять контент на схожесть с предыдущими постами',
+    'auto_posting.duplicate_check_days': 'Дней для проверки',
+    'auto_posting.duplicate_check_days_description': 'Количество дней для проверки на дубликаты',
+    
+    // Post types
+    'post_type.title': 'Выберите тип поста',
+    'post_type.subtitle': 'Выберите формат поста, который лучше всего подходит для вашего контента',
+    'post_type.types_title': 'Типы постов',
+    'post_type.preview_title': 'Предварительный просмотр',
+    'post_type.text_title': 'Текстовый пост',
+    'post_type.text_description': 'Создайте текстовое сообщение с форматированием и тегами. Максимум 4096 символов.',
+    'post_type.image_title': 'Пост с изображением', 
+    'post_type.image_description': 'Создайте пост с текстом и одним изображением. Максимум 4096 символов.',
+    'post_type.video_title': 'Видео пост',
+    'post_type.video_description': 'Создайте пост с видео контентом. Максимум 4096 символов.',
+    'post_type.media_group_title': 'Медиа-группа',
+    'post_type.media_group_description': 'Создайте пост с несколькими изображениями. Максимум 1024 символов.',
+    'post_type.text_example': '🚀 Запускаем новый продукт!\n\nМы рады представить вам инновационное решение для управления контентом.\n\n✅ Быстрая публикация\n✅ Управление каналами\n✅ AI-генерация\n\n',
+    'post_type.text_example_tags': '#новинка #контент #telegram',
+    'post_type.image_example': '🎨 Креативный дизайн для вашего бренда\n\nСоздаем уникальные визуальные решения, которые привлекают внимание и запоминаются.\n\n',
+    'post_type.image_example_tags': '#дизайн #креатив #брендинг',
+    'post_type.media_group_example': '📸 Фотоотчет с мероприятия\n\nДелимся яркими моментами с нашего последнего события. Было здорово!\n\n👥 200+ участников\n🎯 10 докладов\n⭐ Отличные отзывы\n\n',
+    'post_type.media_group_example_tags': '#мероприятие #фотоотчет #команда',
+    'post_type.continue': 'Продолжить',
+    
+    // Create post
+    'create_post.title': 'Создание поста',
+
+    // Back button
+    'common.back': 'Назад',
   },
 };
 

@@ -10,15 +10,24 @@ import {
   updateScheduledPost as apiUpdateScheduledPost 
 } from '../services/api';
 
-interface ContentState {
-  content: GeneratedContent;
+interface Content {
+  text: string;
+  imageUrl: string;
+  imageUrls: string[];
+  tags: string[];
+  imagePosition?: 'top' | 'bottom';
+  buttons?: { text: string; url: string }[];
+}
+
+interface ContentStore {
+  content: Content;
   generatedContent: GeneratedContent;
   isGenerating: boolean;
   isPublishing: boolean;
   publishResult: PublishResult | null;
   error: string | null;
-  setContent: (content: Partial<GeneratedContent>) => void;
-  resetContent: () => void;
+  setContent: (content: Partial<Content>) => void;
+  clearContent: () => void;
   setPublishResult: (result: PublishResult | null) => void;
   generateText: (prompt: string) => Promise<void>;
   generateImage: (prompt: string) => Promise<void>;
@@ -33,7 +42,7 @@ interface ContentState {
   updateScheduledPost: (postId: string, data: ScheduledPostUpdate) => Promise<PublishResult>;
 }
 
-const initialContent: GeneratedContent = {
+const initialContent: Content = {
   text: '',
   imageUrl: '',
   imageUrls: [],
@@ -42,21 +51,21 @@ const initialContent: GeneratedContent = {
   buttons: []
 };
 
-export const useContentStore = create<ContentState>((set, get) => ({
-  content: { ...initialContent },
+export const useContentStore = create<ContentStore>((set, get) => ({
+  content: initialContent,
   generatedContent: { ...initialContent },
   isGenerating: false,
   isPublishing: false,
   publishResult: null,
   error: null,
   
-  setContent: (content: Partial<GeneratedContent>) => {
-    set({ content: { ...get().content, ...content } });
-  },
+  setContent: (newContent) => 
+    set((state) => ({
+      content: { ...state.content, ...newContent }
+    })),
   
-  resetContent: () => {
-    set({ content: { ...initialContent } });
-  },
+  clearContent: () => 
+    set({ content: initialContent }),
   
   setPublishResult: (result: PublishResult | null) => {
     set({ publishResult: result });

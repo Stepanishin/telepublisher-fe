@@ -1,5 +1,4 @@
 import React from 'react';
-import { BarChart2, Check, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TelegramPollPreviewProps {
@@ -16,103 +15,71 @@ const TelegramPollPreview: React.FC<TelegramPollPreviewProps> = ({
   allowsMultipleAnswers
 }) => {
   const { t } = useLanguage();
-  const hasValidOptions = options.filter(o => o.text.trim()).length >= 2;
-  
-  // Filter out empty options
-  const validOptions = options.filter(o => o.text.trim());
-  
+
+  const validOptions = options.filter(option => option.text.trim());
+
   return (
-    <div className="rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
-      <div className="bg-blue-50 p-4 border-b border-gray-200">
-        <h3 className="text-base font-medium text-gray-900 flex items-center">
-          <BarChart2 className="h-5 w-5 mr-2 text-blue-600" />
-          {t('poll_preview.title') || 'Telegram Poll Preview'}
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-blue-500 text-white p-3">
+        <h3 className="font-medium text-sm">
+          {t('poll_preview.title') || 'Предварительный просмотр опроса Telegram'}
         </h3>
       </div>
       
       <div className="p-4">
-        {/* Mock Telegram Message Container */}
-        <div className="max-w-md mx-auto rounded-lg overflow-hidden bg-white shadow">
-          {/* Telegram Poll Header */}
-          <div className="bg-[#F0F2F5] p-3 flex items-start">
-            <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
-              <span className="text-sm font-medium">T</span>
-            </div>
-            <div className="ml-3">
-              <div className="font-semibold text-sm">Telegram</div>
-              <div className="text-xs text-gray-500">Poll</div>
-            </div>
+        {/* Poll Question */}
+        <div className="mb-4">
+          <div className="text-sm font-medium text-gray-900 mb-2">
+            {question || (t('poll_preview.question_placeholder') || 'Ваш вопрос опроса появится здесь')}
           </div>
           
-          {/* Poll Content */}
-          <div className="p-4">
-            {question ? (
-              <div className="font-medium text-base mb-3">{question}</div>
-            ) : (
-              <div className="font-medium text-base mb-3 text-gray-400 italic">
-                {t('poll_preview.question_placeholder') || 'Your poll question will appear here'}
-              </div>
-            )}
-            
-            {/* Poll Options */}
-            {hasValidOptions ? (
-              <div className="space-y-2">
-                {validOptions.map((option, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center p-2 rounded-md hover:bg-gray-100 transition-colors"
-                  >
-                    <div className={`h-5 w-5 mr-3 rounded-full border flex items-center justify-center ${allowsMultipleAnswers ? 'border-gray-400' : 'border-gray-400'}`}>
-                      {/* Empty circle/square for options */}
-                      {allowsMultipleAnswers ? (
-                        <div className="h-4 w-4 rounded-sm border border-gray-400"></div>
-                      ) : null}
-                    </div>
-                    <span className="text-sm">{option.text}</span>
+          {/* Poll Options */}
+          {validOptions.length === 0 ? (
+            <div className="text-sm text-gray-500 italic">
+              {t('poll_preview.options_placeholder') || 'Добавьте минимум два варианта для просмотра'}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {validOptions.map((option, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  <div className="mr-3">
+                    {allowsMultipleAnswers ? (
+                      <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
+                    ) : (
+                      <div className="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-gray-400 italic text-sm">
-                {t('poll_preview.options_placeholder') || 'Add at least two options to see the preview'}
-              </div>
-            )}
-            
-            {/* Poll Footer */}
-            <div className="mt-4 text-xs text-gray-500 flex items-center">
-              <div className="flex items-center mr-4">
-                {isAnonymous ? (
-                  <>
-                    <Check className="h-3 w-3 mr-1 text-gray-400" />
-                    <span>{t('poll_preview.anonymous') || 'Anonymous'}</span>
-                  </>
-                ) : (
-                  <>
-                    <X className="h-3 w-3 mr-1 text-gray-400" />
-                    <span>{t('poll_preview.not_anonymous') || 'Not anonymous'}</span>
-                  </>
-                )}
-              </div>
-              
-              <div className="flex items-center">
-                {allowsMultipleAnswers ? (
-                  <>
-                    <Check className="h-3 w-3 mr-1 text-gray-400" />
-                    <span>{t('poll_preview.multiple_answers') || 'Multiple answers'}</span>
-                  </>
-                ) : (
-                  <>
-                    <X className="h-3 w-3 mr-1 text-gray-400" />
-                    <span>{t('poll_preview.single_answer') || 'Single answer'}</span>
-                  </>
-                )}
-              </div>
+                  <span className="text-sm text-gray-900">{option.text}</span>
+                  <div className="ml-auto text-xs text-gray-500">0%</div>
+                </div>
+              ))}
             </div>
-            
-            {/* Vote Count */}
-            <div className="mt-2 text-xs text-gray-500">
-              <span>{t('poll_preview.no_votes') || '0 votes'}</span>
+          )}
+        </div>
+        
+        {/* Poll Settings */}
+        <div className="border-t border-gray-200 pt-3">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="space-x-4">
+              <span>
+                {isAnonymous 
+                  ? (t('poll_preview.anonymous') || 'Анонимный')
+                  : (t('poll_preview.not_anonymous') || 'Не анонимный')
+                }
+              </span>
+              <span>
+                {allowsMultipleAnswers 
+                  ? (t('poll_preview.multiple_answers') || 'Несколько ответов')
+                  : (t('poll_preview.single_answer') || 'Один ответ')
+                }
+              </span>
             </div>
+            <span>
+              {t('poll_preview.no_votes') || '0 голосов'}
+            </span>
           </div>
         </div>
       </div>

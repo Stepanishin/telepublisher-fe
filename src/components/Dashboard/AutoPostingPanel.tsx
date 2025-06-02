@@ -102,82 +102,6 @@ const AutoPostingPanel: React.FC = () => {
   const [avoidDuplication, setAvoidDuplication] = useState<boolean>(false);
   const [duplicateCheckDays, setDuplicateCheckDays] = useState<number>(7);
   
-  // Тексты по умолчанию для новой функциональности
-  const defaultTexts = {
-    // Русский
-    'ru': {
-      'auto_posting.history_title': 'История автопубликаций',
-      'auto_posting.all_posts': 'Все записи',
-      'auto_posting.successful_posts': 'Успешные',
-      'auto_posting.failed_posts': 'Неудачные',
-      'auto_posting.search_placeholder': 'Поиск по содержимому...',
-      'auto_posting.no_history': 'История пуста',
-      'auto_posting.history_empty_description': 'Когда ваши правила начнут работать, здесь появится история публикаций',
-      'auto_posting.status_success': 'Успешно',
-      'auto_posting.status_failed': 'Ошибка',
-      'auto_posting.published_date': 'Дата публикации',
-      'auto_posting.message': 'Сообщение',
-      'auto_posting.post_image': 'Изображение поста',
-      'auto_posting.view_post': 'Просмотреть пост',
-      'auto_posting.load_more': 'Загрузить еще',
-      'auto_posting.history_load_error': 'Ошибка загрузки истории автопостинга',
-      'auto_posting.has_image': 'С изображением',
-      'auto_posting.post_id': 'ID поста',
-      'common.search': 'Поиск',
-      'auto_posting.source_urls_description': 'URL-адреса для сбора информации и создания постов',
-      'auto_posting.avoid_duplication': 'Избегать повторений',
-      'auto_posting.avoid_duplication_description': 'Проверять контент на схожесть с предыдущими постами',
-      'auto_posting.duplicate_check_days': 'Дней для проверки',
-      'auto_posting.duplicate_check_days_description': 'Количество дней для проверки на дубликаты'
-    },
-    // Английский
-    'en': {
-      'auto_posting.history_title': 'Auto-Posting History',
-      'auto_posting.all_posts': 'All Posts',
-      'auto_posting.successful_posts': 'Successful',
-      'auto_posting.failed_posts': 'Failed',
-      'auto_posting.search_placeholder': 'Search content...',
-      'auto_posting.no_history': 'No History',
-      'auto_posting.history_empty_description': 'When your auto-posting rules start working, the history will appear here',
-      'auto_posting.status_success': 'Success',
-      'auto_posting.status_failed': 'Failed',
-      'auto_posting.published_date': 'Publication Date',
-      'auto_posting.message': 'Message',
-      'auto_posting.post_image': 'Post Image',
-      'auto_posting.view_post': 'View Post',
-      'auto_posting.load_more': 'Load More',
-      'auto_posting.history_load_error': 'Failed to load auto-posting history',
-      'auto_posting.has_image': 'With image',
-      'auto_posting.post_id': 'Post ID',
-      'common.search': 'Search',
-      'auto_posting.source_urls_description': 'URLs to scrape content from',
-      'auto_posting.avoid_duplication': 'Avoid Duplication',
-      'auto_posting.avoid_duplication_description': 'Check content for similarity with previous posts',
-      'auto_posting.duplicate_check_days': 'Days to Check',
-      'auto_posting.duplicate_check_days_description': 'Number of days to check for duplicates'
-    }
-  };
-  
-  // Функция для перевода с поддержкой текста по умолчанию
-  const tWithDefault = (key: string, defaultText?: string): string => {
-    const translated = t(key);
-    const currentLang = 'ru'; // Временно используем русский как язык по умолчанию
-    
-    // Если перевод отсутствует (возвращает ключ), используем текст по умолчанию или английский вариант
-    if (translated === key) {
-      // Проверяем, существует ли ключ в defaultTexts для текущего языка
-      const langDefaults = defaultTexts[currentLang as keyof typeof defaultTexts] || {};
-      const enDefaults = defaultTexts['en'] || {};
-      
-      // Безопасный доступ к ключам
-      return defaultText || 
-        (key in langDefaults ? langDefaults[key as keyof typeof langDefaults] : undefined) || 
-        (key in enDefaults ? enDefaults[key as keyof typeof enDefaults] : undefined) || 
-        key;
-    }
-    return translated;
-  };
-  
   // Fetch rules on component mount
   useEffect(() => {
     fetchRules();
@@ -250,14 +174,14 @@ const AutoPostingPanel: React.FC = () => {
       } else {
         setNotification({
           type: 'error',
-          message: tWithDefault('auto_posting.history_load_error')
+          message: t('auto_posting.history_load_error')
         });
       }
     } catch (error) {
       console.error('Failed to fetch auto-posting history:', error);
       setNotification({
         type: 'error',
-        message: tWithDefault('auto_posting.history_load_error')
+        message: t('auto_posting.history_load_error')
       });
     } finally {
       setHistoryLoading(false);
@@ -630,7 +554,7 @@ const AutoPostingPanel: React.FC = () => {
             {/* Заголовок и фильтры */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-4">
-                {tWithDefault('auto_posting.history_title')}
+                {t('auto_posting.history_title')}
               </h3>
               <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex gap-2">
@@ -642,7 +566,7 @@ const AutoPostingPanel: React.FC = () => {
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {tWithDefault('auto_posting.all_posts')}
+                    {t('auto_posting.all_posts')}
                   </button>
                   <button
                     onClick={() => setSelectedHistoryFilter('success')}
@@ -652,7 +576,7 @@ const AutoPostingPanel: React.FC = () => {
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {tWithDefault('auto_posting.successful_posts')}
+                    {t('auto_posting.successful_posts')}
                   </button>
                   <button
                     onClick={() => setSelectedHistoryFilter('failed')}
@@ -662,7 +586,7 @@ const AutoPostingPanel: React.FC = () => {
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {tWithDefault('auto_posting.failed_posts')}
+                    {t('auto_posting.failed_posts')}
                   </button>
                 </div>
                 
@@ -675,7 +599,7 @@ const AutoPostingPanel: React.FC = () => {
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder={tWithDefault('auto_posting.search_placeholder')}
+                      placeholder={t('auto_posting.search_placeholder')}
                       className="py-2 pl-10 pr-4 border border-gray-300 rounded-md text-sm w-full md:w-64"
                     />
                   </div>
@@ -683,7 +607,7 @@ const AutoPostingPanel: React.FC = () => {
                     type="submit"
                     className="ml-2 px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
                   >
-                    {tWithDefault('common.search')}
+                    {t('common.search')}
                   </button>
                 </form>
               </div>
@@ -697,10 +621,10 @@ const AutoPostingPanel: React.FC = () => {
               <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg">
                 <Clock className="h-12 w-12 mx-auto text-gray-400" />
                 <h3 className="mt-2 text-lg font-medium text-gray-900">
-                  {tWithDefault('auto_posting.no_history')}
+                  {t('auto_posting.no_history')}
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  {tWithDefault('auto_posting.history_empty_description')}
+                  {t('auto_posting.history_empty_description')}
                 </p>
               </div>
             ) : (
@@ -724,8 +648,8 @@ const AutoPostingPanel: React.FC = () => {
                             }`}
                           >
                             {entry.status === 'success' 
-                              ? tWithDefault('auto_posting.status_success') 
-                              : tWithDefault('auto_posting.status_failed')}
+                              ? t('auto_posting.status_success') 
+                              : t('auto_posting.status_failed')}
                           </span>
                           {entry.imageUrl && !entry.imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net') && (
                             <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
@@ -1206,7 +1130,7 @@ const AutoPostingPanel: React.FC = () => {
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-md font-medium mb-3 flex items-center">
                     <Settings size={18} className="mr-2" />
-                    {tWithDefault('auto_posting.avoid_duplication')}
+                    {t('auto_posting.avoid_duplication')}
                   </h4>
                   
                   <div className="space-y-4">
@@ -1219,14 +1143,14 @@ const AutoPostingPanel: React.FC = () => {
                         className="mr-2"
                       />
                       <label htmlFor="avoidDuplication" className="text-sm">
-                        {tWithDefault('auto_posting.avoid_duplication_description')}
+                        {t('auto_posting.avoid_duplication_description')}
                       </label>
                     </div>
                     
                     {avoidDuplication && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {tWithDefault('auto_posting.duplicate_check_days')}
+                          {t('auto_posting.duplicate_check_days')}
                         </label>
                         <Input
                           type="number"
@@ -1237,7 +1161,7 @@ const AutoPostingPanel: React.FC = () => {
                           className="w-full"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          {tWithDefault('auto_posting.duplicate_check_days_description')}
+                          {t('auto_posting.duplicate_check_days_description')}
                         </p>
                       </div>
                     )}

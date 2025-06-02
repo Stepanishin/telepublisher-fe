@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, CheckCircle, AlertTriangle, Calendar, Image as ImageIcon, RefreshCw, Smile } from 'lucide-react';
+import { Send, CheckCircle, AlertTriangle, Calendar, RefreshCw, Smile } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import Button from '../ui/Button';
 import ReactQuill from 'react-quill';
@@ -7,8 +7,6 @@ import 'react-quill/dist/quill.snow.css';
 import MultiSelect from '../ui/MultiSelect';
 import TagInput from '../ui/TagInput';
 import Alert from '../ui/Alert';
-import ImageUploader from '../ui/ImageUploader';
-import MultipleImageUploader from '../ui/MultipleImageUploader';
 import VoiceRecorder from '../ui/VoiceRecorder';
 import { useChannelsStore } from '../../store/channelsStore';
 import { useContentStore } from '../../store/contentStore';
@@ -38,7 +36,7 @@ interface PublishPanelProps {
   initialScheduledDate?: Date;
 }
 
-const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, scheduledPostId, initialChannelId, initialScheduledDate }) => {
+const PublishPanelText: React.FC<PublishPanelProps> = ({ onContentChange, editMode, scheduledPostId, initialChannelId, initialScheduledDate }) => {
   const { channels } = useChannelsStore();
   const { 
     content, 
@@ -539,49 +537,6 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
       const defaultDate = new Date();
       defaultDate.setHours(defaultDate.getHours() + 1);
       setScheduledDate(defaultDate);
-    }
-  };
-  
-  const toggleImageMode = () => {
-    // Prevent toggling to multiple images if bottom position is selected
-    if (!useMultipleImages && imagePosition === 'bottom') {
-      // Notify user this is not allowed
-      setUploadError(t('publish_panel.bottom_position_single_image'));
-      return;
-    }
-    
-    // Handle image cleanup when switching modes
-    if (useMultipleImages) {
-      // When switching from multiple to single
-      // We'll keep the first image and delete the rest
-      if (publishImageUrls.length > 1) {
-        // Delete all images except the first one
-        for (let i = 1; i < publishImageUrls.length; i++) {
-          const imageUrl = publishImageUrls[i];
-          if (imageUrl && imageUrl.includes('/uploads/')) {
-            deleteImage(imageUrl).then(success => {
-              if (success) {
-                console.log('Successfully deleted extra image when switching to single mode:', imageUrl);
-              }
-            });
-          }
-        }
-      }
-    } else {
-      // When switching from single to multiple
-      // Nothing to delete, we'll just move the single image to the array
-    }
-    
-    setUseMultipleImages(!useMultipleImages);
-    
-    // When switching to single image mode, use the first image from multiple images if available
-    if (useMultipleImages && publishImageUrls.length > 0) {
-      setPublishImageUrl(publishImageUrls[0]);
-    }
-    
-    // When switching to multiple images mode, add the current single image if available
-    if (!useMultipleImages && publishImageUrl) {
-      setPublishImageUrls([publishImageUrl]);
     }
   };
   
@@ -1202,94 +1157,6 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
           />
         )}
         
-        {/* Image position selector - moved above image upload */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('publish_panel.image_position')}
-          </label>
-          <div className="flex items-center space-x-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio h-4 w-4 text-blue-600"
-                checked={imagePosition === 'top'}
-                onChange={() => setImagePosition('top')}
-              />
-              <span className="ml-2 text-sm text-gray-700">
-                {t('publish_panel.image_position_top')} (1024 {t('publish_panel.characters')})
-              </span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio h-4 w-4 text-blue-600"
-                checked={imagePosition === 'bottom'}
-                onChange={() => {
-                  setImagePosition('bottom');
-                  // If switching to bottom position, force single image mode
-                  if (useMultipleImages) {
-                    toggleImageMode();
-                  }
-                }}
-              />
-              <span className="ml-2 text-sm text-gray-700">
-                {t('publish_panel.image_position_bottom')} (4096 {t('publish_panel.characters')})
-              </span>
-            </label>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            {imagePosition === 'bottom' 
-              ? (t('publish_panel.image_position_bottom_description')) 
-              : (t('publish_panel.image_position_top_description'))}
-          </p>
-          {imagePosition === 'bottom' && (
-            <p className="text-xs text-amber-600 mt-1">
-              {t('publish_panel.bottom_position_single_image')}
-            </p>
-          )}
-        </div>
-        
-        {/* Toggle between single and multiple image modes */}
-        <div className="mb-4">
-          <div className="flex items-center justify-end mb-2">
-            <label className="text-sm text-gray-600 mr-2 flex items-center">
-              <ImageIcon size={16} className="mr-1" />
-              {t('publish_panel.multiple_images')}
-            </label>
-            <div 
-              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer ${
-                useMultipleImages ? 'bg-blue-600' : 'bg-gray-300'
-              } ${imagePosition === 'bottom' ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => {
-                if (imagePosition !== 'bottom') {
-                  toggleImageMode();
-                }
-              }}
-            >
-              <div 
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                  useMultipleImages ? 'translate-x-5' : 'translate-x-0'
-                }`} 
-              />
-            </div>
-          </div>
-          
-          {!useMultipleImages ? (
-            <ImageUploader
-              value={publishImageUrl}
-              onChange={setPublishImageUrl}
-              onError={setUploadError}
-            />
-          ) : (
-            <MultipleImageUploader
-              values={publishImageUrls}
-              onChange={setPublishImageUrls}
-              onError={setUploadError}
-              maxImages={10}
-            />
-          )}
-        </div>
-        
         <TagInput
           label={t('publish_panel.tags')}
           tags={publishTags}
@@ -1455,7 +1322,7 @@ const PublishPanel: React.FC<PublishPanelProps> = ({ onContentChange, editMode, 
 };
 
 // Set default props
-PublishPanel.defaultProps = {
+PublishPanelText.defaultProps = {
   onContentChange: undefined,
   editMode: false,
   scheduledPostId: undefined,
@@ -1463,4 +1330,4 @@ PublishPanel.defaultProps = {
   initialScheduledDate: undefined
 };
 
-export default PublishPanel;
+export default PublishPanelText;
