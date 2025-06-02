@@ -3,12 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { ArrowLeft, Save, EyeIcon, Edit2, Plus, Trash, Smile } from 'lucide-react';
-import { Draft, createDraft, updateDraft } from '../../services/api';
+import { ArrowLeft, Save, EyeIcon, Edit2, Plus, Trash, Smile, X, Image as ImageIcon } from 'lucide-react';
+import { Draft, createDraft, updateDraft, uploadDraftImage, deleteImage } from '../../services/api';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import ImageUploader from '../ui/ImageUploader';
-import MultipleImageUploader from '../ui/MultipleImageUploader';
 import TagInput from '../ui/TagInput';
 import TelegramPostPreview from '../ui/TelegramPostPreview';
 import { TelegramButton } from '../../types';
@@ -19,6 +17,409 @@ interface DraftEditorProps {
   onSave: (draft: Draft) => void;
   onCancel: () => void;
 }
+
+// Draft-specific single image uploader component
+interface DraftImageUploaderProps {
+  value: string;
+  onChange: (url: string) => void;
+  onError: (error: string) => void;
+}
+
+const DraftImageUploader: React.FC<DraftImageUploaderProps> = ({ value, onChange, onError }) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const { t } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      onError(t('publish_panel.invalid_file_type') || 'Please select an image file');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      onError(t('publish_panel.file_too_large') || 'Image file is too large. Maximum size is 10MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    onError('');
+
+    try {
+      const imageUrl = await uploadDraftImage(file);
+      onChange(imageUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      onError(t('publish_panel.upload_error') || 'Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUrlSubmit = () => {
+    if (urlInput.trim()) {
+      // Basic URL validation
+      try {
+        new URL(urlInput.trim());
+        onChange(urlInput.trim());
+        setUrlInput('');
+        setShowUrlInput(false);
+        onError('');
+      } catch {
+        onError(t('publish_panel.invalid_url') || 'Please enter a valid URL');
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  const removeImage = async () => {
+    if (value) {
+      try {
+        await deleteImage(value);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
+    }
+    onChange('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {value ? (
+        <div className="relative">
+          <img src={value} alt="Upload preview" className="max-w-full h-32 object-cover rounded border" />
+          <button
+            onClick={removeImage}
+            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+            type="button"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ) : (
+        <>
+          <div 
+            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="space-y-2">
+              <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+              <div className="text-sm text-gray-600">
+                {isUploading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>{t('publish_panel.uploading') || 'Uploading...'}</span>
+                  </div>
+                ) : (
+                  <>
+                    <p>{t('publish_panel.drag_drop_image') || 'Drag and drop an image or click to select'}</p>
+                    <p className="text-xs text-gray-500">{t('publish_panel.max_file_size') || 'Max size: 10MB'}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* URL Input Section */}
+          {showUrlInput ? (
+            <div className="flex space-x-2">
+              <input
+                type="url"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder={t('publish_panel.enter_image_url') || 'Enter image URL...'}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
+              />
+              <button
+                type="button"
+                onClick={handleUrlSubmit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {t('common.add') || 'Add'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUrlInput(false);
+                  setUrlInput('');
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                {t('common.cancel') || 'Cancel'}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowUrlInput(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {t('publish_panel.or_enter_url') || 'Or enter image URL'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={isUploading}
+      />
+    </div>
+  );
+};
+
+// Draft-specific multiple image uploader component
+interface DraftMultipleImageUploaderProps {
+  values: string[];
+  onChange: (urls: string[]) => void;
+  onError: (error: string) => void;
+  maxImages?: number;
+}
+
+const DraftMultipleImageUploader: React.FC<DraftMultipleImageUploaderProps> = ({ 
+  values, 
+  onChange, 
+  onError, 
+  maxImages = 10 
+}) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const { t } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (files: File[]) => {
+    const remainingSlots = maxImages - values.length;
+    
+    if (files.length > remainingSlots) {
+      onError(`${t('publish_panel.max_images_exceeded') || 'Maximum'} ${maxImages} ${t('publish_panel.images_allowed') || 'images allowed'}`);
+      return;
+    }
+
+    setIsUploading(true);
+    onError('');
+
+    try {
+      const uploadPromises = files.map(async (file) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`${file.name}: ${t('publish_panel.invalid_file_type') || 'Invalid file type'}`);
+        }
+
+        // Validate file size (10MB limit)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+          throw new Error(`${file.name}: ${t('publish_panel.file_too_large') || 'File too large'}`);
+        }
+
+        return await uploadDraftImage(file);
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      onChange([...values, ...uploadedUrls]);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      onError(error instanceof Error ? error.message : (t('publish_panel.upload_error') || 'Failed to upload images'));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUrlSubmit = () => {
+    if (urlInput.trim()) {
+      if (values.length >= maxImages) {
+        onError(`${t('publish_panel.max_images_exceeded') || 'Maximum'} ${maxImages} ${t('publish_panel.images_allowed') || 'images allowed'}`);
+        return;
+      }
+
+      // Basic URL validation
+      try {
+        new URL(urlInput.trim());
+        onChange([...values, urlInput.trim()]);
+        setUrlInput('');
+        setShowUrlInput(false);
+        onError('');
+      } catch {
+        onError(t('publish_panel.invalid_url') || 'Please enter a valid URL');
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    if (files.length > 0) {
+      handleFileUpload(files);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileUpload(Array.from(files));
+    }
+  };
+
+  const removeImage = async (index: number) => {
+    const urlToRemove = values[index];
+    
+    // Delete from server only if it's a uploaded file (contains our domain)
+    if (urlToRemove && (urlToRemove.includes('/uploads/drafts/') || urlToRemove.includes('localhost') || urlToRemove.includes('.tail10cf98.ts.net'))) {
+      try {
+        await deleteImage(urlToRemove);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+      }
+    }
+    
+    // Remove from local state
+    const newValues = values.filter((_, i) => i !== index);
+    onChange(newValues);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Image Grid */}
+      {values.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {values.map((url, index) => (
+            <div key={index} className="relative group">
+              <img 
+                src={url} 
+                alt={`Upload ${index + 1}`} 
+                className="w-full h-24 object-cover rounded border" 
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 rounded">
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  type="button"
+                >
+                  <X size={12} />
+                </button>
+                <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  {index + 1}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload Area */}
+      {values.length < maxImages && (
+        <div 
+          className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="space-y-2">
+            <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+            <div className="text-sm text-gray-600">
+              {isUploading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span>{t('publish_panel.uploading') || 'Uploading...'}</span>
+                </div>
+              ) : (
+                <>
+                  <p>{t('publish_panel.drag_drop_images') || 'Drag and drop images or click to select'}</p>
+                  <p className="text-xs text-gray-500">
+                    {values.length > 0 
+                      ? `${values.length}/${maxImages} ${t('publish_panel.images_uploaded') || 'images uploaded'}`
+                      : `${t('publish_panel.max_file_size') || 'Max size: 10MB per image'} • ${t('publish_panel.max_images') || 'Max'} ${maxImages} ${t('publish_panel.images') || 'images'}`
+                    }
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* URL Input Section */}
+      {showUrlInput ? (
+        <div className="flex space-x-2">
+          <input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder={t('publish_panel.enter_image_url') || 'Enter image URL...'}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
+          />
+          <button
+            type="button"
+            onClick={handleUrlSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            {t('common.add') || 'Add'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowUrlInput(false);
+              setUrlInput('');
+            }}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+          >
+            {t('common.cancel') || 'Cancel'}
+          </button>
+        </div>
+      ) : (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => setShowUrlInput(true)}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            {t('publish_panel.or_enter_url') || 'Or enter image URL'}
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={isUploading}
+      />
+    </div>
+  );
+};
 
 const DraftEditor: React.FC<DraftEditorProps> = ({ draft, onSave, onCancel }) => {
   const { t } = useLanguage();
@@ -345,13 +746,13 @@ const DraftEditor: React.FC<DraftEditorProps> = ({ draft, onSave, onCancel }) =>
                 </div>
                 
                 {!useMultipleImages ? (
-                  <ImageUploader
+                  <DraftImageUploader
                     value={imageUrl}
                     onChange={setImageUrl}
                     onError={setUploadError}
                   />
                 ) : (
-                  <MultipleImageUploader
+                  <DraftMultipleImageUploader
                     values={imageUrls}
                     onChange={setImageUrls}
                     onError={setUploadError}

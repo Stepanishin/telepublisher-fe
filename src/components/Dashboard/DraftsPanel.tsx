@@ -101,9 +101,9 @@ const DraftsPanel = () => {
     // Apply sorting
     result = result.sort((a, b) => {
       if (sortBy === 'newest') {
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        return b.updatedAt.getTime() - a.updatedAt.getTime();
       } else if (sortBy === 'oldest') {
-        return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+        return a.updatedAt.getTime() - b.updatedAt.getTime();
       } else if (sortBy === 'alphabetical') {
         return a.title.localeCompare(b.title);
       }
@@ -194,16 +194,23 @@ const DraftsPanel = () => {
   };
 
   const handleDraftSaved = (savedDraft: Draft) => {
+    // Convert string dates to Date objects
+    const draftWithDates = {
+      ...savedDraft,
+      createdAt: new Date(savedDraft.createdAt),
+      updatedAt: new Date(savedDraft.updatedAt)
+    };
+    
     if (selectedDraft) {
       // Updating existing draft
-      setDrafts(drafts.map(d => d._id === savedDraft._id ? savedDraft : d));
+      setDrafts(drafts.map(d => d._id === savedDraft._id ? draftWithDates : d));
       setNotification({
         type: 'success',
         message: t('drafts.update_success')
       });
     } else {
       // Adding new draft
-      setDrafts([...drafts, savedDraft]);
+      setDrafts([...drafts, draftWithDates]);
       setNotification({
         type: 'success',
         message: t('drafts.create_success')

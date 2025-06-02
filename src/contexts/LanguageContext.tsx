@@ -272,6 +272,26 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.published_success': 'Successfully published',
     'publish_panel.published_failed': 'Failed to publish',
 
+    // Draft Editor specific translations
+    'publish_panel.or_enter_url': 'Or enter image URL',
+    'publish_panel.enter_image_url': 'Enter image URL...',
+    'publish_panel.drag_drop_image': 'Drag and drop an image or click to select',
+    'publish_panel.drag_drop_images': 'Drag and drop images or click to select',
+    'publish_panel.images_uploaded': 'images uploaded',
+    'publish_panel.max_images': 'Max',
+    'publish_panel.images': 'images',
+    'publish_panel.max_images_exceeded': 'Maximum',
+    'publish_panel.images_allowed': 'images allowed',
+    'publish_panel.invalid_file_type': 'Please select an image file',
+    'publish_panel.file_too_large': 'Image file is too large. Maximum size is 10MB.',
+    'publish_panel.upload_error': 'Failed to upload image. Please try again.',
+    'publish_panel.uploading': 'Uploading...',
+    'publish_panel.max_file_size': 'Max. size of image',
+
+    // Common translations
+    'common.add': 'Add',
+    'common.cancel': 'Cancel',
+
     // Image Uploader
     'image_uploader.label': 'Image',
     'image_uploader.url_mode': 'URL',
@@ -299,7 +319,7 @@ const translations: Record<Language, Record<string, string>> = {
     'image_uploader.clear_all': 'Clear all images',
     'image_uploader.remove_image': 'Remove image',
     'image_uploader.max_images_reached': 'Maximum of 10 images allowed',
-    'image_uploader.multiple_url_not_supported': 'URL mode with multiple images is not supported. Please use upload mode for multiple images.',
+    'image_uploader.multiple_url_not_supported': 'Режим URL с несколькими изображениями не поддерживается. Пожалуйста, используйте режим загрузки для нескольких изображений.',
     'image_uploader.error_empty_url': 'Please enter an image URL',
     'image_uploader.error_invalid_url': 'Please enter a valid URL (e.g., https://example.com/image.jpg)',
     'image_uploader.add_url': 'Add',
@@ -990,6 +1010,26 @@ const translations: Record<Language, Record<string, string>> = {
     'publish_panel.edit_scheduled_album': 'Редактировать запланированный альбом',
     'publish_panel.published_success': 'Успешно опубликовано',
     'publish_panel.published_failed': 'Не удалось опубликовать',
+
+    // Draft Editor specific translations
+    'publish_panel.or_enter_url': 'Или введите URL изображения',
+    'publish_panel.enter_image_url': 'Введите URL изображения...',
+    'publish_panel.drag_drop_image': 'Перетащите изображение или нажмите для выбора',
+    'publish_panel.drag_drop_images': 'Перетащите изображения или нажмите для выбора',
+    'publish_panel.images_uploaded': 'изображений загружено',
+    'publish_panel.max_images': 'Макс',
+    'publish_panel.images': 'изображений',
+    'publish_panel.max_images_exceeded': 'Максимум',
+    'publish_panel.images_allowed': 'изображений разрешено',
+    'publish_panel.invalid_file_type': 'Пожалуйста, выберите файл изображения',
+    'publish_panel.file_too_large': 'Файл изображения слишком большой. Максимальный размер 10МБ.',
+    'publish_panel.upload_error': 'Не удалось загрузить изображение. Попробуйте еще раз.',
+    'publish_panel.uploading': 'Загрузка...',
+    'publish_panel.max_file_size': 'Макс. размер изображения',
+
+    // Common translations
+    'common.add': 'Добавить',
+    'common.cancel': 'Отмена',
 
     // Image Uploader
     'image_uploader.label': 'Изображение',
