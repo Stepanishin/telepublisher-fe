@@ -19,7 +19,16 @@ import CreateMediaGroupPage from './pages/CreateMediaGroupPage';
 import { NotificationProvider } from './contexts/NotificationContext';
 
 function App() {
-  const { isAuthenticated } = useUserStore();
+  const { isAuthenticated, isLoading } = useUserStore();
+
+  // Show loading spinner while authentication state is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <LanguageProvider>

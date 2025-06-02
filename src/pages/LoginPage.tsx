@@ -42,26 +42,36 @@ const LoginPage: React.FC = () => {
         // Check if token exists in localStorage
         const token = localStorage.getItem('token');
         if (token && !isAuthenticated) {
-          setLoading(true);
           // Try to get user profile with existing token
           const user = await getUserProfile();
           if (user) {
             loginUser(user);
           } else {
-            // If no user returned, clear token
+            // If no user returned, clear token and stored user data
             localStorage.removeItem('token');
+            localStorage.removeItem('telegramUser');
           }
+        } else if (!token && isAuthenticated) {
+          // If we have user data but no token, logout to be safe
+          localStorage.removeItem('telegramUser');
+          window.location.reload(); // Reload to reset state
         }
       } catch (error) {
         console.error('Auto-login failed:', error);
-        // Clear token if it's invalid
+        // Clear token and user data if validation fails
         localStorage.removeItem('token');
+        localStorage.removeItem('telegramUser');
       } finally {
         setLoading(false);
       }
     };
 
-    autoLogin();
+    // Only run auto-login if we're not already authenticated
+    if (!isAuthenticated || localStorage.getItem('token')) {
+      autoLogin();
+    } else {
+      setLoading(false);
+    }
   }, [loginUser, isAuthenticated]);
 
   // Check for forceNewLogin parameter and generate new key for Telegram button
