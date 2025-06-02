@@ -1032,6 +1032,7 @@ export interface AutoPostingRule {
   channelId: string;
   imageGeneration: boolean;
   keywords?: string[];
+  buttons?: { text: string; url: string }[];
   nextScheduled?: Date | null;
   lastPublished?: Date | null;
   createdAt?: Date;
@@ -1094,14 +1095,37 @@ export const deleteAutoPostingRule = async (ruleId: string) => {
 };
 
 // Get autoposting history
-export const getAutoPostingHistory = async (limit: number = 20, page: number = 1) => {
+export const getAutoPostingHistory = async (
+  limit: number = 20, 
+  page: number = 1,
+  status?: 'success' | 'failed' | 'all',
+  search?: string
+) => {
   try {
-    const response = await api.get('/autoposting/history', {
-      params: { limit, page }
-    });
-    return response.data;
+    // Формируем параметры запроса
+    const params: Record<string, string | number> = { limit, page };
+    
+    // Добавляем параметры фильтрации, если они заданы
+    if (status && status !== 'all') {
+      params.status = status;
+    }
+    
+    if (search && search.trim()) {
+      params.search = search.trim();
+    }
+    
+    const response = await api.get('/autoposting/history', { params });
+    
+    // Просто передаем ответ от сервера, не преобразовывая его
+    return {
+      success: true,
+      data: response.data
+    };
   } catch (error) {
-    console.error('Error fetching autoposting history:', error);
-    throw error;
+    console.error('Error getting auto-posting history:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch auto-posting history'
+    };
   }
 };

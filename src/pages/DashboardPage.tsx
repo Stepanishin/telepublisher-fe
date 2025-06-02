@@ -121,11 +121,11 @@ const DashboardPage: React.FC = () => {
       label: t('dashboard.tab_content_poll') || 'Poll',
       icon: <BarChart2 className="h-4 w-4" />
     },
-    // {
-    //   id: 'autoposting',
-    //   label: t('dashboard.tab_content_autoposting') || 'AutoPosting',
-    //   icon: <Clock className="h-4 w-4" />
-    // },
+    {
+      id: 'autoposting',
+      label: t('dashboard.tab_content_autoposting') || 'AutoPosting',
+      icon: <Clock className="h-4 w-4" />
+    },
     {
       id: 'drafts',
       label: t('dashboard.tab_content_drafts') || 'Drafts',

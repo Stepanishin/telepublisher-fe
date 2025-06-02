@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { PlusCircle, Clock, Settings, AlertTriangle, Calendar, Tag, Hash } from 'lucide-react';
+import { PlusCircle, Clock, Settings, Calendar, Tag, Hash, Search, ExternalLink, Image } from 'lucide-react';
 import Button from '../ui/Button';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Select from '../ui/Select';
@@ -13,7 +13,7 @@ import { useChannelsStore } from '../../store/channelsStore';
 import Input from '../ui/Input';
 import TagInput from '../ui/TagInput';
 import { useNotification } from '../../contexts/NotificationContext';
-import { createAutoPostingRule, deleteAutoPostingRule, getAutoPostingRules, updateAutoPostingRule } from '../../services/api';
+import { createAutoPostingRule, deleteAutoPostingRule, getAutoPostingRules, updateAutoPostingRule, getAutoPostingHistory } from '../../services/api';
 
 // Типы подвкладок
 type AutoPostingSubTab = 'rules' | 'logs' | 'editor';
@@ -39,6 +39,25 @@ export interface AutoPostingRule {
   keywords?: string[];
   nextScheduled?: Date | null;
   lastPublished?: Date | null;
+  buttons?: { text: string; url: string }[];
+}
+
+// Тип записи истории автопостинга
+export interface AutoPostingHistoryEntry {
+  _id?: string;
+  ruleId: string;
+  ruleName: string;
+  channelId?: string;
+  channelName?: string;
+  postId?: string;
+  status: 'success' | 'failed';
+  message?: string;
+  contentSummary?: string;
+  content?: string;
+  imageUrl?: string;
+  buttons?: { text: string; url: string }[];
+  createdAt: Date;
+  postUrl?: string;
 }
 
 const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -52,6 +71,14 @@ const AutoPostingPanel: React.FC = () => {
   const { channels } = useChannelsStore();
   const { setNotification } = useNotification();
   
+  // История автопостинга
+  const [historyLoading, setHistoryLoading] = useState<boolean>(true);
+  const [historyEntries, setHistoryEntries] = useState<AutoPostingHistoryEntry[]>([]);
+  const [historyPage, setHistoryPage] = useState<number>(1);
+  const [hasMoreHistory, setHasMoreHistory] = useState<boolean>(true);
+  const [selectedHistoryFilter, setSelectedHistoryFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  
   // Form fields
   const [ruleName, setRuleName] = useState<string>('');
   const [ruleTopic, setRuleTopic] = useState<string>('');
@@ -64,11 +91,94 @@ const AutoPostingPanel: React.FC = () => {
   const [preferredDays, setPreferredDays] = useState<string[]>(['monday', 'wednesday', 'friday']);
   const [generateImages, setGenerateImages] = useState<boolean>(true);
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [buttons, setButtons] = useState<{ text: string; url: string }[]>([]);
+  const [buttonText, setButtonText] = useState<string>('');
+  const [buttonUrl, setButtonUrl] = useState<string>('');
+  
+  // Тексты по умолчанию для новой функциональности
+  const defaultTexts = {
+    // Русский
+    'ru': {
+      'auto_posting.history_title': 'История автопубликаций',
+      'auto_posting.all_posts': 'Все записи',
+      'auto_posting.successful_posts': 'Успешные',
+      'auto_posting.failed_posts': 'Неудачные',
+      'auto_posting.search_placeholder': 'Поиск по содержимому...',
+      'auto_posting.no_history': 'История пуста',
+      'auto_posting.history_empty_description': 'Когда ваши правила начнут работать, здесь появится история публикаций',
+      'auto_posting.status_success': 'Успешно',
+      'auto_posting.status_failed': 'Ошибка',
+      'auto_posting.published_date': 'Дата публикации',
+      'auto_posting.message': 'Сообщение',
+      'auto_posting.post_image': 'Изображение поста',
+      'auto_posting.view_post': 'Просмотреть пост',
+      'auto_posting.load_more': 'Загрузить еще',
+      'auto_posting.history_load_error': 'Ошибка загрузки истории автопостинга',
+      'auto_posting.has_image': 'С изображением',
+      'auto_posting.post_id': 'ID поста',
+      'common.search': 'Поиск'
+    },
+    // Английский
+    'en': {
+      'auto_posting.history_title': 'Auto-Posting History',
+      'auto_posting.all_posts': 'All Posts',
+      'auto_posting.successful_posts': 'Successful',
+      'auto_posting.failed_posts': 'Failed',
+      'auto_posting.search_placeholder': 'Search content...',
+      'auto_posting.no_history': 'No History',
+      'auto_posting.history_empty_description': 'When your auto-posting rules start working, the history will appear here',
+      'auto_posting.status_success': 'Success',
+      'auto_posting.status_failed': 'Failed',
+      'auto_posting.published_date': 'Publication Date',
+      'auto_posting.message': 'Message',
+      'auto_posting.post_image': 'Post Image',
+      'auto_posting.view_post': 'View Post',
+      'auto_posting.load_more': 'Load More',
+      'auto_posting.history_load_error': 'Failed to load auto-posting history',
+      'auto_posting.has_image': 'With image',
+      'auto_posting.post_id': 'Post ID',
+      'common.search': 'Search'
+    }
+  };
+  
+  // Функция для перевода с поддержкой текста по умолчанию
+  const tWithDefault = (key: string, defaultText?: string): string => {
+    const translated = t(key);
+    const currentLang = 'ru'; // Временно используем русский как язык по умолчанию
+    
+    // Если перевод отсутствует (возвращает ключ), используем текст по умолчанию или английский вариант
+    if (translated === key) {
+      // Проверяем, существует ли ключ в defaultTexts для текущего языка
+      const langDefaults = defaultTexts[currentLang as keyof typeof defaultTexts] || {};
+      const enDefaults = defaultTexts['en'] || {};
+      
+      // Безопасный доступ к ключам
+      return defaultText || 
+        (key in langDefaults ? langDefaults[key as keyof typeof langDefaults] : undefined) || 
+        (key in enDefaults ? enDefaults[key as keyof typeof enDefaults] : undefined) || 
+        key;
+    }
+    return translated;
+  };
   
   // Fetch rules on component mount
   useEffect(() => {
     fetchRules();
   }, []);
+  
+  // Загружать историю при переходе на вкладку логов
+  useEffect(() => {
+    if (activeSubTab === 'logs') {
+      fetchHistory(1, true);
+    }
+  }, [activeSubTab]);
+  
+  // Загружать историю при изменении фильтра
+  useEffect(() => {
+    if (activeSubTab === 'logs') {
+      fetchHistory(1, true);
+    }
+  }, [selectedHistoryFilter]);
   
   const fetchRules = async () => {
     setLoading(true);
@@ -84,6 +194,70 @@ const AutoPostingPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Функция для загрузки истории автопостинга
+  const fetchHistory = async (page = 1, reset = false) => {
+    setHistoryLoading(true);
+    
+    try {
+      const response = await getAutoPostingHistory(20, page, selectedHistoryFilter, searchTerm);
+      
+      console.log('API Response:', response);
+      
+      if (response.success) {
+        // Адаптируем ответ API к ожидаемому формату
+        const entries = response.data?.data?.history || [];
+        const hasMore = response.data?.data?.pagination?.totalPages > page;
+        
+        console.log('Parsed entries:', entries);
+        
+        // Преобразуем строковые даты в объекты Date
+        const processedEntries = entries.map((entry: Omit<AutoPostingHistoryEntry, 'createdAt'> & { createdAt: string | Date }) => ({
+          ...entry,
+          createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date()
+        }));
+        
+        console.log('Processed entries:', processedEntries);
+        
+        if (reset) {
+          setHistoryEntries(processedEntries);
+        } else {
+          setHistoryEntries(prev => [...prev, ...processedEntries]);
+        }
+        
+        console.log('Current state historyEntries:', processedEntries);
+        
+        setHistoryPage(page);
+        setHasMoreHistory(hasMore);
+      } else {
+        setNotification({
+          type: 'error',
+          message: tWithDefault('auto_posting.history_load_error')
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch auto-posting history:', error);
+      setNotification({
+        type: 'error',
+        message: tWithDefault('auto_posting.history_load_error')
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+  
+  // Функция загрузки следующей страницы истории
+  const loadMoreHistory = () => {
+    if (!historyLoading && hasMoreHistory) {
+      fetchHistory(historyPage + 1);
+    }
+  };
+  
+  // Функция для поиска в истории
+  const handleHistorySearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchHistory(1, true);
   };
   
   // Функция для создания нового правила
@@ -109,6 +283,9 @@ const AutoPostingPanel: React.FC = () => {
     setPreferredDays(rule.preferredDays || ['monday', 'wednesday', 'friday']);
     setGenerateImages(rule.imageGeneration);
     setKeywords(rule.keywords || []);
+    setButtons(rule.buttons || []);
+    setButtonText('');
+    setButtonUrl('');
     
     setActiveSubTab('editor');
   };
@@ -126,6 +303,9 @@ const AutoPostingPanel: React.FC = () => {
     setPreferredDays(['monday', 'wednesday', 'friday']);
     setGenerateImages(true);
     setKeywords([]);
+    setButtons([]);
+    setButtonText('');
+    setButtonUrl('');
   };
   
   // Handle save rule
@@ -168,23 +348,52 @@ const AutoPostingPanel: React.FC = () => {
     // Use _id (MongoDB ObjectId) as channelId if available, otherwise fallback to id
     const channelMongoId = selectedChannel._id || selectedChannel.id;
     
+    // Prepare the rule data based on frequency type
     const ruleData: AutoPostingRule = {
       name: ruleName,
       topic: ruleTopic,
       status: ruleStatus,
       frequency: ruleFrequency,
-      customInterval: customInterval,
-      customTimeUnit: customTimeUnit,
-      preferredTime: preferredTime,
-      preferredDays: preferredDays,
-      channelId: channelMongoId, // Use the MongoDB ObjectId here
+      channelId: channelMongoId,
       imageGeneration: generateImages,
-      keywords: keywords
+      keywords: keywords,
+      buttons: buttons.length > 0 ? buttons : undefined
     };
+    
+    // Add frequency-specific fields
+    if (ruleFrequency === 'custom') {
+      ruleData.customInterval = customInterval;
+      ruleData.customTimeUnit = customTimeUnit;
+      // Custom interval doesn't use preferred time in UI, but backend still expects it
+      // Setting a default value to match backend expectations
+      ruleData.preferredTime = '12:00';
+      // For custom frequency, preferredDays is not used in calculation but still sent for consistency
+      ruleData.preferredDays = weekDays;
+    } else {
+      // For daily and weekly, add preferred time
+      ruleData.preferredTime = preferredTime;
+      
+      // For weekly, add preferred days
+      if (ruleFrequency === 'weekly') {
+        // Ensure at least one day is selected
+        if (preferredDays.length === 0) {
+          setNotification({
+            type: 'error',
+            message: 'Please select at least one day of the week'
+          });
+          return;
+        }
+        ruleData.preferredDays = preferredDays;
+      } else {
+        // For daily, set all days as preferred
+        ruleData.preferredDays = weekDays;
+      }
+    }
     
     try {
       if (selectedRule && selectedRule._id) {
         // Update existing rule
+        console.log('Updating rule with data:', JSON.stringify(ruleData, null, 2));
         await updateAutoPostingRule(selectedRule._id, ruleData);
         setNotification({
           type: 'success',
@@ -192,6 +401,7 @@ const AutoPostingPanel: React.FC = () => {
         });
       } else {
         // Create new rule
+        console.log('Creating rule with data:', JSON.stringify(ruleData, null, 2));
         await createAutoPostingRule(ruleData);
         setNotification({
           type: 'success',
@@ -288,7 +498,7 @@ const AutoPostingPanel: React.FC = () => {
             <Settings size={16} className="mr-2" />
             {t('auto_posting.tab_rules')}
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveSubTab('logs')}
             className={`
               whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm
@@ -300,7 +510,7 @@ const AutoPostingPanel: React.FC = () => {
           >
             <Clock size={16} className="mr-2" />
             {t('auto_posting.tab_logs')}
-          </button>
+          </button> */}
         </nav>
       </div>
       
@@ -338,6 +548,11 @@ const AutoPostingPanel: React.FC = () => {
                         <h3 className="font-medium text-lg">{rule.name}</h3>
                         <p className="text-sm text-gray-600 mt-1">{t('auto_posting.content_topic')}: {rule.topic}</p>
                         <p className="text-sm text-gray-600">{t('auto_posting.target_channel')}: {getChannelName(rule.channelId)}</p>
+                        {rule.buttons && rule.buttons.length > 0 && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">{t('auto_posting.buttons') || 'Buttons'}:</span> {rule.buttons.length}
+                          </p>
+                        )}
                         <p className="text-sm text-gray-600 mt-2 ">
                           {rule.status === 'active' 
                             ? `${t('auto_posting.next_publication')}: ${formatDate(rule.nextScheduled)}`
@@ -384,19 +599,196 @@ const AutoPostingPanel: React.FC = () => {
         
         {activeSubTab === 'logs' && (
           <div>
-            <div className="flex items-center space-x-2 bg-yellow-50 border border-yellow-100 p-4 rounded-md text-yellow-800">
-              <AlertTriangle size={16} className="shrink-0" />
-              <span>{t('auto_posting.coming_soon')}</span>
-            </div>
-            <div className="mt-4 text-center py-10 border-2 border-dashed border-gray-200 rounded-lg">
-              <Clock className="h-12 w-12 mx-auto text-gray-400" />
-              <h3 className="mt-2 text-lg font-medium text-gray-900">
-                {t('auto_posting.no_logs')}
+            {/* Заголовок и фильтры */}
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-4">
+                {tWithDefault('auto_posting.history_title')}
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {t('auto_posting.logs_description')}
-              </p>
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedHistoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                      selectedHistoryFilter === 'all'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tWithDefault('auto_posting.all_posts')}
+                  </button>
+                  <button
+                    onClick={() => setSelectedHistoryFilter('success')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                      selectedHistoryFilter === 'success'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tWithDefault('auto_posting.successful_posts')}
+                  </button>
+                  <button
+                    onClick={() => setSelectedHistoryFilter('failed')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                      selectedHistoryFilter === 'failed'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tWithDefault('auto_posting.failed_posts')}
+                  </button>
+                </div>
+                
+                <form onSubmit={handleHistorySearch} className="flex">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search size={16} className="text-gray-500" />
+                    </div>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder={tWithDefault('auto_posting.search_placeholder')}
+                      className="py-2 pl-10 pr-4 border border-gray-300 rounded-md text-sm w-full md:w-64"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="ml-2 px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    {tWithDefault('common.search')}
+                  </button>
+                </form>
+              </div>
             </div>
+            
+            {historyLoading && historyPage === 1 ? (
+              <div className="text-center py-10">
+                <p>{t('common.loading') || 'Загрузка...'}</p>
+              </div>
+            ) : historyEntries.length === 0 ? (
+              <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg">
+                <Clock className="h-12 w-12 mx-auto text-gray-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900">
+                  {tWithDefault('auto_posting.no_history')}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {tWithDefault('auto_posting.history_empty_description')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {historyEntries.map(entry => (
+                  <div 
+                    key={entry._id || entry.postId} 
+                    className={`border rounded-lg p-4 hover:shadow-sm transition-shadow ${
+                      entry.status === 'success' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-base">{entry.ruleName}</h4>
+                          <span 
+                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              entry.status === 'success' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {entry.status === 'success' 
+                              ? tWithDefault('auto_posting.status_success') 
+                              : tWithDefault('auto_posting.status_failed')}
+                          </span>
+                          {entry.imageUrl && !entry.imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net') && (
+                            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                              <Image size={12} className="inline mr-1" />
+                              {t('auto_posting.has_image')}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {entry.channelName && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            <span className="font-medium">{t('auto_posting.target_channel')}:</span> {entry.channelName}
+                          </p>
+                        )}
+                        
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">{t('auto_posting.published_date')}:</span> {formatDate(entry.createdAt)}
+                        </p>
+                        
+                        {entry.buttons && entry.buttons.length > 0 && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">{t('auto_posting.buttons') || 'Buttons'}:</span> {entry.buttons.length}
+                          </p>
+                        )}
+                        
+                        {entry.message && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">{t('auto_posting.message')}:</span> {entry.message}
+                          </p>
+                        )}
+                        
+                        <div className="mt-2 bg-gray-50 p-3 rounded border border-gray-200">
+                          <div className="flex items-start gap-2">
+                            <Image size={16} className="text-gray-500 mt-1 shrink-0" />
+                            <p className="text-sm text-gray-700 line-clamp-3">{entry.contentSummary || entry.content || "No content available"}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {entry.imageUrl && (
+                        <div className="shrink-0">
+                          <img 
+                            src={entry.imageUrl} 
+                            alt={t('auto_posting.post_image')} 
+                            className="w-24 h-24 object-cover rounded-md border border-gray-200" 
+                            onError={(e) => {
+                              // Заменяем изображение на плейсхолдер при ошибке загрузки
+                              e.currentTarget.src = 'https://via.placeholder.com/96x96?text=Image+Unavailable';
+                              // Добавляем класс для затемнения плейсхолдера
+                              e.currentTarget.classList.add('opacity-60');
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {entry.postUrl ? (
+                      <div className="mt-3 text-right">
+                        <a 
+                          href={entry.postUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          {t('auto_posting.view_post')}
+                          <ExternalLink size={14} className="ml-1" />
+                        </a>
+                      </div>
+                    ) : entry.postId ? (
+                      <div className="mt-3 text-right">
+                        <span className="text-gray-500 text-sm">
+                          {t('auto_posting.post_id')}: {entry.postId}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+                
+                {hasMoreHistory && (
+                  <div className="text-center py-4">
+                    <Button
+                      variant="outline"
+                      onClick={loadMoreHistory}
+                      isLoading={historyLoading}
+                    >
+                      {t('auto_posting.load_more')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
         
@@ -530,17 +922,19 @@ const AutoPostingPanel: React.FC = () => {
                       </div>
                     )}
                     
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('auto_posting.preferred_time')}
-                      </label>
-                      <Input
-                        type="time"
-                        value={preferredTime}
-                        onChange={(e) => setPreferredTime(e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
+                    {ruleFrequency !== 'custom' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('auto_posting.preferred_time')}
+                        </label>
+                        <Input
+                          type="time"
+                          value={preferredTime}
+                          onChange={(e) => setPreferredTime(e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                     
                     {ruleFrequency === 'weekly' && (
                       <div>
@@ -610,6 +1004,84 @@ const AutoPostingPanel: React.FC = () => {
                       <p className="text-xs text-gray-500 mt-1">
                         {t('auto_posting.keywords_description') || "Keywords to focus on in generated content"}
                       </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {t('auto_posting.buttons') || "Buttons"} (optional)
+                      </label>
+                      
+                      {/* Existing buttons list */}
+                      {buttons.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-sm font-medium mb-1">{t('auto_posting.existing_buttons') || "Existing Buttons"}</div>
+                          <div className="space-y-2">
+                            {buttons.map((button, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md border border-gray-200">
+                                <div className="flex-1">
+                                  <div className="font-medium">{button.text}</div>
+                                  <div className="text-xs text-blue-600 truncate">{button.url}</div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newButtons = [...buttons];
+                                    newButtons.splice(index, 1);
+                                    setButtons(newButtons);
+                                  }}
+                                  className="text-red-500 hover:text-red-700 text-sm"
+                                >
+                                  {t('common.delete') || "Delete"}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Add new button form */}
+                      <div className="mt-2">
+                        <div className="text-sm font-medium mb-1">{t('auto_posting.add_button') || "Add Button"}</div>
+                        
+                        <div className="space-y-2">
+                          <Input
+                            value={buttonText}
+                            onChange={(e) => setButtonText(e.target.value)}
+                            placeholder={t('auto_posting.button_text') || "Button Text"}
+                            className="w-full"
+                          />
+                          
+                          <Input
+                            value={buttonUrl}
+                            onChange={(e) => setButtonUrl(e.target.value)}
+                            placeholder={t('auto_posting.button_url') || "https://example.com"}
+                            className="w-full"
+                          />
+                          
+                          <Button
+                            onClick={() => {
+                              if (buttonText.trim() && buttonUrl.trim()) {
+                                setButtons([...buttons, { text: buttonText, url: buttonUrl }]);
+                                setButtonText('');
+                                setButtonUrl('');
+                              } else {
+                                setNotification({
+                                  type: 'error',
+                                  message: t('auto_posting.button_validation') || 'Button text and URL are required'
+                                });
+                              }
+                            }}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            {t('auto_posting.add') || "Add"}
+                          </Button>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 mt-1">
+                          {t('auto_posting.buttons_description') || "Buttons will be added to each auto-posted message"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
