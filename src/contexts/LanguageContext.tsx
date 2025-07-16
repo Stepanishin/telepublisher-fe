@@ -138,7 +138,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_content_post': 'Post',
     'dashboard.tab_content_poll': 'Poll',
     'dashboard.tab_content_drafts': 'Drafts',
-    'dashboard.tab_content_autoposting': 'AutoPosting',
+    'dashboard.tab_content_autoposting': 'AutoPosting (*beta)',
 
     // Dashboard content section
     'dashboard.content_title': 'Content Creation',
@@ -877,7 +877,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.tab_content_post': 'Пост',
     'dashboard.tab_content_poll': 'Опрос',
     'dashboard.tab_content_drafts': 'Черновики',
-    'dashboard.tab_content_autoposting': 'Автопостинг',
+    'dashboard.tab_content_autoposting': 'Автопостинг (*beta)',
 
     // Dashboard content section
     'dashboard.content_title': 'Создание контента',
