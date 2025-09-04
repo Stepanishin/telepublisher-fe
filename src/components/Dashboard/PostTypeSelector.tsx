@@ -80,10 +80,10 @@ const PostTypeSelector: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between space-x-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {t('post_type.title') || 'Выберите тип поста'}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600">
             {t('post_type.subtitle') || 'Выберите формат поста, который лучше всего подходит для вашего контента'}
           </p>
         </div>
@@ -100,17 +100,17 @@ const PostTypeSelector: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Post Types Selection */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             {t('post_type.types_title') || 'Типы постов'}
           </h2>
           <div className="space-y-3">
             {postTypes.map((type) => (
               <div
                 key={type.id}
-                className={`cursor-pointer transition-all duration-200 border rounded-lg ${
+                className={`cursor-pointer transition-all duration-200 border rounded-lg bg-white ${
                   selectedType === type.id
-                    ? 'ring-2 ring-blue-500 border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800'
-                    : 'hover:shadow-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                    ? 'ring-2 ring-blue-500 border-blue-200 bg-white'
+                    : 'hover:shadow-md border-gray-200 bg-white'
                 }`}
                 onClick={() => setSelectedType(type.id)}
               >
@@ -118,16 +118,16 @@ const PostTypeSelector: React.FC = () => {
                   <div className="flex items-start space-x-4">
                     <div className={`p-2 rounded-lg ${
                       selectedType === type.id
-                        ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-gray-100 text-gray-600'
                     }`}>
                       {type.icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                      <h3 className="font-semibold text-gray-900  mb-1">
                         {type.title}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 ">
                         {type.description}
                       </p>
                     </div>
@@ -140,7 +140,7 @@ const PostTypeSelector: React.FC = () => {
 
         {/* Preview */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             {t('post_type.preview_title') || 'Предварительный просмотр'}
           </h2>
           <div className="sticky top-6">
@@ -156,7 +156,7 @@ const PostTypeSelector: React.FC = () => {
       </div>
 
       {/* Continue Button */}
-      <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex justify-end pt-6 border-t border-gray-200">
         <Button
           onClick={handleContinue}
           size="lg"

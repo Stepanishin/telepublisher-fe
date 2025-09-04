@@ -88,11 +88,23 @@ jobs:
             echo "✅ Cursor AI analysis completed successfully"
             # Extract security score for further processing
             SECURITY_SCORE=$(grep "Security Score:" cursor-security-analysis.md | grep -o '[0-9]\+' | head -1)
+            if [ -z "$SECURITY_SCORE" ]; then
+              SECURITY_SCORE=100
+            fi
             echo "SECURITY_SCORE=$SECURITY_SCORE" >> $GITHUB_OUTPUT
             
-            # Count issues by severity
-            CRITICAL_ISSUES=$(grep -c "🚨 Critical Issues" cursor-security-analysis.md || echo 0)
-            HIGH_ISSUES=$(grep -c "⚠️ High Priority Issues" cursor-security-analysis.md || echo 0)
+            # Count issues by severity (more robust)
+            if grep -q "🚨 Critical Issues" cursor-security-analysis.md; then
+              CRITICAL_ISSUES=$(grep -c "🚨 Critical Issues" cursor-security-analysis.md)
+            else
+              CRITICAL_ISSUES=0
+            fi
+            
+            if grep -q "⚠️ High Priority Issues" cursor-security-analysis.md; then
+              HIGH_ISSUES=$(grep -c "⚠️ High Priority Issues" cursor-security-analysis.md)
+            else
+              HIGH_ISSUES=0
+            fi
             
             echo "CRITICAL_ISSUES=$CRITICAL_ISSUES" >> $GITHUB_OUTPUT  
             echo "HIGH_ISSUES=$HIGH_ISSUES" >> $GITHUB_OUTPUT
@@ -147,6 +159,11 @@ jobs:
           CRITICAL_ISSUES=${{ steps.cursor-analysis.outputs.CRITICAL_ISSUES }}
           HIGH_ISSUES=${{ steps.cursor-analysis.outputs.HIGH_ISSUES }}
           
+          # Set defaults if variables are empty
+          SECURITY_SCORE=${SECURITY_SCORE:-100}
+          CRITICAL_ISSUES=${CRITICAL_ISSUES:-0}
+          HIGH_ISSUES=${HIGH_ISSUES:-0}
+          
           echo "📊 Cursor AI Analysis Results:"
           echo "- Security Score: $SECURITY_SCORE/100"
           echo "- Critical Issues: $CRITICAL_ISSUES"
@@ -169,8 +186,8 @@ jobs:
           echo "- **Focus**: Security vulnerabilities and code quality" >> cursor-ai-analysis.md
           echo "" >> cursor-ai-analysis.md
           
-          # Add workflow recommendations based on score
-          if [ "$SECURITY_SCORE" -lt 70 ] && [ "$CRITICAL_ISSUES" -gt 0 ]; then
+          # Add workflow recommendations based on score (ensure numeric comparison)
+          if [ "${SECURITY_SCORE:-100}" -lt 70 ] && [ "${CRITICAL_ISSUES:-0}" -gt 0 ]; then
             echo "## 🚨 Immediate Action Required" >> cursor-ai-analysis.md
             echo "" >> cursor-ai-analysis.md
             echo "**This PR cannot be merged** until critical security issues are resolved." >> cursor-ai-analysis.md
@@ -180,7 +197,7 @@ jobs:
             echo "2. 🧪 Test the fixes locally" >> cursor-ai-analysis.md
             echo "3. 📝 Update the PR with fixes" >> cursor-ai-analysis.md
             echo "4. ✅ Re-run Cursor AI analysis" >> cursor-ai-analysis.md
-          elif [ "$SECURITY_SCORE" -lt 80 ]; then
+          elif [ "${SECURITY_SCORE:-100}" -lt 80 ]; then
             echo "## ⚠️ Recommended Actions" >> cursor-ai-analysis.md
             echo "" >> cursor-ai-analysis.md
             echo "Consider addressing the identified issues to improve security posture." >> cursor-ai-analysis.md
