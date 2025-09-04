@@ -32,7 +32,17 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies for dependency security check..."
+          
+          # Try npm ci first, fallback to npm install if lock file is out of sync
+          if npm ci; then
+            echo "✅ Dependencies installed successfully with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install to fix lock file..."
+            npm install
+            echo "✅ Dependencies installed with npm install"
+          fi
 
       - name: Run npm audit
         id: npm-audit

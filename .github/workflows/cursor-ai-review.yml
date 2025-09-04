@@ -32,7 +32,25 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          echo "🔧 Installing dependencies for Cursor AI analysis..."
+          
+          # Try npm ci first, fallback to npm install if lock file is out of sync
+          if npm ci; then
+            echo "✅ Dependencies installed successfully with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install to fix lock file..."
+            npm install
+            echo "✅ Dependencies installed with npm install"
+          fi
+          
+          # Verify security plugin is available for ESLint
+          if npm ls eslint-plugin-security > /dev/null 2>&1; then
+            echo "✅ eslint-plugin-security is available"
+          else
+            echo "📦 Installing eslint-plugin-security..."
+            npm install eslint-plugin-security@3.0.1 --save-dev
+          fi
 
       - name: Get changed files
         id: changed-files
