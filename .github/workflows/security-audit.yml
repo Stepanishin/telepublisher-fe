@@ -111,21 +111,30 @@ jobs:
           # Check package.json for suspicious packages
           if [ -f package.json ]; then
             # Look for packages with suspicious characteristics
-            node -e "
-              const pkg = require('./package.json');
+            node --input-type=module -e "
+              import fs from 'fs';
+              const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
               const deps = {...(pkg.dependencies || {}), ...(pkg.devDependencies || {})};
               const suspicious = [];
+              const commonPackages = ['react', 'react-dom', 'axios', 'lodash', 'express', 'typescript'];
               
               Object.keys(deps).forEach(dep => {
                 // Check for typosquatting patterns
                 if (dep.includes('_') || dep.length < 3) {
                   suspicious.push(\`Suspicious package name: \${dep}\`);
                 }
+                
+                // Check for potential typosquatting of common packages
+                commonPackages.forEach(common => {
+                  if (dep !== common && dep.includes(common) && Math.abs(dep.length - common.length) <= 2) {
+                    suspicious.push(\`Potential typosquatting of \${common}: \${dep}\`);
+                  }
+                });
               });
               
               if (suspicious.length > 0) {
                 console.log('SUSPICIOUS_PACKAGES=true');
-                require('fs').writeFileSync('suspicious-packages.txt', suspicious.join('\\n'));
+                fs.writeFileSync('suspicious-packages.txt', suspicious.join('\\n'));
               } else {
                 console.log('SUSPICIOUS_PACKAGES=false');
               }

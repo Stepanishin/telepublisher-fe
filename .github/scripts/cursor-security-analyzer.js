@@ -5,9 +5,13 @@
  * Интегрируется с Cursor AI для анализа безопасности кода
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class CursorSecurityAnalyzer {
   constructor() {
@@ -325,7 +329,7 @@ class CursorSecurityAnalyzer {
 }
 
 // Запуск анализа
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const analyzer = new CursorSecurityAnalyzer();
   analyzer.analyze().catch(error => {
     console.error('Error during analysis:', error);
@@ -333,4 +337,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = CursorSecurityAnalyzer;
+export default CursorSecurityAnalyzer;

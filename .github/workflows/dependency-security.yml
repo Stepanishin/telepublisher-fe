@@ -120,8 +120,9 @@ jobs:
           echo "Checking package licenses..."
           
           # Create a simple license checker
-          node -e "
-            const pkg = require('./package.json');
+          node --input-type=module -e "
+            import fs from 'fs';
+            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
             const deps = {...(pkg.dependencies || {}), ...(pkg.devDependencies || {})};
             
             console.log('Analyzing licenses for', Object.keys(deps).length, 'packages...');
@@ -141,8 +142,9 @@ jobs:
           echo "Checking for known malicious packages..."
           
           # Basic check for suspicious package names (typosquatting)
-          node -e "
-            const pkg = require('./package.json');
+          node --input-type=module -e "
+            import fs from 'fs';
+            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
             const deps = {...(pkg.dependencies || {}), ...(pkg.devDependencies || {})};
             
             const suspicious = [];
@@ -169,7 +171,7 @@ jobs:
             
             if (suspicious.length > 0) {
               console.log('SUSPICIOUS_PACKAGES=true');
-              require('fs').writeFileSync('suspicious-packages.txt', suspicious.join('\\n'));
+              fs.writeFileSync('suspicious-packages.txt', suspicious.join('\\n'));
             } else {
               console.log('SUSPICIOUS_PACKAGES=false');
             }
