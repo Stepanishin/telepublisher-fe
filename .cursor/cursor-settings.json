@@ -1,0 +1,52 @@
+{
+  "cursor.general.modelSelection": {
+    "defaultModel": "claude-3-5-sonnet-20241022",
+    "securityAnalysis": "claude-3-5-sonnet-20241022"
+  },
+  "cursor.ai.securityFocus": true,
+  "cursor.ai.codeReview": {
+    "enabled": true,
+    "model": "claude-3-5-sonnet-20241022",
+    "focusAreas": [
+      "security",
+      "performance", 
+      "best-practices",
+      "type-safety"
+    ]
+  },
+  "cursor.security": {
+    "enabled": true,
+    "strictMode": true,
+    "scanPatterns": [
+      "*.js",
+      "*.jsx", 
+      "*.ts",
+      "*.tsx"
+    ],
+    "excludePatterns": [
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      "*.test.*",
+      "*.spec.*"
+    ],
+    "rules": {
+      "detectHardcodedSecrets": true,
+      "detectXSSVulnerabilities": true,
+      "detectCodeInjection": true,
+      "detectInsecureRequests": true,
+      "enforceHTTPS": true,
+      "validateInputSanitization": true
+    }
+  },
+  "cursor.typescript": {
+    "strictMode": true,
+    "enforceTypes": true,
+    "securityTypeChecking": true
+  },
+  "cursor.react": {
+    "securityPatterns": true,
+    "validateProps": true,
+    "checkDangerousHTML": true
+  }
+}

@@ -1,0 +1,120 @@
+пше # Cursor AI Security Analysis Rules
+# Настройки для автоматического security audit с Claude
+
+## Model Preference
+Use Claude (Anthropic) model for all security-related analysis and code reviews.
+
+## Security Analysis Focus
+When analyzing code changes in pull requests, focus on:
+
+### 🔒 Security Vulnerabilities
+- XSS (Cross-Site Scripting) vulnerabilities
+- SQL injection patterns
+- Code injection risks (eval, Function constructor)
+- Hardcoded secrets, API keys, passwords
+- Insecure HTTP requests (should use HTTPS)
+- Unsafe regular expressions
+- Path traversal vulnerabilities
+- Object injection risks
+
+### 🛡️ React/TypeScript Security
+- Props validation and sanitization
+- dangerouslySetInnerHTML usage
+- Direct DOM manipulation security
+- Component security patterns
+- Type safety for security-critical code
+- Input validation patterns
+
+### 📦 Dependencies & Imports
+- Suspicious package imports
+- Outdated vulnerable dependencies
+- Unused or unnecessary dependencies
+- Import path traversal risks
+
+### 🔐 Authentication & Authorization
+- Authentication bypass patterns
+- Authorization logic flaws
+- Session management issues
+- Token handling security
+
+### 📝 Code Quality & Security
+- Console.log statements in production
+- TODO/FIXME comments with security implications
+- Error handling that leaks sensitive information
+- Debugging code left in production
+
+## Analysis Format
+When providing security analysis, use this format:
+
+```
+🔒 SECURITY ANALYSIS REPORT
+
+## Security Score: [0-100]/100
+
+## Critical Issues (🚨)
+[List any critical security vulnerabilities]
+
+## High Priority Issues (⚠️)
+[List high priority security concerns]
+
+## Medium Priority Issues (💡)
+[List medium priority improvements]
+
+## Recommendations (✅)
+[List specific actionable recommendations]
+
+## Code Quality Notes (📝)
+[List code quality improvements related to security]
+```
+
+## Security Scoring Criteria
+- 100-90: Excellent security, no major concerns
+- 89-70: Good security with minor issues to address
+- 69-50: Fair security with several concerns
+- 49-30: Poor security with major issues
+- 29-0: Critical security problems requiring immediate attention
+
+## Analysis Triggers
+Perform comprehensive security analysis when:
+- Pull request contains changes to authentication/authorization code
+- New dependencies are added
+- API endpoints are modified
+- User input handling is changed
+- File upload/download functionality is modified
+- Database queries are added/modified
+- External API integrations are added
+
+## Code Patterns to Flag
+Always flag these patterns as security concerns:
+- `eval(`, `Function(`, `setTimeout(string`, `setInterval(string`
+- `innerHTML`, `outerHTML` without proper sanitization
+- `document.write`, `document.writeln`
+- Hardcoded passwords, API keys, tokens
+- `http://` in production code
+- Unsafe regex patterns
+- Direct file system access in client code
+- Unvalidated user inputs
+
+## Security Best Practices to Enforce
+- Always use HTTPS for external requests
+- Validate and sanitize all user inputs
+- Use Content Security Policy (CSP)
+- Implement proper error handling
+- Use TypeScript strict mode
+- Keep dependencies updated
+- Never commit secrets to version control
+- Use environment variables for configuration
+
+## Integration with GitHub Actions
+This .cursorrules file works together with GitHub Actions workflows to provide:
+- Automated security scanning on PR creation
+- Detailed security reports in PR comments
+- Blocking of PRs with critical security issues
+- Continuous security monitoring
+
+## Team Guidelines
+- Address all Critical (🚨) issues before merging
+- Review and consider all High Priority (⚠️) issues
+- Document any accepted security risks
+- Regular security training and awareness
+- Keep security tools and rules updated

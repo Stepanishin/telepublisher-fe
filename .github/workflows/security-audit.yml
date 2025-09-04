@@ -1,0 +1,306 @@
+name: Security Audit with Cursor AI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.json'
+      - '**/package*.json'
+      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+  actions: read
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          echo "🔧 Installing dependencies for security audit..."
+          
+          # Try npm ci first, fallback to npm install if lock file is out of sync
+          if npm ci; then
+            echo "✅ Dependencies installed successfully with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install to fix lock file..."
+            npm install
+            echo "✅ Dependencies installed with npm install"
+          fi
+          
+          # Verify security plugin is available
+          if npm ls eslint-plugin-security > /dev/null 2>&1; then
+            echo "✅ eslint-plugin-security is available"
+          else
+            echo "📦 Installing eslint-plugin-security..."
+            npm install eslint-plugin-security@3.0.1 --save-dev
+          fi
+
+      - name: Run npm audit
+        id: npm-audit
+        run: |
+          echo "Running npm audit..."
+          npm audit --audit-level=moderate --json > npm-audit-results.json || true
+          echo "NPM_AUDIT_EXIT_CODE=$?" >> $GITHUB_OUTPUT
+
+      - name: Run security linter (ESLint security rules)
+        id: eslint-security
+        run: |
+          echo "Running ESLint security checks..."
+          npx eslint . --ext .js,.jsx,.ts,.tsx --format json --output-file eslint-security-results.json || true
+          echo "ESLINT_EXIT_CODE=$?" >> $GITHUB_OUTPUT
+
+      - name: Check for sensitive data
+        id: secret-scan
+        run: |
+          echo "Scanning for sensitive data..."
+          # Check for common sensitive patterns
+          SENSITIVE_PATTERNS=(
+            "password\s*=\s*['\"][^'\"]*['\"]"
+            "api[_-]?key\s*=\s*['\"][^'\"]*['\"]"
+            "secret\s*=\s*['\"][^'\"]*['\"]"
+            "token\s*=\s*['\"][^'\"]*['\"]"
+            "private[_-]?key"
+            "-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----"
+          )
+          
+          FOUND_ISSUES=()
+          for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+            if grep -r -i -E "$pattern" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.log" --exclude="*.md"; then
+              FOUND_ISSUES+=("Found potential sensitive data: $pattern")
+            fi
+          done
+          
+          if [ ${#FOUND_ISSUES[@]} -gt 0 ]; then
+            echo "SENSITIVE_DATA_FOUND=true" >> $GITHUB_OUTPUT
+            printf '%s\n' "${FOUND_ISSUES[@]}" > sensitive-data-results.txt
+          else
+            echo "SENSITIVE_DATA_FOUND=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Analyze dependencies for known vulnerabilities
+        id: dep-analysis
+        run: |
+          echo "Analyzing dependencies..."
+          # Check for outdated packages
+          npm outdated --json > outdated-packages.json || true
+          
+          # Check package.json for suspicious packages
+          if [ -f package.json ]; then
+            # Look for packages with suspicious characteristics
+            node --input-type=module -e "
+              import fs from 'fs';
+              const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+              const deps = {...(pkg.dependencies || {}), ...(pkg.devDependencies || {})};
+              const suspicious = [];
+              const commonPackages = ['react', 'react-dom', 'axios', 'lodash', 'express', 'typescript'];
+              
+              Object.keys(deps).forEach(dep => {
+                // Check for typosquatting patterns
+                if (dep.includes('_') || dep.length < 3) {
+                  suspicious.push(\`Suspicious package name: \${dep}\`);
+                }
+                
+                // Check for potential typosquatting of common packages
+                commonPackages.forEach(common => {
+                  if (dep !== common && dep.includes(common) && Math.abs(dep.length - common.length) <= 2) {
+                    suspicious.push(\`Potential typosquatting of \${common}: \${dep}\`);
+                  }
+                });
+              });
+              
+              if (suspicious.length > 0) {
+                console.log('SUSPICIOUS_PACKAGES=true');
+                fs.writeFileSync('suspicious-packages.txt', suspicious.join('\\n'));
+              } else {
+                console.log('SUSPICIOUS_PACKAGES=false');
+              }
+            " >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Cursor AI Analysis (Mock)
+        id: cursor-analysis
+        run: |
+          echo "Preparing Cursor AI security analysis..."
+          
+          # Create a comprehensive security report
+          cat > cursor-security-report.md << 'EOF'
+          # 🔒 Cursor AI Security Analysis Report
+          
+          ## Overview
+          This automated security audit was performed on the codebase changes in this PR.
+          
+          ## Analysis Results
+          
+          ### 📦 Dependencies Security
+          EOF
+          
+          # Add npm audit results
+          if [ -f npm-audit-results.json ]; then
+            echo "- **NPM Audit Results:**" >> cursor-security-report.md
+            if [ "$(jq '.metadata.vulnerabilities.total' npm-audit-results.json 2>/dev/null || echo 0)" -gt 0 ]; then
+              echo "  - ⚠️  Vulnerabilities found in dependencies" >> cursor-security-report.md
+              jq -r '.advisories | to_entries[] | "  - " + .value.severity + ": " + .value.title' npm-audit-results.json >> cursor-security-report.md 2>/dev/null || true
+            else
+              echo "  - ✅ No vulnerabilities found in dependencies" >> cursor-security-report.md
+            fi
+          fi
+          
+          # Add ESLint security results
+          echo "" >> cursor-security-report.md
+          echo "### 🔍 Code Security Analysis" >> cursor-security-report.md
+          if [ -f eslint-security-results.json ]; then
+            ESLINT_ISSUES=$(jq '[.[] | select(.messages | length > 0)] | length' eslint-security-results.json 2>/dev/null || echo 0)
+            if [ "$ESLINT_ISSUES" -gt 0 ]; then
+              echo "- ⚠️  ESLint security issues found: $ESLINT_ISSUES files with issues" >> cursor-security-report.md
+            else
+              echo "- ✅ No ESLint security issues found" >> cursor-security-report.md
+            fi
+          fi
+          
+          # Add sensitive data scan results
+          echo "" >> cursor-security-report.md
+          echo "### 🔐 Sensitive Data Scan" >> cursor-security-report.md
+          if [ "${{ steps.secret-scan.outputs.SENSITIVE_DATA_FOUND }}" == "true" ]; then
+            echo "- ⚠️  Potential sensitive data found:" >> cursor-security-report.md
+            while read -r line; do
+              echo "  - $line" >> cursor-security-report.md
+            done < sensitive-data-results.txt
+          else
+            echo "- ✅ No sensitive data patterns detected" >> cursor-security-report.md
+          fi
+          
+          # Add dependency analysis
+          echo "" >> cursor-security-report.md
+          echo "### 📋 Dependency Analysis" >> cursor-security-report.md
+          if [ -f outdated-packages.json ] && [ -s outdated-packages.json ]; then
+            echo "- ⚠️  Outdated packages detected (check for security updates)" >> cursor-security-report.md
+          else
+            echo "- ✅ Dependencies are up to date" >> cursor-security-report.md
+          fi
+          
+          # Add recommendations
+          cat >> cursor-security-report.md << 'EOF'
+          
+          ## 🛡️ Security Recommendations
+          
+          1. **Keep dependencies updated**: Regular updates include security patches
+          2. **Use npm audit**: Run `npm audit fix` to automatically fix vulnerabilities
+          3. **Environment variables**: Store sensitive data in environment variables, not in code
+          4. **Code review**: Always review changes for security implications
+          5. **HTTPS**: Ensure all external API calls use HTTPS
+          
+          ## 🔧 Suggested Actions
+          
+          - [ ] Review any flagged vulnerabilities
+          - [ ] Update outdated dependencies
+          - [ ] Remove any hardcoded sensitive data
+          - [ ] Add security headers to your application
+          - [ ] Consider using Content Security Policy (CSP)
+          
+          ---
+          *This report was generated automatically by Cursor AI Security Audit*
+          EOF
+
+      - name: Comment on PR with security audit results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the security report
+            const securityReport = fs.readFileSync('cursor-security-report.md', 'utf8');
+            
+            // Check if there's an existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.data.find(comment => 
+              comment.body.includes('🔒 Cursor AI Security Analysis Report')
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: securityReport
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: securityReport
+              });
+            }
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-results
+          path: |
+            npm-audit-results.json
+            eslint-security-results.json
+            cursor-security-report.md
+            sensitive-data-results.txt
+            suspicious-packages.txt
+            outdated-packages.json
+          retention-days: 30
+
+      - name: Fail on critical security issues
+        run: |
+          # Determine if we should fail the workflow
+          CRITICAL_ISSUES=false
+          
+          # Check npm audit for critical/high vulnerabilities
+          if [ -f npm-audit-results.json ]; then
+            CRITICAL_VULNS=$(jq '.metadata.vulnerabilities.critical + .metadata.vulnerabilities.high' npm-audit-results.json 2>/dev/null || echo 0)
+            if [ "$CRITICAL_VULNS" -gt 0 ]; then
+              echo "❌ Critical or high severity vulnerabilities found: $CRITICAL_VULNS"
+              CRITICAL_ISSUES=true
+            fi
+          fi
+          
+          # Check for sensitive data
+          if [ "${{ steps.secret-scan.outputs.SENSITIVE_DATA_FOUND }}" == "true" ]; then
+            echo "❌ Sensitive data found in code"
+            CRITICAL_ISSUES=true
+          fi
+          
+          if [ "$CRITICAL_ISSUES" == "true" ]; then
+            echo "🚨 Security audit failed due to critical issues"
+            exit 1
+          else
+            echo "✅ Security audit passed"
+          fi

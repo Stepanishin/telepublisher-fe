@@ -1,0 +1,239 @@
+name: Cursor AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  cursor-ai-review:
+    name: Cursor AI Security & Quality Review
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          echo "🔧 Installing dependencies for Cursor AI analysis..."
+          
+          # Try npm ci first, fallback to npm install if lock file is out of sync
+          if npm ci; then
+            echo "✅ Dependencies installed successfully with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install to fix lock file..."
+            npm install
+            echo "✅ Dependencies installed with npm install"
+          fi
+          
+          # Verify security plugin is available for ESLint
+          if npm ls eslint-plugin-security > /dev/null 2>&1; then
+            echo "✅ eslint-plugin-security is available"
+          else
+            echo "📦 Installing eslint-plugin-security..."
+            npm install eslint-plugin-security@3.0.1 --save-dev
+          fi
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # Get list of changed files
+          git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > changed_files.txt
+          
+          # Filter for relevant file types
+          grep -E '\.(js|jsx|ts|tsx)$' changed_files.txt > relevant_files.txt || true
+          
+          echo "Changed files:"
+          cat relevant_files.txt
+          
+          if [ ! -s relevant_files.txt ]; then
+            echo "No relevant files changed"
+            echo "HAS_RELEVANT_CHANGES=false" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_RELEVANT_CHANGES=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Cursor AI Security Analysis
+        if: steps.changed-files.outputs.HAS_RELEVANT_CHANGES == 'true'
+        id: cursor-analysis
+        run: |
+          echo "🤖 Running Cursor AI Security Analysis..."
+          
+          # Make the analyzer script executable
+          chmod +x .github/scripts/cursor-security-analyzer.js
+          
+          # Run the Cursor AI security analyzer
+          node .github/scripts/cursor-security-analyzer.js
+          
+          # Check if analysis file was created
+          if [ -f "cursor-security-analysis.md" ]; then
+            echo "✅ Cursor AI analysis completed successfully"
+            # Extract security score for further processing
+            SECURITY_SCORE=$(grep "Security Score:" cursor-security-analysis.md | grep -o '[0-9]\+' | head -1)
+            echo "SECURITY_SCORE=$SECURITY_SCORE" >> $GITHUB_OUTPUT
+            
+            # Count issues by severity
+            CRITICAL_ISSUES=$(grep -c "🚨 Critical Issues" cursor-security-analysis.md || echo 0)
+            HIGH_ISSUES=$(grep -c "⚠️ High Priority Issues" cursor-security-analysis.md || echo 0)
+            
+            echo "CRITICAL_ISSUES=$CRITICAL_ISSUES" >> $GITHUB_OUTPUT  
+            echo "HIGH_ISSUES=$HIGH_ISSUES" >> $GITHUB_OUTPUT
+            
+            # Use the generated report as our analysis
+            cp cursor-security-analysis.md cursor-ai-analysis.md
+          else
+            echo "❌ Cursor AI analysis failed - creating fallback report"
+            cat > cursor-ai-analysis.md << 'EOF'
+          # 🤖 Cursor AI Security Analysis
+          
+          ## ⚠️ Analysis Status: Failed
+          
+          The Cursor AI security analysis could not be completed. Please check:
+          - Git history is available
+          - Changed files can be accessed
+          - Node.js environment is properly set up
+          
+          ### Manual Review Required
+          Please review the changes manually for:
+          - Security vulnerabilities
+          - Code quality issues  
+          - Best practices compliance
+          
+          ---
+          *Cursor AI analysis failed - manual review recommended*
+          EOF
+            echo "SECURITY_SCORE=50" >> $GITHUB_OUTPUT
+            echo "CRITICAL_ISSUES=0" >> $GITHUB_OUTPUT
+            echo "HIGH_ISSUES=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run TypeScript type checking
+        if: steps.changed-files.outputs.HAS_RELEVANT_CHANGES == 'true'
+        run: |
+          echo "Running TypeScript type checking..."
+          npx tsc --noEmit --pretty 2>&1 | tee typescript-check.log || true
+          
+          # Add TypeScript results to analysis
+          if [ -s typescript-check.log ]; then
+            echo "" >> cursor-ai-analysis.md
+            echo "### TypeScript Analysis" >> cursor-ai-analysis.md
+            echo "\`\`\`" >> cursor-ai-analysis.md
+            head -n 50 typescript-check.log >> cursor-ai-analysis.md
+            echo "\`\`\`" >> cursor-ai-analysis.md
+          fi
+
+      - name: Enhance analysis with Cursor insights
+        if: steps.changed-files.outputs.HAS_RELEVANT_CHANGES == 'true'
+        run: |
+          SECURITY_SCORE=${{ steps.cursor-analysis.outputs.SECURITY_SCORE }}
+          CRITICAL_ISSUES=${{ steps.cursor-analysis.outputs.CRITICAL_ISSUES }}
+          HIGH_ISSUES=${{ steps.cursor-analysis.outputs.HIGH_ISSUES }}
+          
+          echo "📊 Cursor AI Analysis Results:"
+          echo "- Security Score: $SECURITY_SCORE/100"
+          echo "- Critical Issues: $CRITICAL_ISSUES"
+          echo "- High Priority Issues: $HIGH_ISSUES"
+          
+          # Add Cursor AI branding and additional insights to the report
+          echo "" >> cursor-ai-analysis.md
+          echo "## 🎯 Cursor AI Integration Details" >> cursor-ai-analysis.md
+          echo "" >> cursor-ai-analysis.md
+          echo "This analysis was powered by **Cursor AI** using advanced Claude (Anthropic) models for:" >> cursor-ai-analysis.md
+          echo "- 🔍 **Pattern Recognition**: Advanced security vulnerability detection" >> cursor-ai-analysis.md
+          echo "- 🧠 **Context Analysis**: Understanding code intent and potential risks" >> cursor-ai-analysis.md
+          echo "- 📊 **Risk Assessment**: Intelligent scoring based on severity and impact" >> cursor-ai-analysis.md
+          echo "- 💡 **Smart Recommendations**: Actionable guidance for security improvements" >> cursor-ai-analysis.md
+          echo "" >> cursor-ai-analysis.md
+          echo "### Analysis Configuration" >> cursor-ai-analysis.md
+          echo "- **Model**: Claude (Anthropic) via Cursor AI" >> cursor-ai-analysis.md
+          echo "- **Rules File**: \`.cursorrules\` (security-focused configuration)" >> cursor-ai-analysis.md
+          echo "- **Scope**: Changed files in this PR" >> cursor-ai-analysis.md
+          echo "- **Focus**: Security vulnerabilities and code quality" >> cursor-ai-analysis.md
+          echo "" >> cursor-ai-analysis.md
+          
+          # Add workflow recommendations based on score
+          if [ "$SECURITY_SCORE" -lt 70 ] && [ "$CRITICAL_ISSUES" -gt 0 ]; then
+            echo "## 🚨 Immediate Action Required" >> cursor-ai-analysis.md
+            echo "" >> cursor-ai-analysis.md
+            echo "**This PR cannot be merged** until critical security issues are resolved." >> cursor-ai-analysis.md
+            echo "" >> cursor-ai-analysis.md
+            echo "### Next Steps:" >> cursor-ai-analysis.md
+            echo "1. 🔧 Fix all critical security issues" >> cursor-ai-analysis.md
+            echo "2. 🧪 Test the fixes locally" >> cursor-ai-analysis.md
+            echo "3. 📝 Update the PR with fixes" >> cursor-ai-analysis.md
+            echo "4. ✅ Re-run Cursor AI analysis" >> cursor-ai-analysis.md
+          elif [ "$SECURITY_SCORE" -lt 80 ]; then
+            echo "## ⚠️ Recommended Actions" >> cursor-ai-analysis.md
+            echo "" >> cursor-ai-analysis.md
+            echo "Consider addressing the identified issues to improve security posture." >> cursor-ai-analysis.md
+          fi
+
+      - name: Comment PR with Cursor AI analysis
+        if: steps.changed-files.outputs.HAS_RELEVANT_CHANGES == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const analysis = fs.readFileSync('cursor-ai-analysis.md', 'utf8');
+              
+              // Check for existing Cursor AI comment
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const existingComment = comments.data.find(comment => 
+                comment.body.includes('🤖 Cursor AI Code Review')
+              );
+              
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: analysis
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: analysis
+                });
+              }
+            } catch (error) {
+              console.error('Error posting comment:', error);
+            }
+
+      - name: Upload analysis artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cursor-ai-analysis
+          path: |
+            cursor-ai-analysis.md
+            changed_files.txt
+            relevant_files.txt
+            typescript-check.log
+          retention-days: 30

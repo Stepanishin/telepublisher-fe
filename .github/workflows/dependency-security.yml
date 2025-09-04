@@ -1,0 +1,268 @@
+name: Dependency Security Check
+
+on:
+  pull_request:
+    paths:
+      - 'package*.json'
+      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  dependency-security:
+    name: Dependency Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          echo "🔧 Installing dependencies for dependency security check..."
+          
+          # Try npm ci first, fallback to npm install if lock file is out of sync
+          if npm ci; then
+            echo "✅ Dependencies installed successfully with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install to fix lock file..."
+            npm install
+            echo "✅ Dependencies installed with npm install"
+          fi
+
+      - name: Run npm audit
+        id: npm-audit
+        run: |
+          echo "Running comprehensive npm audit..."
+          
+          # Run audit and capture results
+          npm audit --audit-level=info --json > npm-audit-full.json || true
+          npm audit --audit-level=moderate --json > npm-audit-moderate.json || true
+          npm audit --audit-level=high --json > npm-audit-high.json || true
+          
+          # Check for different severity levels
+          TOTAL_VULNS=$(jq '.metadata.vulnerabilities.total' npm-audit-full.json 2>/dev/null || echo 0)
+          HIGH_VULNS=$(jq '.metadata.vulnerabilities.high' npm-audit-high.json 2>/dev/null || echo 0)
+          CRITICAL_VULNS=$(jq '.metadata.vulnerabilities.critical' npm-audit-high.json 2>/dev/null || echo 0)
+          
+          echo "TOTAL_VULNERABILITIES=$TOTAL_VULNS" >> $GITHUB_OUTPUT
+          echo "HIGH_VULNERABILITIES=$HIGH_VULNS" >> $GITHUB_OUTPUT
+          echo "CRITICAL_VULNERABILITIES=$CRITICAL_VULNS" >> $GITHUB_OUTPUT
+          
+          # Generate human-readable report
+          echo "# 🔍 Dependency Security Report" > dependency-report.md
+          echo "" >> dependency-report.md
+          echo "## Summary" >> dependency-report.md
+          echo "- **Total vulnerabilities found:** $TOTAL_VULNS" >> dependency-report.md
+          echo "- **High severity:** $HIGH_VULNS" >> dependency-report.md
+          echo "- **Critical severity:** $CRITICAL_VULNS" >> dependency-report.md
+          echo "" >> dependency-report.md
+          
+          if [ $TOTAL_VULNS -gt 0 ]; then
+            echo "## Vulnerability Details" >> dependency-report.md
+            echo "" >> dependency-report.md
+            
+            # Extract detailed vulnerability info
+            if [ -f npm-audit-moderate.json ] && [ -s npm-audit-moderate.json ]; then
+              jq -r '.advisories | to_entries[] | "### " + .value.title + "\n- **Severity:** " + .value.severity + "\n- **Package:** " + .value.module_name + "\n- **Vulnerable versions:** " + .value.vulnerable_versions + "\n- **Patched in:** " + .value.patched_versions + "\n- **Overview:** " + .value.overview + "\n"' npm-audit-moderate.json >> dependency-report.md 2>/dev/null || true
+            fi
+            
+            echo "## Recommended Actions" >> dependency-report.md
+            echo "" >> dependency-report.md
+            echo "1. Run \`npm audit fix\` to automatically fix vulnerabilities" >> dependency-report.md
+            echo "2. For critical issues that can't be auto-fixed, consider:" >> dependency-report.md
+            echo "   - Updating to a newer version of the package" >> dependency-report.md
+            echo "   - Finding alternative packages" >> dependency-report.md
+            echo "   - Adding the vulnerability to \`.npmrc\` with a justification if no fix is available" >> dependency-report.md
+          else
+            echo "✅ **No vulnerabilities found!** Your dependencies are secure." >> dependency-report.md
+          fi
+
+      - name: Check for outdated packages
+        id: outdated-check
+        run: |
+          echo "Checking for outdated packages..."
+          npm outdated --json > outdated-packages.json || true
+          
+          OUTDATED_COUNT=$(jq 'keys | length' outdated-packages.json 2>/dev/null || echo 0)
+          echo "OUTDATED_PACKAGES=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ $OUTDATED_COUNT -gt 0 ]; then
+            echo "" >> dependency-report.md
+            echo "## 📦 Outdated Packages ($OUTDATED_COUNT found)" >> dependency-report.md
+            echo "" >> dependency-report.md
+            echo "The following packages have newer versions available:" >> dependency-report.md
+            echo "" >> dependency-report.md
+            
+            jq -r 'to_entries[] | "- **" + .key + "**: " + .value.current + " → " + .value.latest + " (wanted: " + .value.wanted + ")"' outdated-packages.json >> dependency-report.md 2>/dev/null || true
+            
+            echo "" >> dependency-report.md
+            echo "💡 Consider updating packages regularly to get security patches and bug fixes." >> dependency-report.md
+          fi
+
+      - name: License compliance check
+        id: license-check
+        run: |
+          echo "Checking package licenses..."
+          
+          # Create a simple license checker
+          node --input-type=module -e "
+            import fs from 'fs';
+            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            const deps = {...(pkg.dependencies || {}), ...(pkg.devDependencies || {})};
+            
+            console.log('Analyzing licenses for', Object.keys(deps).length, 'packages...');
+            
+            // This is a basic check - in production, you'd want to use a proper license checker
+            const problematicLicenses = ['GPL-3.0', 'AGPL-3.0', 'LGPL-3.0'];
+            
+            console.log('License check completed. For detailed license analysis, consider using tools like:');
+            console.log('- license-checker');
+            console.log('- license-compliance');
+            console.log('- fossa');
+          " || true
+
+      - name: Check for known malicious packages
+        id: malware-check
+        run: |
+          echo "Checking for known malicious packages..."
+          
+          # Basic check for suspicious package names (typosquatting)
+          node --input-type=module -e "
+            import fs from 'fs';
+            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            const deps = {...(pkg.dependencies || {}), ...(pkg.devDependencies || {})};
+            
+            const suspicious = [];
+            const commonPackages = ['react', 'react-dom', 'axios', 'lodash', 'express', 'typescript'];
+            
+            Object.keys(deps).forEach(dep => {
+              // Check for very short names (potential typosquatting)
+              if (dep.length < 3) {
+                suspicious.push(\`Very short package name: \${dep}\`);
+              }
+              
+              // Check for packages with underscores (less common in npm)
+              if (dep.includes('_') && !dep.startsWith('@')) {
+                suspicious.push(\`Package with underscore: \${dep}\`);
+              }
+              
+              // Check for potential typosquatting of common packages
+              commonPackages.forEach(common => {
+                if (dep !== common && dep.includes(common) && Math.abs(dep.length - common.length) <= 2) {
+                  suspicious.push(\`Potential typosquatting of \${common}: \${dep}\`);
+                }
+              });
+            });
+            
+            if (suspicious.length > 0) {
+              console.log('SUSPICIOUS_PACKAGES=true');
+              fs.writeFileSync('suspicious-packages.txt', suspicious.join('\\n'));
+            } else {
+              console.log('SUSPICIOUS_PACKAGES=false');
+            }
+          " >> $GITHUB_OUTPUT
+
+      - name: Generate security recommendations
+        run: |
+          echo "" >> dependency-report.md
+          echo "## 🛡️ Security Best Practices" >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "### Dependency Management" >> dependency-report.md
+          echo "- 🔄 **Regular Updates**: Update dependencies monthly or when security advisories are published" >> dependency-report.md
+          echo "- 🔒 **Lock File**: Always commit \`package-lock.json\` to ensure reproducible builds" >> dependency-report.md
+          echo "- 🚫 **Minimize Dependencies**: Only add dependencies you actually need" >> dependency-report.md
+          echo "- 📋 **Review Before Adding**: Research packages before adding them to your project" >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "### Security Tools" >> dependency-report.md
+          echo "- \`npm audit\`: Regular security audits" >> dependency-report.md
+          echo "- \`npm outdated\`: Check for outdated packages" >> dependency-report.md
+          echo "- \`npx audit-ci\`: Fail CI on vulnerabilities" >> dependency-report.md
+          echo "- \`dependabot\`: Automated dependency updates" >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "### Development Security" >> dependency-report.md
+          echo "- 🔧 Use \`npm ci\` in production instead of \`npm install\`" >> dependency-report.md
+          echo "- 🚫 Avoid running \`npm audit fix\` blindly - review changes first" >> dependency-report.md
+          echo "- 📝 Document any accepted security risks with justification" >> dependency-report.md
+          echo "" >> dependency-report.md
+          echo "---" >> dependency-report.md
+          echo "*Report generated on $(date)*" >> dependency-report.md
+
+      - name: Upload security scan results to GitHub Security
+        if: steps.npm-audit.outputs.TOTAL_VULNERABILITIES > 0
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: npm-audit-sarif.json
+        continue-on-error: true
+
+      - name: Comment on PR with dependency analysis
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const report = fs.readFileSync('dependency-report.md', 'utf8');
+              
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const existingComment = comments.data.find(comment => 
+                comment.body.includes('🔍 Dependency Security Report')
+              );
+              
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: report
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: report
+                });
+              }
+            } catch (error) {
+              console.error('Error posting dependency report:', error);
+            }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-security-results
+          path: |
+            dependency-report.md
+            npm-audit-*.json
+            outdated-packages.json
+            suspicious-packages.txt
+          retention-days: 30
+
+      - name: Fail on critical vulnerabilities
+        if: steps.npm-audit.outputs.CRITICAL_VULNERABILITIES > 0
+        run: |
+          echo "❌ Critical vulnerabilities found: ${{ steps.npm-audit.outputs.CRITICAL_VULNERABILITIES }}"
+          echo "Please fix critical vulnerabilities before merging this PR"
+          exit 1
