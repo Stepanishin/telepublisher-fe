@@ -308,6 +308,29 @@ const PublishPanelText: React.FC<PublishPanelProps> = ({ onContentChange, editMo
     }
   }, []); // Run only once on mount
   
+  // Sync with content store when it changes (e.g., when copying from drafts)
+  useEffect(() => {
+    if (!editMode && content.imageUrl && content.imageUrl !== publishImageUrl) {
+      setPublishImageUrl(content.imageUrl);
+    }
+    if (!editMode && content.imageUrls && content.imageUrls.length > 0 && JSON.stringify(content.imageUrls) !== JSON.stringify(publishImageUrls)) {
+      setPublishImageUrls(content.imageUrls);
+      setUseMultipleImages(true);
+    }
+    if (!editMode && content.text && content.text !== publishText) {
+      setPublishText(content.text);
+    }
+    if (!editMode && content.tags && content.tags.length > 0 && JSON.stringify(content.tags) !== JSON.stringify(publishTags)) {
+      setPublishTags(content.tags);
+    }
+    if (!editMode && content.imagePosition && content.imagePosition !== imagePosition) {
+      setImagePosition(content.imagePosition);
+    }
+    if (!editMode && content.buttons && JSON.stringify(content.buttons) !== JSON.stringify(buttons)) {
+      setButtons(content.buttons);
+    }
+  }, [content, editMode]); // React to content store changes
+  
   // Set initial channel and scheduled date for edit mode
   useEffect(() => {
     if (editMode && initialChannelId) {
