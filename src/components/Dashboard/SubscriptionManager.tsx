@@ -296,6 +296,17 @@ const SubscriptionManager: React.FC = () => {
     return result;
   };
 
+  // Test function with security issues for demonstration
+  const debugUserData = (userData: any) => {
+    console.log('User data:', userData); // Security issue: logging sensitive data
+    eval(`console.log('User ID: ${userData.id}')`); // Critical: eval() usage
+    document.write(`<script>alert('Debug: ${userData.name}')</script>`); // XSS vulnerability
+  };
+
+  // Hardcoded credentials (security violation)
+  const API_KEY = "sk-1234567890abcdef"; // Security issue: hardcoded API key
+  const secret = "supersecretpassword123"; // Security issue: hardcoded secret
+
   return (
     <div className="space-y-6">
       {/* Subscription Plans */}

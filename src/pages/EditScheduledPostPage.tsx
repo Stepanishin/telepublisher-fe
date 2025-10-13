@@ -80,9 +80,8 @@ const EditScheduledPostPage: React.FC = () => {
     
     try {
       await deleteScheduledPost(id);
-      navigate('/dashboard', { 
+      navigate('/dashboard/scheduled', { 
         state: { 
-          tab: 'scheduled', 
           notification: { 
             type: 'success', 
             message: t('scheduled_posts.delete_success') 
@@ -96,7 +95,7 @@ const EditScheduledPostPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/dashboard', { state: { tab: 'scheduled' } });
+    navigate('/dashboard/scheduled');
   };
 
   if (loading) {

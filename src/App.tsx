@@ -2,6 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/Layout/MainLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import DashboardContentPage from './pages/DashboardContentPage';
+import DashboardChannelsPage from './pages/DashboardChannelsPage';
+import DashboardInstructionsPage from './pages/DashboardInstructionsPage';
+import DashboardSubscriptionPage from './pages/DashboardSubscriptionPage';
+import DashboardScheduledPage from './pages/DashboardScheduledPage';
 import NotFoundPage from './pages/NotFoundPage';
 import HomePage from './pages/HomePage';
 import ContactPage from './pages/ContactPage';
@@ -40,67 +45,35 @@ function App() {
               <Route path="login" element={<LoginPage />} />
               <Route path="contact" element={<ContactPage />} />
               <Route path="terms" element={<TermsPage />} />
+              
+              {/* Dashboard routes with nested tabs */}
               <Route 
                 path="dashboard" 
                 element={
                   isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              {/* Content routes */}
-              <Route 
-                path="dashboard/content/post" 
-                element={
-                  isAuthenticated ? <PostTypeSelector /> : <Navigate to="/login" replace />
-                } 
-              />
-              <Route 
-                path="dashboard/content/create-text" 
-                element={
-                  isAuthenticated ? <CreateTextPostPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              <Route 
-                path="dashboard/content/create-image" 
-                element={
-                  isAuthenticated ? <CreateImagePostPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              {/* <Route 
-                path="dashboard/content/create-video" 
-                element={
-                  isAuthenticated ? <CreateVideoPostPage /> : <Navigate to="/login" replace />
-                } 
-              /> */}
-              <Route 
-                path="dashboard/content/create-media-group" 
-                element={
-                  isAuthenticated ? <CreateMediaGroupPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              <Route 
-                path="dashboard/content/poll" 
-                element={
-                  isAuthenticated ? <PollPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              <Route 
-                path="dashboard/content/autoposting" 
-                element={
-                  isAuthenticated ? <AutoPostingPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              <Route 
-                path="dashboard/content/drafts" 
-                element={
-                  isAuthenticated ? <DraftsPage /> : <Navigate to="/login" replace />
-                } 
-              />
-              <Route 
-                path="edit-scheduled-post/:id" 
-                element={
-                  isAuthenticated ? <EditScheduledPostPage /> : <Navigate to="/login" replace />
-                } 
-              />
+                }
+              >
+                {/* Redirect /dashboard to /dashboard/content */}
+                <Route index element={<Navigate to="/dashboard/content" replace />} />
+                
+                {/* Dashboard tab pages */}
+                <Route path="content" element={<DashboardContentPage />} />
+                <Route path="channels" element={<DashboardChannelsPage />} />
+                <Route path="instructions" element={<DashboardInstructionsPage />} />
+                <Route path="subscription" element={<DashboardSubscriptionPage />} />
+                <Route path="scheduled" element={<DashboardScheduledPage />} />
+                
+                {/* Content creation routes - nested within dashboard to maintain tab navigation */}
+                <Route path="content/post" element={<PostTypeSelector />} />
+                <Route path="content/create-text" element={<CreateTextPostPage />} />
+                <Route path="content/create-image" element={<CreateImagePostPage />} />
+                {/* <Route path="content/create-video" element={<CreateVideoPostPage />} /> */}
+                <Route path="content/create-media-group" element={<CreateMediaGroupPage />} />
+                <Route path="content/poll" element={<PollPage />} />
+                <Route path="content/autoposting" element={<AutoPostingPage />} />
+                <Route path="content/drafts" element={<DraftsPage />} />
+                <Route path="edit-scheduled-post/:id" element={<EditScheduledPostPage />} />
+              </Route>
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

@@ -213,7 +213,7 @@ const ScheduledPosts: React.FC = () => {
       // TODO: Implement edit for polls when available
       alert(t('scheduled_posts.poll_edit_not_available'));
     } else {
-      navigate(`/edit-scheduled-post/${item._id}`);
+      navigate(`/dashboard/edit-scheduled-post/${item._id}`);
     }
   };
 
